@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sembriogan - Dashboard Operativo</title>
+    <link rel="stylesheet" href="css/dashboard_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="admin-layout">
+        
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="Admin.html">
+                    <img src="img/image-removebg-preview.png" alt="Logo Sembriogan" class="sidebar-logo">
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" id="nav-dash"><i class="fas fa-chart-pie"></i> Dashboard</a>
+                <a href="gestion_animal.html" id="nav-animal"><i class="fas fa-cow"></i> Gestión Animal</a>
+                <a href="catalogo_genetico.html" id="nav-cata"><i class="fas fa-vial"></i> Catálogo</a>
+                <a href="pedidos_web.html" id="nav-pedi"><i class="fas fa-shopping-cart"></i> Pedidos</a>
+                <a href="usuarios_roles.html" id="nav-user"><i class="fas fa-users"></i> Usuarios</a>
+                <a href="configuracion.html" id="nav-conf"><i class="fas fa-cog"></i> Ajustes</a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            
+            <header class="topbar">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Buscar hato, pajilla o reporte...">
+                </div>
+                <div class="user-profile">
+                    <i class="fas fa-bell notification-bell"></i>
+                    <div class="avatar">Ad</div>
+                    <div class="user-info">
+                        <span class="user-name">Juan Pablo Porras</span>
+                        <span class="user-role">Gerencia General</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="page-header">
+                    <div>
+                        <h1>Panel de Control Analítico</h1>
+                        <p class="subtitle">Monitoreo de biotecnología y rendimiento comercial</p>
+                    </div>
+                    <button class="btn-primary"><i class="fas fa-download"></i> Descargar PDF</button>
+                </div>
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon blue"><i class="fas fa-dna"></i></div>
+                        <div class="kpi-info">
+                            <h3>Animales Evaluados</h3>
+                            <p class="kpi-value">1,245</p>
+                            <span class="kpi-trend up"><i class="fas fa-arrow-up"></i> +12% este mes</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon green"><i class="fas fa-percentage"></i></div>
+                        <div class="kpi-info">
+                            <h3>Efectividad IATF</h3>
+                            <p class="kpi-value">68%</p>
+                            <span class="kpi-trend up"><i class="fas fa-arrow-up"></i> Promedio regional óptimo</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon orange"><i class="fas fa-bell"></i></div>
+                        <div class="kpi-info">
+                            <h3>Alertas de Parto</h3>
+                            <p class="kpi-value">32</p>
+                            <span class="kpi-trend warning">Próximos 15 días</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon purple"><i class="fas fa-ice-cream"></i></div>
+                        <div class="kpi-info">
+                            <h3>Stock de Pajillas</h3>
+                            <p class="kpi-value">8,500</p>
+                            <span class="kpi-trend normal">Inventario Central</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    
+                    <div class="chart-card">
+                        <h2>Volumen de Ventas Genéticas (2026)</h2>
+                        <div class="bar-chart">
+                            <div class="chart-axis-y">
+                                <span>20M</span><span>15M</span><span>10M</span><span>5M</span><span>0</span>
+                            </div>
+                            <div class="bar-container">
+                                <div class="bar-wrapper">
+                                    <div class="bar" style="height: 40%;"><span>$8M</span></div>
+                                    <span class="bar-label">Ene</span>
+                                </div>
+                                <div class="bar-wrapper">
+                                    <div class="bar" style="height: 65%;"><span>$13M</span></div>
+                                    <span class="bar-label">Feb</span>
+                                </div>
+                                <div class="bar-wrapper">
+                                    <div class="bar" style="height: 85%;"><span>$17M</span></div>
+                                    <span class="bar-label">Mar</span>
+                                </div>
+                                <div class="bar-wrapper">
+                                    <div class="bar active" style="height: 95%;"><span>$19M</span></div>
+                                    <span class="bar-label">Abr</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <h2>Tasa de Preñez por Raza Bovinas</h2>
+                        <div class="progress-chart-container">
+                            
+                            <div class="progress-group">
+                                <div class="progress-labels">
+                                    <span>Brahman Gris</span>
+                                    <strong>74%</strong>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill blue" style="width: 74%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="progress-group">
+                                <div class="progress-labels">
+                                    <span>Gyr Holando</span>
+                                    <strong>65%</strong>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill green" style="width: 65%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="progress-group">
+                                <div class="progress-labels">
+                                    <span>Nelore</span>
+                                    <strong>58%</strong>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill orange" style="width: 58%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="progress-group">
+                                <div class="progress-labels">
+                                    <span>Angus Rojo</span>
+                                    <strong>70%</strong>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill purple" style="width: 70%;"></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+<script>
+    // Detecta la página actual y resalta el botón en la sidebar
+    const path = window.location.pathname;
+    const navLinks = {
+        "dashboard.html": "nav-dash",
+        "gestion_animal.html": "nav-animal",
+        "catalogo_genetico.html": "nav-cata",
+        "pedidos_web.html": "nav-pedi",
+        "usuarios_roles.html": "nav-user",
+        "configuracion.html": "nav-conf"
+    };
+
+    const activeId = Object.keys(navLinks).find(key => path.includes(key));
+    if (activeId) {
+        document.getElementById(navLinks[activeId]).classList.add('active');
+    }
+</script>
+</body>
+</html>

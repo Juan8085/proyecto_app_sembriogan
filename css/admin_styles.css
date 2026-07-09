@@ -1,0 +1,349 @@
+/* Reseteo básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: #f4f7f6; /* Fondo gris muy claro para el área de trabajo */
+    color: #333;
+}
+
+/* --- ESTRUCTURA PRINCIPAL (GRID) --- */
+.admin-layout {
+    display: grid;
+    grid-template-columns: 250px 1fr; /* 250px para el menú, el resto para el contenido */
+    min-height: 100vh; /* Ocupa todo el alto de la pantalla */
+}
+
+/* --- BARRA LATERAL (SIDEBAR) --- */
+.sidebar {
+    background-color: #016ebb; /* Azul Corporativo Oscuro */
+    color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 20px;
+    display: flex;
+    justify-content: center; /* Centramos el logo */
+    align-items: center;
+    background-color: white;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Nueva clase para controlar el tamaño del logo */
+.sidebar-logo {
+    max-width: 180px; /* Evita que el logo se salga del menú */
+    height: auto;
+    display: block;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+}
+
+.sidebar-nav a {
+    color: #b0bec5;
+    text-decoration: none;
+    padding: 15px 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.3s;
+}
+
+.sidebar-nav a:hover, .sidebar-nav a.active {
+    background-color: rgba(255,255,255,0.1);
+    color: white;
+    border-left: 4px solid #4CAF50;
+}
+
+/* --- BARRA SUPERIOR (TOPBAR) --- */
+.main-wrapper {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Evita desbordamientos indeseados */
+}
+
+.topbar {
+    background-color: white;
+    height: 70px;
+    padding: 0 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    z-index: 10;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    background-color: #f0f2f5;
+    padding: 10px 15px;
+    border-radius: 20px;
+    width: 400px;
+    transition: width 0.3s;
+}
+
+.search-bar input {
+    border: none;
+    background: transparent;
+    outline: none;
+    margin-left: 10px;
+    width: 100%;
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.notification-bell {
+    font-size: 1.2rem;
+    color: #666;
+    cursor: pointer;
+    margin-right: 15px;
+}
+
+.avatar {
+    background-color: #f63535; /* Rojo Sembriogan */
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+}
+
+/* --- CONTENIDO DEL DASHBOARD --- */
+.dashboard-content {
+    padding: 30px;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.btn-primary {
+    background-color: #f63535;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    white-space: nowrap;
+}
+
+/* Grid de Indicadores (KPIs) */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 columnas por defecto */
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.kpi-card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.kpi-icon {
+    min-width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.kpi-icon.blue { background-color: #2196F3; }
+.kpi-icon.green { background-color: #4CAF50; }
+.kpi-icon.orange { background-color: #FF9800; }
+.kpi-icon.purple { background-color: #9C27B0; }
+
+.kpi-info h3 {
+    font-size: 0.85rem;
+    color: #777;
+    font-weight: normal;
+}
+
+.kpi-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-top: 5px;
+}
+
+/* --- TABLA DE DATOS --- */
+.data-section {
+    background-color: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+}
+
+.data-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+    color: #444;
+}
+
+.table-responsive {
+    overflow-x: auto; /* Permite hacer scroll en la tabla si no cabe en pantalla */
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px; /* Fuerza un ancho mínimo para evitar que el texto se aplaste */
+}
+
+.data-table th, .data-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+}
+
+.data-table th {
+    background-color: #f9fafb;
+    color: #666;
+    font-weight: 600;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    white-space: nowrap;
+}
+.badge-blue { background-color: #e3f2fd; color: #1565c0; }
+.badge-green { background-color: #e8f5e9; color: #2e7d32; }
+.badge-orange { background-color: #fff3e0; color: #e65100; }
+
+.status { font-weight: bold; font-size: 0.85rem; }
+.status.success { color: #4CAF50; }
+.status.warning { color: #FF9800; }
+
+.btn-icon {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+.btn-icon:hover { color: #2E7D32; }
+
+
+/* ====================================================
+   MEDIA QUERIES (DISEÑO RESPONSIVE)
+==================================================== */
+
+/* Dispositivos medianos (Tablets, pantallas menores a 992px) */
+@media (max-width: 992px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr); /* Pasa de 4 columnas a 2 columnas */
+    }
+    
+    .search-bar {
+        width: 250px; /* Achicamos la barra de búsqueda */
+    }
+}
+
+/* Dispositivos pequeños (Celulares, pantallas menores a 768px) */
+@media (max-width: 768px) {
+    
+    /* El menú lateral pasa a estar arriba y el contenido abajo */
+    .admin-layout {
+        grid-template-columns: 1fr; 
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Ajustamos el menú lateral para dispositivos móviles */
+    .sidebar {
+        width: 100%;
+    }
+
+    .sidebar-logo {
+        max-width: 140px; /* Logo más pequeño en celular */
+    }
+
+    /* Convertimos la lista vertical en un menú deslizable horizontal */
+    .sidebar-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 10px;
+        white-space: nowrap;
+    }
+
+    .sidebar-nav a {
+        padding: 10px 15px;
+        border-left: none; /* Quitamos la línea verde de la izquierda */
+        border-bottom: 3px solid transparent; /* La pasamos abajo */
+    }
+
+    .sidebar-nav a:hover, .sidebar-nav a.active {
+        border-left: none;
+        border-bottom: 3px solid #4CAF50;
+    }
+
+    /* Ajustamos la barra superior (Buscador y Perfil) */
+    .topbar {
+        height: auto;
+        padding: 15px;
+        flex-direction: column-reverse; /* El perfil arriba, el buscador abajo */
+        gap: 15px;
+    }
+
+    .search-bar {
+        width: 100%; /* El buscador ocupa todo el ancho */
+    }
+
+    /* Las tarjetas de resumen (KPIs) pasan a ocupar toda la pantalla */
+    .kpi-grid {
+        grid-template-columns: 1fr; /* 1 sola columna */
+    }
+
+    /* El título y el botón de exportar se acomodan verticalmente */
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .dashboard-content {
+        padding: 15px; /* Menos espacio en los bordes para aprovechar la pantalla */
+    }
+}

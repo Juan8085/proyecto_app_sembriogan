@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sembriogan - Catálogo Genético</title>
+    <link rel="stylesheet" href="css/catalogo_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="admin-layout">
+        
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="img/image-removebg-preview.png" alt="Logo Sembriogan" class="sidebar-logo">
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html"><i class="fas fa-chart-pie"></i> Dashboard</a>
+                <a href="gestion_animal.html"><i class="fas fa-cow"></i> Gestión Animal</a>
+                <a href="#" class="active"><i class="fas fa-vial"></i> Catálogo Genético</a>
+                <a href="#"><i class="fas fa-shopping-cart"></i> Pedidos Web</a>
+                <a href="#"><i class="fas fa-users"></i> Usuarios y Roles</a>
+                <a href="#"><i class="fas fa-cog"></i> Configuración</a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            
+            <header class="topbar">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Buscar toro, raza o código de pajilla...">
+                </div>
+                <div class="user-profile">
+                    <i class="fas fa-bell notification-bell"></i>
+                    <div class="avatar">Ad</div>
+                    <div class="user-info">
+                        <span class="user-name">Juan Pablo Porras</span>
+                        <span class="user-role">Gerencia General</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                
+                <div class="page-header">
+                    <div>
+                        <h1>Catálogo Comercial de Genética</h1>
+                        <p class="subtitle">Administración de inventario de pajillas de semen y embriones</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-primary"><i class="fas fa-plus-circle"></i> Nuevo Producto</button>
+                    </div>
+                </div>
+
+                <div class="filter-bar">
+                    <select class="filter-select">
+                        <option value="all">Tipo de Material</option>
+                        <option value="semen">Pajillas de Semen</option>
+                        <option value="embrion">Embriones</option>
+                    </select>
+                    <select class="filter-select">
+                        <option value="all">Filtrar por Raza</option>
+                        <option value="brahman">Brahman</option>
+                        <option value="gyr">Gyr</option>
+                        <option value="angus">Angus</option>
+                    </select>
+                    <select class="filter-select">
+                        <option value="all">Disponibilidad</option>
+                        <option value="stock">En Stock</option>
+                        <option value="agotado">Agotado</option>
+                    </select>
+                </div>
+
+                <div class="catalog-grid">
+                    
+                    <div class="product-card">
+                        <div class="product-image brahman-img">
+                            <span class="status-badge available">Disponible</span>
+                        </div>
+                        <div class="product-content">
+                            <div class="product-header">
+                                <h3>Toro Rómulo TE 452</h3>
+                                <span class="product-type"><i class="fas fa-vial"></i> Semen</span>
+                            </div>
+                            <p class="product-breed">Brahman Gris - Registro: 98452</p>
+                            
+                            <div class="product-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Precio x Dosis</span>
+                                    <span class="stat-value price">$ 45.000</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Stock Actual</span>
+                                    <span class="stat-value">1,250 uni.</span>
+                                </div>
+                            </div>
+
+                            <div class="product-actions">
+                                <button class="btn-outline"><i class="fas fa-edit"></i> Editar</button>
+                                <button class="btn-icon danger"><i class="fas fa-power-off"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image angus-img">
+                            <span class="status-badge low-stock">Pocas Unidades</span>
+                        </div>
+                        <div class="product-content">
+                            <div class="product-header">
+                                <h3>Don Aso (Toro Élite)</h3>
+                                <span class="product-type"><i class="fas fa-vial"></i> Semen</span>
+                            </div>
+                            <p class="product-breed">Angus Rojo - Registro: 11005</p>
+                            
+                            <div class="product-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Precio x Dosis</span>
+                                    <span class="stat-value price">$ 120.000</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Stock Actual</span>
+                                    <span class="stat-value warning">85 uni.</span>
+                                </div>
+                            </div>
+
+                            <div class="product-actions">
+                                <button class="btn-outline"><i class="fas fa-edit"></i> Editar</button>
+                                <button class="btn-icon danger"><i class="fas fa-power-off"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image embryo-img">
+                            <span class="status-badge available">Disponible</span>
+                        </div>
+                        <div class="product-content">
+                            <div class="product-header">
+                                <h3>Embrión Gyr x Holando</h3>
+                                <span class="product-type embryo"><i class="fas fa-microscope"></i> Embrión</span>
+                            </div>
+                            <p class="product-breed">Girolando (F1) - Alta Producción</p>
+                            
+                            <div class="product-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Precio Unitario</span>
+                                    <span class="stat-value price">$ 1.500.000</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Stock Actual</span>
+                                    <span class="stat-value">12 uni.</span>
+                                </div>
+                            </div>
+
+                            <div class="product-actions">
+                                <button class="btn-outline"><i class="fas fa-edit"></i> Editar</button>
+                                <button class="btn-icon danger"><i class="fas fa-power-off"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card disabled">
+                        <div class="product-image gyr-img">
+                            <span class="status-badge out-of-stock">Agotado</span>
+                        </div>
+                        <div class="product-content">
+                            <div class="product-header">
+                                <h3>Toro Centurión 102</h3>
+                                <span class="product-type"><i class="fas fa-vial"></i> Semen</span>
+                            </div>
+                            <p class="product-breed">Gyr Lechero - Registro: 45102</p>
+                            
+                            <div class="product-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Precio x Dosis</span>
+                                    <span class="stat-value price">$ 65.000</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Stock Actual</span>
+                                    <span class="stat-value danger">0 uni.</span>
+                                </div>
+                            </div>
+
+                            <div class="product-actions">
+                                <button class="btn-outline"><i class="fas fa-sync"></i> Reabastecer</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+</body>
+</html>

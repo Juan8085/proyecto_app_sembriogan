@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contacto | Mi Proyecto</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- HEADER — Igual en todas las páginas -->
+  <header class="header">
+    <div class="header-logo">
+      <span class="logo-icono">🏪</span>
+      <span class="logo-texto">Mi Proyecto</span>
+    </div>
+    <button id="menu-toggle" class="menu-toggle" aria-label="Abrir menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav id="nav-menu" class="nav-menu">
+      <a href="index.html">Inicio</a>
+      <a href="productos.html">Productos</a>
+      <a href="nosotros.html">Nosotros</a>
+      <a href="contacto.html" class="activo">Contacto</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- Page header -->
+    <div class="page-header">
+      <p class="breadcrumb"><a href="index.html">Inicio</a> / Contacto</p>
+      <h1>Contáctanos</h1>
+      <p>Estamos para ayudarte. Escríbenos y te respondemos pronto.</p>
+    </div>
+
+    <!-- --------------------------------------------------------
+         SECCIÓN CONTACTO — Grid 2 columnas
+         Formulario (span 2) + Datos de contacto (1 col)
+         -------------------------------------------------------- -->
+    <section class="seccion-contacto">
+
+      <!--
+        FORMULARIO
+        id="form-contacto" → JavaScript lo seleccionará para validar
+        novalidate → Desactiva validación del navegador (JS lo hará)
+      -->
+      <form id="form-contacto" class="form-contacto" novalidate>
+        <h2>Envíanos un mensaje</h2>
+        <p>Todos los campos marcados con * son obligatorios.</p>
+
+        <!--
+          Cada .campo contiene:
+          - label
+          - input / textarea (con id y name iguales)
+          - span.error (vacío — JavaScript escribe el error aquí)
+        -->
+
+        <div class="campo">
+          <label for="nombre">Nombre completo *</label>
+          <input type="text"
+                 id="nombre"
+                 name="nombre"
+                 placeholder="Tu nombre y apellido"
+                 autocomplete="name"
+                 required>
+          <span class="error" id="error-nombre"></span>
+        </div>
+
+        <div class="campo">
+          <label for="email">Correo electrónico *</label>
+          <input type="email"
+                 id="email"
+                 name="email"
+                 placeholder="tucorreo@ejemplo.com"
+                 autocomplete="email"
+                 required>
+          <span class="error" id="error-email"></span>
+        </div>
+
+        <div class="campo">
+          <label for="telefono">Teléfono (opcional)</label>
+          <input type="tel"
+                 id="telefono"
+                 name="telefono"
+                 placeholder="300 000 0000"
+                 autocomplete="tel">
+          <span class="error" id="error-telefono"></span>
+        </div>
+
+        <!--
+          ✏️ Personaliza el select según tu proyecto:
+          - Tienda: "Consulta de producto", "Pedido", "Devolución"
+          - Servicios: "Cotización", "Información", "Soporte"
+          - Educación: "Inscripción", "Información del curso"
+        -->
+        <div class="campo">
+          <label for="asunto">Asunto *</label>
+          <select id="asunto" name="asunto" required>
+            <option value="">-- Selecciona un asunto --</option>
+            <option value="consulta">Consulta general</option>
+            <option value="pedido">Pedido / compra</option>
+            <option value="soporte">Soporte técnico</option>
+            <option value="otro">Otro</option>
+          </select>
+          <span class="error" id="error-asunto"></span>
+        </div>
+
+        <div class="campo">
+          <label for="mensaje">Mensaje *</label>
+          <textarea id="mensaje"
+                    name="mensaje"
+                    rows="5"
+                    placeholder="Escribe tu mensaje aquí..."
+                    required></textarea>
+          <span class="error" id="error-mensaje"></span>
+        </div>
+
+        <button type="submit" class="btn-enviar">
+          Enviar mensaje →
+        </button>
+
+        <!--
+          Mensaje de éxito — oculto por CSS, JavaScript lo mostrará
+          después de validar y "enviar" el formulario
+        -->
+        <div id="form-exito" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:16px; color:#166534; font-weight:600;">
+          ✅ ¡Mensaje enviado! Te contactaremos pronto.
+        </div>
+
+      </form>
+
+      <!-- Columna de datos de contacto -->
+      <aside class="datos-contacto">
+
+        <div class="dato-item">
+          <span class="dato-icono">📍</span>
+          <div>
+            <h4>Dirección</h4>
+            <!-- ✏️ Personaliza con la dirección real -->
+            <p>Calle 7 # 8-30<br>Garzón, Huila, Colombia</p>
+          </div>
+        </div>
+
+        <div class="dato-item">
+          <span class="dato-icono">📞</span>
+          <div>
+            <h4>Teléfono</h4>
+            <p>300 000 0000<br>8 am – 6 pm · Lun a Sáb</p>
+          </div>
+        </div>
+
+        <div class="dato-item">
+          <span class="dato-icono">✉️</span>
+          <div>
+            <h4>Correo</h4>
+            <p>info@miproyecto.co</p>
+          </div>
+        </div>
+
+        <div class="dato-item">
+          <span class="dato-icono">📱</span>
+          <div>
+            <h4>Redes sociales</h4>
+            <!-- ✏️ Personaliza con las redes de tu proyecto -->
+            <p>
+              <a href="#" style="display:block; margin-bottom:4px;">Instagram</a>
+              <a href="#" style="display:block; margin-bottom:4px;">Facebook</a>
+              <a href="#">WhatsApp</a>
+            </p>
+          </div>
+        </div>
+
+      </aside>
+
+    </section>
+
+  </main>
+
+  <!-- FOOTER — Igual en todas las páginas -->
+  <footer class="footer">
+    <div class="footer-contenido">
+      <div class="footer-marca">
+        <span class="logo-icono">🏪</span>
+        <span class="logo-texto">Mi Proyecto</span>
+        <p>Descripción corta del negocio.</p>
+      </div>
+      <nav class="footer-nav">
+        <h4>Páginas</h4>
+        <a href="index.html">Inicio</a>
+        <a href="productos.html">Productos</a>
+        <a href="nosotros.html">Nosotros</a>
+        <a href="contacto.html">Contacto</a>
+      </nav>
+      <div class="footer-contacto">
+        <h4>Contacto</h4>
+        <p>📍 Ciudad, Departamento</p>
+        <p>📞 300 000 0000</p>
+        <p>✉️ info@miproyecto.co</p>
+      </div>
+    </div>
+    <div class="footer-copy">
+      <p>&copy; 2026 Mi Proyecto — Todos los derechos reservados</p>
+    </div>
+  </footer>
+
+</body>
+</html>

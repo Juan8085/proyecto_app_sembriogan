@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--
+    ✏️ PERSONALIZA: Cambia el título por el nombre de tu proyecto
+    Ejemplo: "Tienda La Cosecha | Inicio" o "Studio Foto Lima | Inicio"
+  -->
+  <title>Mi Proyecto | Inicio</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       HEADER — Copia este bloque IGUAL en todas las páginas
+       Solo cambia el class="activo" al enlace de la página actual
+       ============================================================ -->
+  <header class="header">
+    <div class="header-logo">
+      <!--
+        ✏️ Opción A: Logo con imagen
+        <img src="img/logo.png" alt="Logo mi proyecto" class="logo-img">
+        ✏️ Opción B: Solo texto (más fácil para empezar)
+      -->
+      <span class="logo-icono">🏪</span>
+      <span class="logo-texto">Mi Proyecto</span>
+    </div>
+
+    <!-- Botón hamburguesa — JavaScript lo activará en la próxima sesión -->
+    <button id="menu-toggle" class="menu-toggle" aria-label="Abrir menú" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav id="nav-menu" class="nav-menu">
+      <!-- class="activo" va en el enlace de la página actual -->
+      <a href="index.html" class="activo">Inicio</a>
+      <!--
+        ✏️ Ajusta los nombres según tu proyecto:
+        - Tienda: "Productos", "Ofertas"
+        - Servicios: "Servicios", "Portafolio"
+        - Educación: "Cursos", "Instructores"
+        - Restaurante: "Menú", "Reservas"
+      -->
+      <a href="productos.html">Productos</a>
+      <a href="nosotros.html">Nosotros</a>
+      <a href="contacto.html">Contacto</a>
+    </nav>
+  </header>
+
+  <!-- ============================================================
+       MAIN — Contenido único de esta página
+       ============================================================ -->
+  <main>
+
+    <!-- --------------------------------------------------------
+         HERO — Sección principal de bienvenida
+         -------------------------------------------------------- -->
+    <section class="hero" id="hero">
+      <div class="hero-contenido">
+        <!--
+          ✏️ Personaliza: Título llamativo de tu negocio o proyecto
+        -->
+        <h1>Bienvenido a<br><span class="hero-destacado">Mi Proyecto</span></h1>
+        <p>Describe en 1-2 frases qué hace tu negocio o proyecto y por qué el usuario debería quedarse.</p>
+        <!--
+          ✏️ El botón CTA lleva a la página principal de tu proyecto
+          (productos, servicios, cursos, etc.)
+        -->
+        <div class="hero-acciones">
+          <a href="productos.html" class="btn btn-primario">Ver productos</a>
+          <a href="nosotros.html" class="btn btn-secundario">Conócenos</a>
+        </div>
+      </div>
+      <!--
+        ✏️ Opción: Agrega una imagen hero
+        <img src="img/hero.jpg" alt="Hero" class="hero-imagen">
+      -->
+    </section>
+
+    <!-- --------------------------------------------------------
+         DESTACADOS — Grid de tarjetas (productos/servicios/cursos)
+         El id="grid-tarjetas" lo usará JavaScript para cargar
+         tarjetas dinámicamente desde un array de datos
+         -------------------------------------------------------- -->
+    <section class="seccion-tarjetas" id="destacados">
+      <div class="seccion-header">
+        <h2>Nuestros Productos</h2>
+        <!--
+          ✏️ Cambia "Nuestros Productos" según tu proyecto:
+          "Nuestros Servicios", "Cursos Disponibles", "Nuestro Menú"
+        -->
+        <p>Descripción breve de esta sección</p>
+      </div>
+
+      <!--
+        El id="grid-tarjetas" es importante:
+        JavaScript usará este id para inyectar tarjetas dinámicamente.
+        Por ahora, pon el contenido manualmente.
+      -->
+      <div class="grid-tarjetas" id="grid-tarjetas">
+
+        <!-- ✏️ Copia y pega este bloque para cada tarjeta (mínimo 6) -->
+        <article class="tarjeta" data-id="1">
+          <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=250&fit=crop&q=80"
+               alt="Producto 1"
+               class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Nombre del producto</h3>
+            <p class="tarjeta-desc">Descripción corta del producto o servicio. Máximo 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <!--
+                ✏️ Si es tienda: muestra precio
+                Si es servicios: muestra "Solicitar"
+                Si es cursos: muestra duración
+              -->
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="2">
+          <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=250&fit=crop&q=80"
+               alt="Producto 2"
+               class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Nombre del producto</h3>
+            <p class="tarjeta-desc">Descripción corta del producto o servicio. Máximo 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="3">
+          <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&h=250&fit=crop&q=80"
+               alt="Producto 3"
+               class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Nombre del producto</h3>
+            <p class="tarjeta-desc">Descripción corta del producto o servicio. Máximo 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="4">
+          <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=250&fit=crop&q=80"
+               alt="Producto 4"
+               class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Nombre del producto</h3>
+            <p class="tarjeta-desc">Descripción corta del producto o servicio. Máximo 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="5">
+          <img src="https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=250&fit=crop&q=80"
+               alt="Producto 5"
+               class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Nombre del producto</h3>
+            <p class="tarjeta-desc">Descripción corta del producto o servicio. Máximo 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="6">
+          <img src="https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=400&h=250&fit=crop&q=80"
+               alt="Producto 6"
+               class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Nombre del producto</h3>
+            <p class="tarjeta-desc">Descripción corta del producto o servicio. Máximo 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+      </div><!-- /grid-tarjetas -->
+
+      <div class="seccion-cta">
+        <a href="productos.html" class="btn btn-primario">Ver todos los productos</a>
+      </div>
+    </section>
+
+    <!-- --------------------------------------------------------
+         SECCIÓN ABOUT (mini) — breve presentación
+         -------------------------------------------------------- -->
+    <section class="seccion-about" id="about">
+      <div class="about-texto">
+        <!--
+          ✏️ Versión corta de "Nosotros" — 2-3 frases y un enlace
+        -->
+        <h2>¿Quiénes somos?</h2>
+        <p>Breve descripción de tu negocio o proyecto. Quién eres, qué haces, por qué lo haces. Máximo 3 líneas para mantener el interés.</p>
+        <a href="nosotros.html" class="btn btn-secundario">Conoce más</a>
+      </div>
+      <div class="about-stats">
+        <!-- ✏️ Personaliza los números según tu proyecto -->
+        <div class="stat">
+          <span class="stat-numero">+100</span>
+          <span class="stat-label">Clientes</span>
+        </div>
+        <div class="stat">
+          <span class="stat-numero">5</span>
+          <span class="stat-label">Años</span>
+        </div>
+        <div class="stat">
+          <span class="stat-numero">+50</span>
+          <span class="stat-label">Productos</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       FOOTER — Copia este bloque IGUAL en todas las páginas
+       ============================================================ -->
+  <footer class="footer">
+    <div class="footer-contenido">
+      <div class="footer-marca">
+        <span class="logo-icono">🏪</span>
+        <span class="logo-texto">Mi Proyecto</span>
+        <p>Descripción corta del negocio.</p>
+      </div>
+      <nav class="footer-nav">
+        <h4>Páginas</h4>
+        <a href="index.html">Inicio</a>
+        <a href="productos.html">Productos</a>
+        <a href="nosotros.html">Nosotros</a>
+        <a href="contacto.html">Contacto</a>
+      </nav>
+      <div class="footer-contacto">
+        <h4>Contacto</h4>
+        <p>📍 Ciudad, Departamento</p>
+        <p>📞 300 000 0000</p>
+        <p>✉️ info@miproyecto.co</p>
+      </div>
+    </div>
+    <div class="footer-copy">
+      <p>&copy; 2026 Mi Proyecto — Todos los derechos reservados</p>
+    </div>
+  </footer>
+
+  <!--
+    JavaScript irá aquí en la próxima sesión:
+    <script src="js/main.js"></script>
+  -->
+
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sembriogan - Usuarios y Roles</title>
+    <link rel="stylesheet" href="css/usuarios_styles.css">
+    <link rel="stylesheet" href="css/dashboard_styles.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="Admin.html">
+                    <img src="img/image-removebg-preview.png" alt="Logo Sembriogan" class="sidebar-logo">
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" id="nav-dash"><i class="fas fa-chart-pie"></i> Dashboard</a>
+                <a href="gestion_animal.html" id="nav-animal"><i class="fas fa-cow"></i> Gestión Animal</a>
+                <a href="catalogo_genetico.html" id="nav-cata"><i class="fas fa-vial"></i> Catálogo</a>
+                <a href="pedidos_web.html" id="nav-pedi"><i class="fas fa-shopping-cart"></i> Pedidos</a>
+                <a href="usuarios_roles.html" id="nav-user"><i class="fas fa-users"></i> Usuarios</a>
+                <a href="configuracion.html" id="nav-conf"><i class="fas fa-cog"></i> Ajustes</a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Buscar usuario por nombre o correo...">
+                </div>
+                <div class="user-profile">
+                    <div class="avatar">Ad</div>
+                    <div class="user-info">
+                        <span class="user-name">Juan Pablo Porras</span>
+                        <span class="user-role">Gerencia General</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="page-header">
+                    <div>
+                        <h1>Gestión de Usuarios</h1>
+                        <p class="subtitle">Configuración de acceso y permisos del sistema</p>
+                    </div>
+                    <button class="btn-primary"><i class="fas fa-user-plus"></i> Invitar Usuario</button>
+                </div>
+
+                <div class="data-section">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Rol Asignado</th>
+                                <th>Último Acceso</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-avatar blue">AM</div>
+                                        <div>
+                                            <strong>Dr. Aldair Monje</strong>
+                                            <span>a.monje@sembriogan.com</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="role-badge veter">Veterinario</span></td>
+                                <td>Hace 2 horas</td>
+                                <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td><button class="icon-btn"><i class="fas fa-edit"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-avatar green">JS</div>
+                                        <div>
+                                            <strong>Juan Sánchez</strong>
+                                            <span>j.sanchez@asocentro.com</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="role-badge gana">Ganadero</span></td>
+                                <td>Hace 1 día</td>
+                                <td><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></td>
+                                <td><button class="icon-btn"><i class="fas fa-edit"></i></button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script>
+    // Detecta la página actual y resalta el botón en la sidebar
+    const path = window.location.pathname;
+    const navLinks = {
+        "dashboard.html": "nav-dash",
+        "gestion_animal.html": "nav-animal",
+        "catalogo_genetico.html": "nav-cata",
+        "pedidos_web.html": "nav-pedi",
+        "usuarios_roles.html": "nav-user",
+        "configuracion.html": "nav-conf"
+    };
+
+    const activeId = Object.keys(navLinks).find(key => path.includes(key));
+    if (activeId) {
+        document.getElementById(navLinks[activeId]).classList.add('active');
+    }
+</script>
+</body>
+</html>

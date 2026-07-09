@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sembriogan - Configuración</title>
+    <link rel="stylesheet" href="css/config_styles.css">
+    <link rel="stylesheet" href="css/pedidos_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="Admin.html">
+                    <img src="img/image-removebg-preview.png" alt="Logo Sembriogan" class="sidebar-logo">
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" id="nav-dash"><i class="fas fa-chart-pie"></i> Dashboard</a>
+                <a href="gestion_animal.html" id="nav-animal"><i class="fas fa-cow"></i> Gestión Animal</a>
+                <a href="catalogo_genetico.html" id="nav-cata"><i class="fas fa-vial"></i> Catálogo</a>
+                <a href="pedidos_web.html" id="nav-pedi"><i class="fas fa-shopping-cart"></i> Pedidos</a>
+                <a href="usuarios_roles.html" id="nav-user"><i class="fas fa-users"></i> Usuarios</a>
+                <a href="configuracion.html" id="nav-conf"><i class="fas fa-cog"></i> Ajustes</a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            <header class="topbar">
+                <div class="title-area">
+                    <h1>Configuración del Sistema</h1>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="config-container">
+                    <div class="tabs">
+                        <button class="tab-btn active">Empresa</button>
+                        <button class="tab-btn">Notificaciones</button>
+                        <button class="tab-btn">Seguridad</button>
+                        <button class="tab-btn">Base de Datos</button>
+                    </div>
+
+                    <div class="config-panel">
+                        <section class="config-section">
+                            <h2>Información General de la Empresa</h2>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Razón Social</label>
+                                    <input type="text" value="Grupo Sembriogan S.A.S.">
+                                </div>
+                                <div class="form-group">
+                                    <label>NIT</label>
+                                    <input type="text" value="901390019-1">
+                                </div>
+                                <div class="form-group">
+                                    <label>Correo de Contacto</label>
+                                    <input type="email" value="contacto@sembriogan.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>Dirección</label>
+                                    <input type="text" value="Garzón, Huila">
+                                </div>
+                            </div>
+                            <button class="btn-primary">Guardar Cambios</button>
+                        </section>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script>
+    // Detecta la página actual y resalta el botón en la sidebar
+    const path = window.location.pathname;
+    const navLinks = {
+        "dashboard.html": "nav-dash",
+        "gestion_animal.html": "nav-animal",
+        "catalogo_genetico.html": "nav-cata",
+        "pedidos_web.html": "nav-pedi",
+        "usuarios_roles.html": "nav-user",
+        "configuracion.html": "nav-conf"
+    };
+
+    const activeId = Object.keys(navLinks).find(key => path.includes(key));
+    if (activeId) {
+        document.getElementById(navLinks[activeId]).classList.add('active');
+    }
+</script>
+</body>
+</html>

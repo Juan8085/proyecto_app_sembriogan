@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- ✏️ Cambia el título: "Productos | Mi Tienda" o "Servicios | Mi Empresa" -->
+  <title>Productos | Mi Proyecto</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       HEADER — Igual en todas las páginas
+       Cambia class="activo" al enlace "Productos"
+       ============================================================ -->
+  <header class="header">
+    <div class="header-logo">
+      <span class="logo-icono">🏪</span>
+      <span class="logo-texto">Mi Proyecto</span>
+    </div>
+    <button id="menu-toggle" class="menu-toggle" aria-label="Abrir menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav id="nav-menu" class="nav-menu">
+      <a href="index.html">Inicio</a>
+      <a href="productos.html" class="activo">Productos</a>
+      <a href="nosotros.html">Nosotros</a>
+      <a href="contacto.html">Contacto</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- --------------------------------------------------------
+         PAGE HEADER — Título de la página
+         -------------------------------------------------------- -->
+    <div class="page-header">
+      <!-- ✏️ Personaliza el título y descripción -->
+      <p class="breadcrumb"><a href="index.html">Inicio</a> / Productos</p>
+      <h1>Nuestros Productos</h1>
+      <p>Encuentra todo lo que necesitas en un solo lugar.</p>
+    </div>
+
+    <!-- --------------------------------------------------------
+         CATÁLOGO COMPLETO
+         id="grid-tarjetas" lo usará JavaScript para cargar
+         todos los productos desde un array de datos
+         -------------------------------------------------------- -->
+    <section class="seccion-tarjetas">
+      <div class="grid-tarjetas" id="grid-tarjetas">
+
+        <!-- ✏️ Copia y pega este bloque para cada producto -->
+        <!-- Mínimo 9 productos en la página de catálogo -->
+
+        <article class="tarjeta" data-id="1">
+          <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=250&fit=crop&q=80"
+               alt="Producto 1" class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Producto 1</h3>
+            <p class="tarjeta-desc">Descripción del producto. Características principales en 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="2">
+          <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=250&fit=crop&q=80"
+               alt="Producto 2" class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Producto 2</h3>
+            <p class="tarjeta-desc">Descripción del producto. Características principales en 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="3">
+          <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&h=250&fit=crop&q=80"
+               alt="Producto 3" class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Producto 3</h3>
+            <p class="tarjeta-desc">Descripción del producto. Características principales en 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="4">
+          <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=250&fit=crop&q=80"
+               alt="Producto 4" class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Producto 4</h3>
+            <p class="tarjeta-desc">Descripción del producto. Características principales en 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="5">
+          <img src="https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=250&fit=crop&q=80"
+               alt="Producto 5" class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Producto 5</h3>
+            <p class="tarjeta-desc">Descripción del producto. Características principales en 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="6">
+          <img src="https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=400&h=250&fit=crop&q=80"
+               alt="Producto 6" class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Producto 6</h3>
+            <p class="tarjeta-desc">Descripción del producto. Características principales en 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="7">
+          <img src="https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=400&h=250&fit=crop&q=80"
+               alt="Producto 7" class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Producto 7</h3>
+            <p class="tarjeta-desc">Descripción del producto. Características principales en 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="8">
+          <img src="https://images.unsplash.com/photo-1434056886845-dac89ffe9b56?w=400&h=250&fit=crop&q=80"
+               alt="Producto 8" class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Producto 8</h3>
+            <p class="tarjeta-desc">Descripción del producto. Características principales en 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="tarjeta" data-id="9">
+          <img src="https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=400&h=250&fit=crop&q=80"
+               alt="Producto 9" class="tarjeta-img">
+          <div class="tarjeta-info">
+            <h3 class="tarjeta-nombre">Producto 9</h3>
+            <p class="tarjeta-desc">Descripción del producto. Características principales en 2-3 líneas.</p>
+            <div class="tarjeta-pie">
+              <span class="tarjeta-precio">$XX.000</span>
+              <button class="btn-accion">Ver más</button>
+            </div>
+          </div>
+        </article>
+
+      </div><!-- /grid-tarjetas -->
+    </section>
+
+  </main>
+
+  <!-- Footer — igual en todas las páginas -->
+  <footer class="footer">
+    <div class="footer-contenido">
+      <div class="footer-marca">
+        <span class="logo-icono">🏪</span>
+        <span class="logo-texto">Mi Proyecto</span>
+        <p>Descripción corta del negocio.</p>
+      </div>
+      <nav class="footer-nav">
+        <h4>Páginas</h4>
+        <a href="index.html">Inicio</a>
+        <a href="productos.html">Productos</a>
+        <a href="nosotros.html">Nosotros</a>
+        <a href="contacto.html">Contacto</a>
+      </nav>
+      <div class="footer-contacto">
+        <h4>Contacto</h4>
+        <p>📍 Ciudad, Departamento</p>
+        <p>📞 300 000 0000</p>
+        <p>✉️ info@miproyecto.co</p>
+      </div>
+    </div>
+    <div class="footer-copy">
+      <p>&copy; 2026 Mi Proyecto — Todos los derechos reservados</p>
+    </div>
+  </footer>
+
+</body>
+</html>

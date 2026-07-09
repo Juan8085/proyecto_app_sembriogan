@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sembriogan - Gestión de Pedidos</title>
+    <link rel="stylesheet" href="css/pedidos_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="admin-layout">
+        
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="Admin.html">
+                    <img src="img/image-removebg-preview.png" alt="Logo Sembriogan" class="sidebar-logo">
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" id="nav-dash"><i class="fas fa-chart-pie"></i> Dashboard</a>
+                <a href="gestion_animal.html" id="nav-animal"><i class="fas fa-cow"></i> Gestión Animal</a>
+                <a href="catalogo_genetico.html" id="nav-cata"><i class="fas fa-vial"></i> Catálogo</a>
+                <a href="pedidos_web.html" id="nav-pedi"><i class="fas fa-shopping-cart"></i> Pedidos</a>
+                <a href="usuarios_roles.html" id="nav-user"><i class="fas fa-users"></i> Usuarios</a>
+                <a href="configuracion.html" id="nav-conf"><i class="fas fa-cog"></i> Ajustes</a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            
+            <header class="topbar">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Buscar por # de Orden, Cliente o Finca...">
+                </div>
+                <div class="user-profile">
+                    <i class="fas fa-bell notification-bell"></i>
+                    <span class="badge-notification">3</span>
+                    <div class="avatar">Ad</div>
+                    <div class="user-info">
+                        <span class="user-name">Juan Pablo Porras</span>
+                        <span class="user-role">Gerencia General</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                
+                <div class="page-header">
+                    <div>
+                        <h1>Gestión de Pedidos Web</h1>
+                        <p class="subtitle">Control de ventas, facturación y logística de despachos</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-secondary"><i class="fas fa-file-excel"></i> Exportar</button>
+                        <button class="btn-primary"><i class="fas fa-plus"></i> Nuevo Pedido Manual</button>
+                    </div>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon orange"><i class="fas fa-clock"></i></div>
+                        <div class="kpi-info">
+                            <h3>Nuevos / Pendientes</h3>
+                            <p class="kpi-value">12</p>
+                            <span class="kpi-trend warning">Requieren revisión</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon blue"><i class="fas fa-box-open"></i></div>
+                        <div class="kpi-info">
+                            <h3>En Preparación</h3>
+                            <p class="kpi-value">5</p>
+                            <span class="kpi-trend normal">Termo criogénico</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon purple"><i class="fas fa-truck"></i></div>
+                        <div class="kpi-info">
+                            <h3>En Ruta</h3>
+                            <p class="kpi-value">8</p>
+                            <span class="kpi-trend normal">Con transportadora</span>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon green"><i class="fas fa-check-double"></i></div>
+                        <div class="kpi-info">
+                            <h3>Entregados (Mes)</h3>
+                            <p class="kpi-value">45</p>
+                            <span class="kpi-trend up">+$18.5M Ingresos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-bar">
+                    <select class="filter-select">
+                        <option value="all">Todos los Estados</option>
+                        <option value="pending">Pendientes</option>
+                        <option value="processing">En Preparación</option>
+                        <option value="shipped">En Ruta</option>
+                        <option value="delivered">Entregados</option>
+                    </select>
+                    <select class="filter-select">
+                        <option value="all">Rango de Fechas</option>
+                        <option value="today">Hoy</option>
+                        <option value="week">Esta Semana</option>
+                        <option value="month">Este Mes</option>
+                    </select>
+                </div>
+
+                <div class="data-section">
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Orden / Fecha</th>
+                                    <th>Cliente / Destino</th>
+                                    <th>Resumen de Compra</th>
+                                    <th>Total (COP)</th>
+                                    <th>Estado Logístico</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <strong>#ORD-2026-089</strong>
+                                        <span class="date-text">Hoy, 10:15 AM</span>
+                                    </td>
+                                    <td>
+                                        <div class="customer-info">
+                                            <strong>Hacienda El Oasis</strong>
+                                            <span>Contacto: Carlos Vargas</span>
+                                            <span><i class="fas fa-map-marker-alt"></i> Garzón, Vereda Alta</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="items-text">20x Semen Toro Rómulo...</span>
+                                        <span class="items-text">1x Termo 3L Nitrógeno</span>
+                                    </td>
+                                    <td>
+                                        <strong class="price-text">$ 1.850.000</strong>
+                                        <span class="payment-status success"><i class="fas fa-check-circle"></i> Pagado</span>
+                                    </td>
+                                    <td><span class="badge badge-warning"><i class="fas fa-clock"></i> Pendiente</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="icon-btn view" title="Ver Detalles"><i class="fas fa-file-invoice"></i></button>
+                                            <button class="btn-sm-primary" title="Procesar Pedido">Procesar</button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <strong>#ORD-2026-088</strong>
+                                        <span class="date-text">Ayer, 03:45 PM</span>
+                                    </td>
+                                    <td>
+                                        <div class="customer-info">
+                                            <strong>Finca La Esperanza</strong>
+                                            <span>Contacto: Mario Ceballos</span>
+                                            <span><i class="fas fa-map-marker-alt"></i> Pitalito, Huila</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="items-text">2x Embriones Gyr x Holando</span>
+                                    </td>
+                                    <td>
+                                        <strong class="price-text">$ 3.000.000</strong>
+                                        <span class="payment-status pending"><i class="fas fa-hourglass-half"></i> 50% Anticipo</span>
+                                    </td>
+                                    <td><span class="badge badge-purple"><i class="fas fa-truck"></i> En Ruta</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="icon-btn view" title="Ver Detalles"><i class="fas fa-file-invoice"></i></button>
+                                            <button class="btn-sm-outline" title="Actualizar Estado">Actualizar</button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <strong>#ORD-2026-085</strong>
+                                        <span class="date-text">24 May 2026</span>
+                                    </td>
+                                    <td>
+                                        <div class="customer-info">
+                                            <strong>Asociación ASOGACENTRO</strong>
+                                            <span>Centro del Huila</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="items-text">50x Semen Don Aso (Élite)</span>
+                                    </td>
+                                    <td>
+                                        <strong class="price-text">$ 6.000.000</strong>
+                                        <span class="payment-status success"><i class="fas fa-check-circle"></i> Pagado</span>
+                                    </td>
+                                    <td><span class="badge badge-success"><i class="fas fa-check-double"></i> Entregado</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="icon-btn view" title="Ver Detalles"><i class="fas fa-file-invoice"></i></button>
+                                            <button class="icon-btn menu" title="Descargar Factura"><i class="fas fa-download"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+<script>
+    // Detecta la página actual y resalta el botón en la sidebar
+    const path = window.location.pathname;
+    const navLinks = {
+        "dashboard.html": "nav-dash",
+        "gestion_animal.html": "nav-animal",
+        "catalogo_genetico.html": "nav-cata",
+        "pedidos_web.html": "nav-pedi",
+        "usuarios_roles.html": "nav-user",
+        "configuracion.html": "nav-conf"
+    };
+
+    const activeId = Object.keys(navLinks).find(key => path.includes(key));
+    if (activeId) {
+        document.getElementById(navLinks[activeId]).classList.add('active');
+    }
+</script>
+</body>
+</html>

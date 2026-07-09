@@ -1,0 +1,111 @@
+/* --- IMPORTA LAS BASES DEL DASHBOARD ANTERIOR --- */
+/* (Aquí pegamos las reglas estructurales generales para mantener consistencia) */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+body { background-color: #f4f6f8; color: #333; }
+.admin-layout { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+
+/* Sidebar & Topbar (Idéntico a tu dashboard) */
+.sidebar { background-color: #016ebb; color: white; display: flex; flex-direction: column; }
+.sidebar-header { padding: 20px; display: flex; justify-content: center; background-color: white; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.sidebar-logo { max-width: 170px; height: auto; }
+.sidebar-nav { display: flex; flex-direction: column; padding: 15px 0; }
+.sidebar-nav a { color: #b0bec5; text-decoration: none; padding: 14px 20px; display: flex; align-items: center; gap: 12px; font-size: 0.95rem; transition: all 0.3s; }
+.sidebar-nav a:hover, .sidebar-nav a.active { background-color: rgba(255,255,255,0.08); color: white; border-left: 4px solid #4CAF50; }
+
+.main-wrapper { display: flex; flex-direction: column; overflow: hidden; }
+.topbar { background-color: white; height: 70px; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.search-bar { display: flex; align-items: center; background-color: #f1f3f4; padding: 8px 16px; border-radius: 24px; width: 380px; }
+.search-bar input { border: none; background: transparent; outline: none; margin-left: 10px; width: 100%; }
+.user-profile { display: flex; align-items: center; gap: 12px; }
+.notification-bell { font-size: 1.1rem; color: #5f6368; cursor: pointer; margin-right: 10px; }
+.avatar { background-color: #f63535; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+.user-info { display: flex; flex-direction: column; }
+.user-name { font-size: 0.9rem; font-weight: 600; }
+.user-role { font-size: 0.75rem; color: #70757a; }
+
+/* --- NUEVOS ESTILOS: GESTIÓN ANIMAL --- */
+.dashboard-content { padding: 30px; overflow-y: auto; }
+
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.subtitle { font-size: 0.9rem; color: #5f6368; margin-top: 4px; }
+
+.header-actions { display: flex; gap: 10px; }
+.btn-primary { background-color: #f63535; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+.btn-primary:hover { background-color: #f65b50; }
+.btn-secondary { background-color: white; color: #333; border: 1px solid #ddd; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+.btn-secondary:hover { background-color: #f4f6f8; }
+
+/* Barra de Filtros */
+.filter-bar { display: flex; gap: 15px; margin-bottom: 20px; }
+.filter-select { padding: 10px 15px; border-radius: 6px; border: 1px solid #ddd; background-color: white; color: #444; font-size: 0.9rem; outline: none; cursor: pointer; min-width: 180px; }
+
+/* Sección de la Tabla */
+.data-section { background-color: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.015); padding: 10px 0; }
+.table-responsive { overflow-x: auto; padding: 0 20px; }
+
+.animal-table { width: 100%; border-collapse: collapse; min-width: 900px; }
+.animal-table th { background-color: #f8f9fa; color: #5f6368; font-weight: 600; text-align: left; padding: 15px; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #eee; }
+.animal-table td { padding: 15px; border-bottom: 1px solid #eee; vertical-align: middle; }
+.animal-table tbody tr:hover { background-color: #fcfdfe; transition: background-color 0.2s; }
+
+/* Celdas compuestas (Avatar + Info) */
+.animal-id-cell { display: flex; align-items: center; gap: 15px; }
+.animal-avatar { width: 42px; height: 42px; border-radius: 8px; display: flex; justify-content: center; align-items: center; color: white; font-size: 1.2rem; flex-shrink: 0; }
+.brahman-bg { background-color: #9e9e9e; } /* Gris */
+.gyr-bg { background-color: #8d6e63; } /* Café */
+.angus-bg { background-color: #e53935; } /* Rojo */
+
+.animal-info, .animal-table td { display: flex; flex-direction: column; gap: 4px; }
+.animal-table td { display: table-cell; } /* Reseteo del flex para la celda */
+.animal-table td > span, .animal-table td > strong { display: block; margin-bottom: 3px; }
+
+.animal-info strong { font-size: 0.95rem; color: #202124; }
+.animal-info span { font-size: 0.8rem; color: #70757a; }
+
+.breed-text, .date-text { font-size: 0.9rem; color: #333; }
+.category-text, .weight-text { font-size: 0.8rem; color: #70757a; }
+
+/* Badges (Estados Reproductivos) */
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; width: fit-content; }
+.badge-success { background-color: #e8f5e9; color: #2e7d32; } /* Verde para Gestante */
+.badge-warning { background-color: #fff3e0; color: #e65100; } /* Naranja para Vacía */
+.badge-info { background-color: #e3f2fd; color: #1565c0; } /* Azul para Toros */
+
+/* Botones de Acción en la tabla */
+.action-buttons { display: flex; gap: 8px; }
+.icon-btn { width: 32px; height: 32px; border-radius: 6px; border: none; background-color: #f1f3f4; color: #5f6368; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+.icon-btn:hover { background-color: #e0e0e0; }
+.icon-btn.view:hover { background-color: #e3f2fd; color: #1565c0; }
+.icon-btn.edit:hover { background-color: #e8f5e9; color: #2e7d32; }
+
+/* Paginación */
+.pagination { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-top: 1px solid #eee; }
+.page-info { font-size: 0.85rem; color: #70757a; }
+.page-controls { display: flex; gap: 5px; align-items: center; }
+.btn-page { width: 32px; height: 32px; border: 1px solid #ddd; background-color: white; color: #444; border-radius: 4px; cursor: pointer; font-weight: 600; display: flex; justify-content: center; align-items: center; }
+.btn-page:hover:not(.disabled) { background-color: #f4f6f8; }
+.btn-page.active { background-color: #2E7D32; color: white; border-color: #2E7D32; }
+.btn-page.disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* --- RESPONSIVE --- */
+@media (max-width: 992px) {
+    .filter-bar { flex-wrap: wrap; }
+    .filter-select { flex-grow: 1; }
+}
+
+@media (max-width: 768px) {
+    .admin-layout { grid-template-columns: 1fr; display: flex; flex-direction: column; }
+    .sidebar { width: 100%; }
+    .sidebar-nav { flex-direction: row; overflow-x: auto; padding: 5px; }
+    .sidebar-nav a { padding: 10px 15px; white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; }
+    .sidebar-nav a.active { border-bottom: 3px solid #4CAF50; }
+    
+    .topbar { flex-direction: column-reverse; height: auto; padding: 15px; gap: 12px; }
+    .search-bar { width: 100%; }
+    
+    .page-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+    .header-actions { width: 100%; display: flex; justify-content: space-between; }
+    .btn-primary, .btn-secondary { flex-grow: 1; justify-content: center; }
+    
+    .pagination { flex-direction: column; gap: 15px; align-items: center; }
+}
