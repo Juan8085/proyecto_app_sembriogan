@@ -20,7 +20,7 @@ body {
 
 /* --- BARRA LATERAL (SIDEBAR) --- */
 .sidebar {
-    background-color: #016ebb; /* Azul Corporativo Oscuro */
+    background-color: #015b9c; /* Azul Corporativo Oscuro */
     color: white;
     display: flex;
     flex-direction: column;
