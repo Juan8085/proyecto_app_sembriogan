@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "tipo": "Servicio",
+    "nombre": "Diagnóstico Reproductivo",
+    "descripcion": "Evaluación clínica y ecográfica del tracto reproductivo bovino.",
+    "disponibilidad": true
+  },
+  {
+    "id": 2,
+    "tipo": "Biotecnología",
+    "nombre": "Inseminación Artificial (IATF)",
+    "descripcion": "Protocolo de sincronización hormonal a tiempo fijo.",
+    "disponibilidad": true
+  },
+  {
+    "id": 3,
+    "tipo": "Biotecnología",
+    "nombre": "Aspiración Folicular (OPU)",
+    "descripcion": "Recuperación de ovocitos guiada por ultrasonido Doppler.",
+    "disponibilidad": true
+  }
+]

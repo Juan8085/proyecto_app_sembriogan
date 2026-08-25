@@ -1,0 +1,341 @@
+/* ====================================================
+   BASES GENERALES Y ESTRUCTURA (GRID)
+==================================================== */
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    font-family: 'Segoe UI', Arial, sans-serif; 
+}
+
+body { 
+    background-color: #f4f6f8; 
+    color: #333; 
+}
+
+.admin-layout { 
+    display: grid; 
+    grid-template-columns: 260px 1fr; 
+    min-height: 100vh; 
+}
+
+/* ====================================================
+   SIDEBAR (MENÚ LATERAL)
+==================================================== */
+.sidebar { 
+    background-color: #1A237E; 
+    color: white; 
+    display: flex; 
+    flex-direction: column; 
+}
+
+.sidebar-header { 
+    padding: 20px; 
+    display: flex; 
+    justify-content: center; 
+    background-color: #ffffff; 
+    border-bottom: 1px solid rgba(255,255,255,0.1); 
+}
+
+.sidebar-logo { 
+    max-width: 170px; 
+    height: auto; 
+}
+
+.sidebar-nav { 
+    display: flex; 
+    flex-direction: column; 
+    padding: 15px 0; 
+}
+
+.sidebar-nav a { 
+    color: #b0bec5; 
+    text-decoration: none; 
+    padding: 14px 20px; 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    font-size: 0.95rem; 
+    transition: all 0.3s; 
+}
+
+.sidebar-nav a:hover, .sidebar-nav a.active { 
+    background-color: rgba(255,255,255,0.08); 
+    color: white; 
+    border-left: 4px solid #4CAF50; 
+}
+
+/* Botón cerrar menú (Oculto en PC) */
+.close-menu-btn {
+    display: none;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+/* ====================================================
+   TOPBAR Y CABECERA PRINCIPAL
+==================================================== */
+.main-wrapper { 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+}
+
+.topbar { 
+    background-color: white; 
+    height: 70px; 
+    padding: 0 30px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04); 
+}
+
+/* Botón hamburguesa (Oculto en PC) */
+.menu-toggle {
+    display: none;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #333;
+    cursor: pointer;
+    margin-right: 15px;
+}
+
+.search-bar { 
+    display: flex; 
+    align-items: center; 
+    background-color: #f1f3f4; 
+    padding: 8px 16px; 
+    border-radius: 24px; 
+    width: 380px; 
+}
+
+.search-bar input { 
+    border: none; 
+    background: transparent; 
+    outline: none; 
+    margin-left: 10px; 
+    width: 100%; 
+}
+
+.user-profile { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+}
+
+.notification-bell { font-size: 1.1rem; color: #5f6368; cursor: pointer; margin-right: 10px; }
+.avatar { background-color: #2E7D32; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+.user-info { display: flex; flex-direction: column; }
+.user-name { font-size: 0.9rem; font-weight: 600; }
+.user-role { font-size: 0.75rem; color: #70757a; }
+
+/* ====================================================
+   CONTENIDO DEL CATÁLOGO
+==================================================== */
+.dashboard-content { padding: 30px; overflow-y: auto; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.subtitle { font-size: 0.9rem; color: #5f6368; margin-top: 4px; }
+.header-actions { display: flex; gap: 10px; }
+.btn-primary { background-color: #2E7D32; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+.btn-primary:hover { background-color: #1b5e20; }
+
+/* Barra de Filtros */
+.filter-bar { display: flex; gap: 15px; margin-bottom: 25px; }
+.filter-select { padding: 10px 15px; border-radius: 6px; border: 1px solid #ddd; background-color: white; color: #444; font-size: 0.9rem; outline: none; cursor: pointer; min-width: 200px; }
+
+/* --- GRID DE TARJETAS DE PRODUCTO --- */
+.catalog-grid {
+    display: grid;
+    /* Esto hace que las tarjetas se adapten automáticamente al ancho disponible */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+}
+
+.product-card {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
+
+.product-card.disabled {
+    opacity: 0.7;
+    filter: grayscale(80%);
+}
+
+.product-image {
+    height: 180px;
+    position: relative;
+    background-size: cover;
+    background-position: center;
+}
+
+.brahman-img { background-color: #cfd8dc; } 
+.angus-img { background-color: #b71c1c; } 
+.gyr-img { background-color: #8d6e63; } 
+.embryo-img { background-color: #bbdefb; } 
+
+.status-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.available { background-color: #4CAF50; }
+.low-stock { background-color: #FF9800; }
+.out-of-stock { background-color: #F44336; }
+
+.product-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 5px;
+}
+
+.product-header h3 { font-size: 1.1rem; color: #202124; line-height: 1.3; }
+
+.product-type {
+    background-color: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 4px;
+    font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 5px;
+}
+.product-type.embryo { background-color: #f3e5f5; color: #8e24aa; }
+
+.product-breed { font-size: 0.85rem; color: #5f6368; margin-bottom: 20px; }
+
+.product-stats {
+    display: flex; justify-content: space-between; background-color: #f8f9fa;
+    padding: 12px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #eee;
+}
+
+.stat { display: flex; flex-direction: column; gap: 4px; }
+.stat-label { font-size: 0.75rem; color: #70757a; text-transform: uppercase; }
+.stat-value { font-size: 0.95rem; font-weight: 600; color: #333; }
+.stat-value.price { color: #2E7D32; font-size: 1.1rem; }
+.stat-value.warning { color: #e65100; }
+.stat-value.danger { color: #d32f2f; }
+
+.product-actions { display: flex; gap: 10px; margin-top: auto; }
+
+.btn-outline {
+    flex-grow: 1; background-color: transparent; color: #1A237E; border: 1px solid #1A237E;
+    padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s;
+    display: flex; justify-content: center; align-items: center; gap: 8px;
+}
+.btn-outline:hover { background-color: #1A237E; color: white; }
+
+.btn-icon.danger {
+    background-color: transparent; color: #d32f2f; border: 1px solid #ffcdd2;
+    padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;
+}
+.btn-icon.danger:hover { background-color: #d32f2f; color: white; border-color: #d32f2f; }
+
+/* ====================================================
+   MEDIA QUERIES (MÓVILES Y TABLETS) - MENÚ HAMBURGUESA
+==================================================== */
+@media (max-width: 768px) {
+    
+    /* Mostramos los botones de abrir y cerrar menú */
+    .menu-toggle { display: block; }
+    .close-menu-btn { display: block; }
+
+    /* Ajuste del Layout para quitar el Grid */
+    .admin-layout {
+        display: block; 
+    }
+
+    /* EL MENÚ SE VUELVE FLOTANTE Y SE OCULTA A LA IZQUIERDA */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px; /* Escondido a la izquierda */
+        width: 260px;
+        height: 100vh;
+        z-index: 1000;
+        transition: left 0.3s ease-in-out;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.5);
+    }
+
+    /* Clase activa que inyecta JavaScript para deslizar el menú */
+    .sidebar.open-mobile {
+        left: 0; 
+    }
+
+    .sidebar-header {
+        justify-content: space-between;
+        padding: 15px 20px;
+    }
+    
+    .sidebar-logo {
+        max-width: 120px;
+    }
+
+    .sidebar-nav {
+        flex-direction: column;
+        overflow-x: hidden;
+    }
+    .sidebar-nav a {
+        padding: 15px 25px;
+        border-left: 4px solid transparent;
+        border-bottom: none;
+    }
+    .sidebar-nav a.active {
+        border-left: 4px solid #4CAF50;
+        border-bottom: none;
+    }
+
+    /* Arreglamos la barra superior */
+    .topbar {
+        flex-direction: row;
+        flex-wrap: wrap;
+        height: auto;
+        padding: 15px;
+    }
+
+    .user-profile {
+        margin-left: auto;
+    }
+
+    .search-bar {
+        width: 100%;
+        margin-top: 15px;
+        order: 3; /* Obliga al buscador a ir a la línea de abajo */
+    }
+    
+    /* Ajustes específicos del Catálogo para móviles */
+    .dashboard-content { padding: 15px; }
+    .page-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+    .header-actions { width: 100%; }
+    .btn-primary { width: 100%; justify-content: center; }
+    
+    .filter-bar { flex-direction: column; gap: 10px; }
+    .filter-select { width: 100%; }
+
+    /* El Grid de productos ya se ajusta solo por el auto-fill, pero aseguramos el espaciado */
+    .catalog-grid { gap: 15px; }
+}

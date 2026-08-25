@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sembriogan - Configuración</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="admin-layout">
+        
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="Admin.html">
+                    <img src="img/image-removebg-preview.png" alt="Logo Sembriogan" class="sidebar-logo">
+                </a>
+                <button id="close-menu" class="close-menu-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" id="nav-dash"><i class="fas fa-chart-pie"></i> Dashboard</a>
+                <a href="gestion_animal.html" id="nav-animal"><i class="fas fa-cow"></i> Gestión Animal</a>
+                <a href="catalogo_genetico.html" id="nav-cata"><i class="fas fa-vial"></i> Catálogo</a>
+                <a href="pedidos_web.html" id="nav-pedi"><i class="fas fa-shopping-cart"></i> Pedidos</a>
+                <a href="usuarios_roles.html" id="nav-user"><i class="fas fa-users"></i> Usuarios</a>
+                <a href="configuracion.html" id="nav-conf" class="active"><i class="fas fa-cog"></i> Ajustes</a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            
+            <header class="topbar">
+                <button id="menu-toggle" class="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Buscar parámetro o ajuste...">
+                </div>
+                <div class="user-profile">
+                    <i class="fas fa-bell notification-bell"></i>
+    
+                    <button id="theme-toggle" class="theme-toggle-btn" title="Cambiar Tema">
+                        <i class="fas fa-moon"></i>
+                    </button>
+
+                    <div class="avatar">Ad</div>
+                    <div class="user-info">
+                        <span class="user-name">Juan Pablo Porras</span>
+                        <span class="user-role">Gerencia General</span>
+                    </div>
+
+                    <button id="logout-btn" class="logout-btn" title="Cerrar Sesión">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="page-header">
+                    <div>
+                        <h1>Configuración del Sistema</h1>
+                        <p class="subtitle">Ajustes de la empresa, notificaciones, seguridad y gestión de datos</p>
+                    </div>
+                </div>
+
+                <div class="config-container">
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="panel-empresa"><i class="fas fa-building"></i> Empresa</button>
+                        <button class="tab-btn" data-tab="panel-notificaciones"><i class="fas fa-bell"></i> Notificaciones</button>
+                        <button class="tab-btn" data-tab="panel-seguridad"><i class="fas fa-shield-alt"></i> Seguridad</button>
+                        <button class="tab-btn" data-tab="panel-bd"><i class="fas fa-database"></i> Base de Datos</button>
+                    </div>
+
+                    <div class="config-panel">
+                        
+                        <div class="tab-panel active" id="panel-empresa">
+                            <section class="config-section">
+                                <h2>Información General de la Empresa</h2>
+                                <p class="section-desc">Datos legales y de contacto del Grupo Sembriogan S.A.S.</p>
+                                
+                                <form class="form-grid" onsubmit="event.preventDefault();">
+                                    <div class="form-group">
+                                        <label>Razón Social</label>
+                                        <input type="text" value="Grupo Sembriogan S.A.S.">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>NIT</label>
+                                        <input type="text" value="901390019-1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Correo Electrónico de Contacto</label>
+                                        <input type="email" value="contacto@sembriogan.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Teléfono Principal</label>
+                                        <input type="text" value="+57 310 000 0000">
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label>Dirección Sede Principal</label>
+                                        <input type="text" value="Garzón, Huila - Colombia">
+                                    </div>
+                                </form>
+                                
+                                <div class="panel-actions">
+                                    <button class="btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="tab-panel" id="panel-notificaciones">
+                            <section class="config-section">
+                                <h2>Preferencias de Notificaciones</h2>
+                                <p class="section-desc">Configura los avisos automáticos para el hato y la gestión comercial.</p>
+                                
+                                <div class="setting-list">
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <strong>Alertas de Parto y Celo</strong>
+                                            <span>Notificar a los veterinarios cuando un animal esté próximo a fecha de parto.</span>
+                                        </div>
+                                        <label class="switch">
+                                            <input type="checkbox" checked>
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <strong>Avisos de Pedidos Web</strong>
+                                            <span>Enviar notificación push cada vez que se registre una nueva compra en la app.</span>
+                                        </div>
+                                        <label class="switch">
+                                            <input type="checkbox" checked>
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <strong>Recordatorios de Sincronización</strong>
+                                            <span>Alertar al usuario de campo si lleva más de 24 horas sin sincronizar datos offline.</span>
+                                        </div>
+                                        <label class="switch">
+                                            <input type="checkbox" checked>
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <strong>Resumen Semanal por Correo</strong>
+                                            <span>Enviar informe ejecutivo con los KPIs del hato cada lunes a Gerencia.</span>
+                                        </div>
+                                        <label class="switch">
+                                            <input type="checkbox">
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="panel-actions" style="margin-top: 25px;">
+                                    <button class="btn-primary"><i class="fas fa-save"></i> Guardar Preferencias</button>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="tab-panel" id="panel-seguridad">
+                            <section class="config-section">
+                                <h2>Seguridad y Control de Acceso</h2>
+                                <p class="section-desc">Administra las credenciales de acceso y las políticas de la cuenta.</p>
+                                
+                                <form class="form-grid" onsubmit="event.preventDefault();">
+                                    <div class="form-group full-width">
+                                        <h3>Cambiar Contraseña de Administrador</h3>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Contraseña Actual</label>
+                                        <input type="password" placeholder="••••••••">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Nueva Contraseña</label>
+                                        <input type="password" placeholder="Mínimo 8 caracteres">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Confirmar Nueva Contraseña</label>
+                                        <input type="password" placeholder="Repite la contraseña">
+                                    </div>
+                                </form>
+
+                                <div class="setting-list" style="margin-top: 20px;">
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <strong>Autenticación en Dos Pasos (2FA)</strong>
+                                            <span>Solicitar un código enviado al teléfono al iniciar sesión en el panel Web.</span>
+                                        </div>
+                                        <label class="switch">
+                                            <input type="checkbox">
+                                            <span class="slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="panel-actions" style="margin-top: 25px;">
+                                    <button class="btn-primary"><i class="fas fa-key"></i> Actualizar Seguridad</button>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div class="tab-panel" id="panel-bd">
+                            <section class="config-section">
+                                <h2>Gestión de Datos y Copias de Seguridad</h2>
+                                <p class="section-desc">Administra las copias de respaldo (Backup) y el estado de sincronización del sistema.</p>
+                                
+                                <div class="db-status-card">
+                                    <div class="db-status-header">
+                                        <i class="fas fa-cloud-check icon-green"></i>
+                                        <div>
+                                            <strong>Estado del Servidor: En línea</strong>
+                                            <span>Última sincronización en la nube: Hoy, 08:30 AM (Firebase Cloud)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="setting-list" style="margin-top: 20px;">
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <strong>Descargar Copia de Seguridad (Backup)</strong>
+                                            <span>Generar un archivo estructurado (JSON/SQL) con todo el inventario bovino y ventas.</span>
+                                        </div>
+                                        <button class="btn-secondary"><i class="fas fa-download"></i> Descargar Backup</button>
+                                    </div>
+
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <strong>Restaurar Datos</strong>
+                                            <span>Cargar una copia de respaldo previa para restablecer el estado del sistema.</span>
+                                        </div>
+                                        <button class="btn-secondary"><i class="fas fa-upload"></i> Cargar Archivo</button>
+                                    </div>
+
+                                    <div class="setting-item">
+                                        <div class="setting-info">
+                                            <strong>Limpiar Caché Offline</strong>
+                                            <span>Elimina registros temporales almacenados localmente en el navegador.</span>
+                                        </div>
+                                        <button class="btn-sm-outline danger"><i class="fas fa-broom"></i> Depurar Caché</button>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

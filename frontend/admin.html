@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sembriogan - (Nombre de la pantalla)</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="admin-layout">
+        
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="Admin.html">
+                    <img src="img/Logo_Sembriogan.png" alt="Logo Sembriogan" class="sidebar-logo">
+                </a>
+                <button id="close-menu" class="close-menu-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" id="nav-dash"><i class="fas fa-chart-pie"></i> Dashboard</a>
+                <a href="gestion_animal.html" id="nav-animal"><i class="fas fa-cow"></i> Gestión Animal</a>
+                <a href="catalogo_genetico.html" id="nav-cata"><i class="fas fa-vial"></i> Catálogo</a>
+                <a href="pedidos_web.html" id="nav-pedi"><i class="fas fa-shopping-cart"></i> Pedidos</a>
+                <a href="usuarios_roles.html" id="nav-user"><i class="fas fa-users"></i> Usuarios</a>
+                <a href="configuracion.html" id="nav-conf"><i class="fas fa-cog"></i> Ajustes</a>
+            </nav>
+        </aside>
+
+        <div class="main-wrapper">
+            
+            <header class="topbar">
+                <button id="menu-toggle" class="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Buscar animal por ID, raza o propietario...">
+                </div>
+                <div class="user-profile">
+                    <i class="fas fa-bell notification-bell"></i>
+    
+                    <button id="theme-toggle" class="theme-toggle-btn" title="Cambiar Tema">
+                        <i class="fas fa-moon"></i>
+                    </button>
+
+                    <div class="avatar">Ad</div>
+                    <div class="user-info">
+                        <span class="user-name">Juan Pablo Porras</span>
+                        <span class="user-role">Gerencia General</span>
+                    </div>
+
+                    <button id="logout-btn" class="logout-btn" title="Cerrar Sesión">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </header>
+
+            <main class="dashboard-content">
+                <div class="page-header">
+                    <h1>Resumen Operativo</h1>
+                    <button class="btn-primary"><i class="fas fa-file-export"></i> Exportar Reporte</button>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon blue"><i class="fas fa-database"></i></div>
+                        <div class="kpi-info">
+                            <h3>Animales Registrados</h3>
+                            <p class="kpi-value">1,245</p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon green"><i class="fas fa-check-circle"></i></div>
+                        <div class="kpi-info">
+                            <h3>Tasa de Preñez Global</h3>
+                            <p class="kpi-value">68%</p>
+                        </div>
+                    </div>
+                    </div>
+
+                <div class="data-section">
+                    <h2>Últimos Eventos Reproductivos Sincronizados</h2>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+<script src="js/main.js"></script>
+</body>
+</html>
