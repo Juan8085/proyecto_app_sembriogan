@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administrativo - Sembriogan</title>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar de navegación -->
+        <aside class="sidebar">
+            <h2>Sembriogan 🐂</h2>
+            <ul>
+                <li><a href="#" class="active">Dashboard / Solicitudes</a></li>
+                <li><a href="#">Catálogo de Servicios</a></li>
+                <li><a href="#">Configuración</a></li>
+            </ul>
+        </aside>
+
+        <!-- Contenido Principal -->
+        <main class="main-content">
+            <header>
+                <h1>Gestión de Solicitudes y Servicios</h1>
+                <span class="user-role">Administrador</span>
+            </header>
+
+            <!-- Sección de Solicitudes -->
+            <section class="card">
+                <h2>Solicitudes Recientes (MongoDB)</h2>
+                <table id="tabla-solicitudes">
+                    <thead>
+                        <tr>
+                            <th>Productor</th>
+                            <th>Finca</th>
+                            <th>Servicio</th>
+                            <th>Estado</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los datos se cargarán dinámicamente con JavaScript -->
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
