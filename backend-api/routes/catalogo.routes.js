@@ -1,8 +1,12 @@
+// backend-api/routes/catalogo.routes.js
 const express = require('express');
 const router = express.Router();
-const { obtenerCatalogo } = require('../controllers/catalogo.controller');
+const { obtenerCatalogo, crearCatalogoItem } = require('../controllers/catalogo.controller');
 
-// Ruta GET para obtener el catálogo
+// GET /api/catalogo - Obtener servicios
 router.get('/', obtenerCatalogo);
+
+// POST /api/catalogo - Registrar un nuevo servicio
+router.post('/', crearCatalogoItem);
 
 module.exports = router;

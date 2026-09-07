@@ -4,6 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const conectarDB = require('./database/db');
 const solicitudesRoutes = require('./routes/solicitudes.routes');
+const catalogoRoutes = require('./routes/catalogo.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +19,8 @@ app.use(express.json());
 
 // Rutas de la API
 app.use('/api/solicitudes', solicitudesRoutes); // <- ¡Esta línea faltaba!
+
+app.use('/api/catalogo', catalogoRoutes);
 
 // Ruta de prueba
 app.get('/api', (req, res) => {
