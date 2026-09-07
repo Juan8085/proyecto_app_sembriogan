@@ -10,7 +10,9 @@
     <div class="admin-container">
         <!-- Sidebar de navegación -->
         <aside class="sidebar">
-            <h2>Sembriogan 🐂</h2>
+            <div class="logo-container">
+                <img src="img/logo.png" alt="Sembriogan Logo" class="logo-img">
+            </div>
             <ul>
                 <li><a href="#" class="active">Dashboard / Solicitudes</a></li>
                 <li><a href="#">Catálogo de Servicios</a></li>
@@ -20,10 +22,30 @@
 
         <!-- Contenido Principal -->
         <main class="main-content">
-            <header>
+            <header class="top-header">
                 <h1>Gestión de Solicitudes y Servicios</h1>
                 <span class="user-role">Administrador</span>
             </header>
+
+            <!-- Formulario para Registrar Solicitud -->
+            <section class="card">
+                <h2>Registrar Nueva Solicitud</h2>
+                <form id="form-solicitud">
+                    <div class="form-group">
+                        <label for="productor">Productor:</label>
+                        <input type="text" id="productor" required placeholder="Nombre del productor">
+                    </div>
+                    <div class="form-group">
+                        <label for="finca">Finca:</label>
+                        <input type="text" id="finca" required placeholder="Nombre de la finca">
+                    </div>
+                    <div class="form-group">
+                        <label for="servicio">Servicio:</label>
+                        <input type="text" id="servicio" required placeholder="Ej. Inseminación Artificial">
+                    </div>
+                    <button type="submit" class="btn-primary">Guardar Solicitud</button>
+                </form>
+            </section>
 
             <!-- Sección de Solicitudes -->
             <section class="card">
@@ -39,7 +61,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Los datos se cargarán dinámicamente con JavaScript -->
+                        <!-- Dinámico con JS -->
                     </tbody>
                 </table>
             </section>
