@@ -3,18 +3,21 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const conectarDB = require('./database/db');
+const solicitudesRoutes = require('./routes/solicitudes.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Conectar a MongoDB
-conectarDB(); // <- Ejecutar conexión
+conectarDB();
 
 // Middlewares
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 
+// Rutas de la API
+app.use('/api/solicitudes', solicitudesRoutes); // <- ¡Esta línea faltaba!
 
 // Ruta de prueba
 app.get('/api', (req, res) => {
