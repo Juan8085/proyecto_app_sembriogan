@@ -7,7 +7,6 @@ const solicitudesRoutes = require('./routes/solicitudes.routes');
 const catalogoRoutes = require('./routes/catalogo.routes');
 const path = require('path'); // Asegúrate de requerir path si no lo tienes
 const app = express();
-const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Conectar a MongoDB
