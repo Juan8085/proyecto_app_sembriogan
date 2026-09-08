@@ -206,3 +206,10 @@ table td {
 .select-estado.en-proceso { background-color: #dbeafe; color: #1e40af; }
 .select-estado.completada { background-color: #dcfce7; color: #166534; }
 .select-estado.cancelada { background-color: #fee2e2; color: #991b1b; }
+
+.form-group input[type="file"] {
+    padding: 8px;
+    background-color: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    cursor: pointer;
+}

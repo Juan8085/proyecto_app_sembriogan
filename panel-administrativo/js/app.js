@@ -30,63 +30,73 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. Manejo de Formulario de Solicitudes
     const formSolicitud = document.getElementById('form-solicitud');
-    formSolicitud.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const productor = document.getElementById('productor').value;
-        const finca = document.getElementById('finca').value;
-        const servicio = document.getElementById('servicio').value;
+    if (formSolicitud) {
+        formSolicitud.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const productor = document.getElementById('productor').value;
+            const finca = document.getElementById('finca').value;
+            const servicio = document.getElementById('servicio').value;
 
-        try {
-            const respuesta = await fetch('http://localhost:3000/api/solicitudes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productor, finca, servicio })
-            });
-            const resultado = await respuesta.json();
+            try {
+                const respuesta = await fetch('http://localhost:3000/api/solicitudes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productor, finca, servicio })
+                });
+                const resultado = await respuesta.json();
 
-            if (resultado.success) {
-                alert('¡Solicitud registrada con éxito!');
-                formSolicitud.reset();
-                cargarSolicitudes();
-            } else {
-                alert('Error al registrar: ' + resultado.mensaje);
+                if (resultado.success) {
+                    alert('¡Solicitud registrada con éxito!');
+                    formSolicitud.reset();
+                    cargarSolicitudes();
+                } else {
+                    alert('Error al registrar: ' + resultado.mensaje);
+                }
+            } catch (error) {
+                console.error('Error de red:', error);
             }
-        } catch (error) {
-            console.error('Error de red:', error);
-        }
-    });
+        });
+    }
 
-    // 4. Manejo de Formulario del Catálogo
+    // 4. Manejo de Formulario del Catálogo (Con Imágenes)
     const formCatalogo = document.getElementById('form-catalogo');
-    formCatalogo.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const tipo = document.getElementById('tipo').value;
-        const descripcion = document.getElementById('descripcion').value;
-        const costo = document.getElementById('costo').value;
+    if (formCatalogo) {
+        formCatalogo.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-        try {
-            const respuesta = await fetch('http://localhost:3000/api/catalogo', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tipo, descripcion, costo })
-            });
-            const resultado = await respuesta.json();
-
-            if (resultado.success) {
-                alert('¡Servicio agregado al catálogo exitosamente!');
-                formCatalogo.reset();
-                cargarCatalogo();
-            } else {
-                alert('Error al registrar servicio: ' + resultado.mensaje);
+            const formData = new FormData();
+            formData.append('tipo', document.getElementById('tipo').value);
+            formData.append('descripcion', document.getElementById('descripcion').value);
+            formData.append('costo', document.getElementById('costo').value);
+            
+            const archivoInput = document.getElementById('imagen');
+            if (archivoInput.files[0]) {
+                formData.append('imagen', archivoInput.files[0]);
             }
-        } catch (error) {
-            console.error('Error de red:', error);
-        }
-    });
+
+            try {
+                const respuesta = await fetch('http://localhost:3000/api/catalogo', {
+                    method: 'POST',
+                    body: formData // Sin headers de tipo de contenido para permitir FormData
+                });
+                const resultado = await respuesta.json();
+
+                if (resultado.success) {
+                    alert('¡Servicio agregado al catálogo con éxito!');
+                    formCatalogo.reset();
+                    cargarCatalogo();
+                } else {
+                    alert('Error al registrar servicio: ' + resultado.mensaje);
+                }
+            } catch (error) {
+                console.error('Error de red:', error);
+            }
+        });
+    }
 });
 
 // ==========================================
-// FUNCIONES PARA CARGAR DATOS DESDE LA API
+// FUNCIONES GLOBALES DE CARGA Y GESTIÓN
 // ==========================================
 
 const cargarSolicitudes = async () => {
@@ -96,12 +106,11 @@ const cargarSolicitudes = async () => {
 
         if (resultado.success) {
             const tbody = document.querySelector('#tabla-solicitudes tbody');
+            if (!tbody) return;
             tbody.innerHTML = ''; 
 
             resultado.data.forEach(solicitud => {
                 const fila = document.createElement('tr');
-                
-                // Definir las opciones del select según el estado actual
                 const opcionesEstado = ['Pendiente', 'En Proceso', 'Completada', 'Cancelada']
                     .map(estado => `<option value="${estado}" ${solicitud.estado === estado ? 'selected' : ''}>${estado}</option>`)
                     .join('');
@@ -120,7 +129,6 @@ const cargarSolicitudes = async () => {
                 tbody.appendChild(fila);
             });
 
-            // Asignar el evento change a todos los selects recién creados
             document.querySelectorAll('.select-estado').forEach(select => {
                 select.addEventListener('change', async (e) => {
                     const idSolicitud = e.target.getAttribute('data-id');
@@ -134,7 +142,6 @@ const cargarSolicitudes = async () => {
     }
 };
 
-// Nueva función para enviar la actualización al backend
 const actualizarEstado = async (id, nuevoEstado) => {
     try {
         const respuesta = await fetch(`http://localhost:3000/api/solicitudes/${id}`, {
@@ -144,9 +151,7 @@ const actualizarEstado = async (id, nuevoEstado) => {
         });
         
         const resultado = await respuesta.json();
-        
         if (resultado.success) {
-            // Recargar la tabla para actualizar los colores de las clases
             cargarSolicitudes();
         } else {
             alert('Error al actualizar: ' + resultado.mensaje);
@@ -163,14 +168,19 @@ const cargarCatalogo = async () => {
 
         if (resultado.success) {
             const tbody = document.querySelector('#tabla-catalogo tbody');
+            if (!tbody) return;
             tbody.innerHTML = ''; 
 
-            // Formateador para pesos colombianos (COP)
             const formatoCOP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
 
             resultado.data.forEach(item => {
                 const fila = document.createElement('tr');
+                const urlImagen = item.imagen ? `http://localhost:3000${item.imagen}` : '';
+
                 fila.innerHTML = `
+                    <td>
+                        ${urlImagen ? `<img src="${urlImagen}" alt="Miniatura" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;">` : 'Sin imagen'}
+                    </td>
                     <td><strong>${item.tipo}</strong></td>
                     <td>${item.descripcion}</td>
                     <td>${formatoCOP.format(item.costo)}</td>
@@ -179,6 +189,6 @@ const cargarCatalogo = async () => {
             });
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error al cargar catálogo:', error);
     }
 };
