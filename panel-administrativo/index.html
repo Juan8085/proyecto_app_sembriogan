@@ -12,59 +12,104 @@
         <aside class="sidebar">
             <div class="logo-container">
                 <img src="img/logo.png" alt="Sembriogan Logo" class="logo-img">
+                <h2>Sembriogan 🐂</h2>
             </div>
             <ul>
-                <li><a href="#" class="active">Dashboard / Solicitudes</a></li>
-                <li><a href="#">Catálogo de Servicios</a></li>
+                <!-- Añadimos IDs a los enlaces para controlarlos con JS -->
+                <li><a href="#" id="nav-solicitudes" class="active">Dashboard / Solicitudes</a></li>
+                <li><a href="#" id="nav-catalogo">Catálogo de Servicios</a></li>
                 <li><a href="#">Configuración</a></li>
             </ul>
         </aside>
 
         <!-- Contenido Principal -->
-        <main class="main-content">
+       <main class="main-content">
             <header class="top-header">
-                <h1>Gestión de Solicitudes y Servicios</h1>
+                <h1 id="titulo-seccion">Gestión de Solicitudes</h1>
                 <span class="user-role">Administrador</span>
             </header>
 
-            <!-- Formulario para Registrar Solicitud -->
-            <section class="card">
-                <h2>Registrar Nueva Solicitud</h2>
-                <form id="form-solicitud">
-                    <div class="form-group">
-                        <label for="productor">Productor:</label>
-                        <input type="text" id="productor" required placeholder="Nombre del productor">
-                    </div>
-                    <div class="form-group">
-                        <label for="finca">Finca:</label>
-                        <input type="text" id="finca" required placeholder="Nombre de la finca">
-                    </div>
-                    <div class="form-group">
-                        <label for="servicio">Servicio:</label>
-                        <input type="text" id="servicio" required placeholder="Ej. Inseminación Artificial">
-                    </div>
-                    <button type="submit" class="btn-primary">Guardar Solicitud</button>
-                </form>
-            </section>
+            <!-- =============================== -->
+            <!-- VISTA 1: SOLICITUDES            -->
+            <!-- =============================== -->
+            <div id="vista-solicitudes">
+                <section class="card">
+                    <h2>Registrar Nueva Solicitud</h2>
+                    <form id="form-solicitud">
+                        <div class="form-group">
+                            <label for="productor">Productor:</label>
+                            <input type="text" id="productor" required placeholder="Nombre del productor">
+                        </div>
+                        <div class="form-group">
+                            <label for="finca">Finca:</label>
+                            <input type="text" id="finca" required placeholder="Nombre de la finca">
+                        </div>
+                        <div class="form-group">
+                            <label for="servicio">Servicio:</label>
+                            <input type="text" id="servicio" required placeholder="Ej. Inseminación Artificial">
+                        </div>
+                        <button type="submit" class="btn-primary">Guardar Solicitud</button>
+                    </form>
+                </section>
 
-            <!-- Sección de Solicitudes -->
-            <section class="card">
-                <h2>Solicitudes Recientes (MongoDB)</h2>
-                <table id="tabla-solicitudes">
-                    <thead>
-                        <tr>
-                            <th>Productor</th>
-                            <th>Finca</th>
-                            <th>Servicio</th>
-                            <th>Estado</th>
-                            <th>Fecha</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Dinámico con JS -->
-                    </tbody>
-                </table>
-            </section>
+                <section class="card">
+                    <h2>Solicitudes Recientes (MongoDB)</h2>
+                    <table id="tabla-solicitudes">
+                        <thead>
+                            <tr>
+                                <th>Productor</th>
+                                <th>Finca</th>
+                                <th>Servicio</th>
+                                <th>Estado</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dinámico con JS -->
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+
+            <!-- =============================== -->
+            <!-- VISTA 2: CATÁLOGO DE SERVICIOS  -->
+            <!-- =============================== -->
+            <div id="vista-catalogo" style="display: none;">
+                <section class="card">
+                    <h2>Registrar Nuevo Servicio Biotecnológico</h2>
+                    <form id="form-catalogo">
+                        <div class="form-group">
+                            <label for="tipo">Tipo de Servicio:</label>
+                            <input type="text" id="tipo" required placeholder="Ej. Aspiración Folicular">
+                        </div>
+                        <div class="form-group">
+                            <label for="descripcion">Descripción:</label>
+                            <input type="text" id="descripcion" required placeholder="Detalle técnico del procedimiento">
+                        </div>
+                        <div class="form-group">
+                            <label for="costo">Costo (COP):</label>
+                            <input type="number" id="costo" required placeholder="Ej. 150000">
+                        </div>
+                        <button type="submit" class="btn-primary">Guardar Servicio</button>
+                    </form>
+                </section>
+
+                <section class="card">
+                    <h2>Catálogo Activo (MongoDB)</h2>
+                    <table id="tabla-catalogo">
+                        <thead>
+                            <tr>
+                                <th>Servicio</th>
+                                <th>Descripción</th>
+                                <th>Costo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dinámico con JS -->
+                        </tbody>
+                    </table>
+                </section>
+            </div>
         </main>
     </div>
 
