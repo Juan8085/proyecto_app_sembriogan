@@ -97,20 +97,62 @@ const cargarSolicitudes = async () => {
         if (resultado.success) {
             const tbody = document.querySelector('#tabla-solicitudes tbody');
             tbody.innerHTML = ''; 
+
             resultado.data.forEach(solicitud => {
                 const fila = document.createElement('tr');
+                
+                // Definir las opciones del select según el estado actual
+                const opcionesEstado = ['Pendiente', 'En Proceso', 'Completada', 'Cancelada']
+                    .map(estado => `<option value="${estado}" ${solicitud.estado === estado ? 'selected' : ''}>${estado}</option>`)
+                    .join('');
+
                 fila.innerHTML = `
                     <td>${solicitud.productor}</td>
                     <td>${solicitud.finca}</td>
                     <td>${solicitud.servicio}</td>
-                    <td><span class="badge ${solicitud.estado.toLowerCase()}">${solicitud.estado}</span></td>
+                    <td>
+                        <select class="select-estado ${solicitud.estado.toLowerCase().replace(' ', '-')}" data-id="${solicitud._id}">
+                            ${opcionesEstado}
+                        </select>
+                    </td>
                     <td>${solicitud.fecha}</td>
                 `;
                 tbody.appendChild(fila);
             });
+
+            // Asignar el evento change a todos los selects recién creados
+            document.querySelectorAll('.select-estado').forEach(select => {
+                select.addEventListener('change', async (e) => {
+                    const idSolicitud = e.target.getAttribute('data-id');
+                    const nuevoEstado = e.target.value;
+                    await actualizarEstado(idSolicitud, nuevoEstado);
+                });
+            });
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error al conectar con la API de Sembriogan:', error);
+    }
+};
+
+// Nueva función para enviar la actualización al backend
+const actualizarEstado = async (id, nuevoEstado) => {
+    try {
+        const respuesta = await fetch(`http://localhost:3000/api/solicitudes/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ estado: nuevoEstado })
+        });
+        
+        const resultado = await respuesta.json();
+        
+        if (resultado.success) {
+            // Recargar la tabla para actualizar los colores de las clases
+            cargarSolicitudes();
+        } else {
+            alert('Error al actualizar: ' + resultado.mensaje);
+        }
+    } catch (error) {
+        console.error('Error de red al actualizar estado:', error);
     }
 };
 

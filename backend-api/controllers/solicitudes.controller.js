@@ -41,7 +41,40 @@ const crearSolicitud = async (req, res) => {
     }
 };
 
+// Actualizar el estado de una solicitud
+const actualizarEstadoSolicitud = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { estado } = req.body;
+
+        // Validar que el estado sea uno de los permitidos
+        const estadosValidos = ['Pendiente', 'En Proceso', 'Completada', 'Cancelada'];
+        if (!estadosValidos.includes(estado)) {
+            return res.status(400).json({ success: false, mensaje: "Estado no válido" });
+        }
+
+        const solicitudActualizada = await Solicitud.findByIdAndUpdate(
+            id,
+            { estado: estado },
+            { new: true } // Devuelve el documento actualizado
+        );
+
+        if (!solicitudActualizada) {
+            return res.status(404).json({ success: false, mensaje: "Solicitud no encontrada" });
+        }
+
+        res.status(200).json({
+            success: true,
+            mensaje: "Estado actualizado exitosamente",
+            data: solicitudActualizada
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, mensaje: "Error al actualizar la solicitud", error: error.message });
+    }
+};
+
 module.exports = {
     obtenerSolicitudes,
-    crearSolicitud
+    crearSolicitud,
+    actualizarEstadoSolicitud // <- Añade esto
 };

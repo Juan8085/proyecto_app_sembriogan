@@ -188,3 +188,21 @@ table td {
     object-fit: contain;
     display: block;
 }
+
+/* Estilos para el select de estado en la tabla */
+.select-estado {
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid #cbd5e1;
+    cursor: pointer;
+    outline: none;
+    appearance: none; /* Quita la flecha predeterminada en algunos navegadores */
+}
+
+/* Colores según el estado */
+.select-estado.pendiente { background-color: #fef9c3; color: #854d0e; }
+.select-estado.en-proceso { background-color: #dbeafe; color: #1e40af; }
+.select-estado.completada { background-color: #dcfce7; color: #166534; }
+.select-estado.cancelada { background-color: #fee2e2; color: #991b1b; }
