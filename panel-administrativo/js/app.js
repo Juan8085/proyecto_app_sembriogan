@@ -109,7 +109,24 @@ const cargarSolicitudes = async () => {
             if (!tbody) return;
             tbody.innerHTML = ''; 
 
+            let total = resultado.data.length;
+            let pendientes = 0;
+            let enProceso = 0;
+            let completadas = 0;
+            let ventasTotales = 0;
+
+            // Formateador de moneda colombiana
+            const formatoCOP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
             resultado.data.forEach(solicitud => {
+                // Conteo de KPIs según estado
+                if (solicitud.estado === 'Pendiente') pendientes++;
+                if (solicitud.estado === 'En Proceso') enProceso++;
+                if (solicitud.estado === 'Completadas' || solicitud.estado === 'Completada') {
+                    completadas++;
+                    ventasTotales += (solicitud.costo || 150000); // Estimado base o costo real del servicio
+                }
+
                 const fila = document.createElement('tr');
                 const opcionesEstado = ['Pendiente', 'En Proceso', 'Completada', 'Cancelada']
                     .map(estado => `<option value="${estado}" ${solicitud.estado === estado ? 'selected' : ''}>${estado}</option>`)
@@ -128,6 +145,13 @@ const cargarSolicitudes = async () => {
                 `;
                 tbody.appendChild(fila);
             });
+
+            // Actualizar los elementos visuales de las tarjetas KPIs
+            document.getElementById('kpi-total').textContent = total;
+            document.getElementById('kpi-pendientes').textContent = pendientes;
+            document.getElementById('kpi-proceso').textContent = enProceso;
+            document.getElementById('kpi-completadas').textContent = completadas;
+            document.getElementById('kpi-ventas').textContent = formatoCOP.format(ventasTotales);
 
             document.querySelectorAll('.select-estado').forEach(select => {
                 select.addEventListener('change', async (e) => {

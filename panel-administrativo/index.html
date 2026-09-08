@@ -15,7 +15,6 @@
                 <h2>Sembriogan 🐂</h2>
             </div>
             <ul>
-                <!-- Añadimos IDs a los enlaces para controlarlos con JS -->
                 <li><a href="#" id="nav-solicitudes" class="active">Dashboard / Solicitudes</a></li>
                 <li><a href="#" id="nav-catalogo">Catálogo de Servicios</a></li>
                 <li><a href="#">Configuración</a></li>
@@ -23,7 +22,7 @@
         </aside>
 
         <!-- Contenido Principal -->
-       <main class="main-content">
+        <main class="main-content">
             <header class="top-header">
                 <h1 id="titulo-seccion">Gestión de Solicitudes</h1>
                 <span class="user-role">Administrador</span>
@@ -33,6 +32,31 @@
             <!-- VISTA 1: SOLICITUDES            -->
             <!-- =============================== -->
             <div id="vista-solicitudes">
+                <!-- Tarjetas de KPIs y Métricas -->
+                <div class="kpi-container">
+                    <div class="kpi-card">
+                        <h3>Total Solicitudes</h3>
+                        <p id="kpi-total">0</p>
+                    </div>
+                    <div class="kpi-card pendiente">
+                        <h3>Pendientes</h3>
+                        <p id="kpi-pendientes">0</p>
+                    </div>
+                    <div class="kpi-card proceso">
+                        <h3>En Proceso</h3>
+                        <p id="kpi-proceso">0</p>
+                    </div>
+                    <div class="kpi-card completadas">
+                        <h3>Completadas</h3>
+                        <p id="kpi-completadas">0</p>
+                    </div>
+                    <div class="kpi-card ventas">
+                        <h3>Ventas Totales</h3>
+                        <p id="kpi-ventas">$ 0</p>
+                    </div>
+                </div>
+
+                <!-- Formulario de Solicitudes -->
                 <section class="card">
                     <h2>Registrar Nueva Solicitud</h2>
                     <form id="form-solicitud">
@@ -52,6 +76,7 @@
                     </form>
                 </section>
 
+                <!-- Tabla de Solicitudes -->
                 <section class="card">
                     <h2>Solicitudes Recientes (MongoDB)</h2>
                     <table id="tabla-solicitudes">
@@ -69,13 +94,14 @@
                         </tbody>
                     </table>
                 </section>
-            </div>
+            </div><!-- Fin de vista-solicitudes -->
 
-            <!-- VISTA 2: CATÁLOGO DE SERVICIOS -->
+            <!-- =============================== -->
+            <!-- VISTA 2: CATÁLOGO DE SERVICIOS  -->
+            <!-- =============================== -->
             <div id="vista-catalogo" style="display: none;">
                 <section class="card">
                     <h2>Registrar Nuevo Servicio o Producto</h2>
-                    <!-- Añadimos enctype para permitir subida de archivos -->
                     <form id="form-catalogo" enctype="multipart/form-data">
                         <div class="form-group">
                             <label for="tipo">Tipo de Servicio:</label>
@@ -113,7 +139,7 @@
                         </tbody>
                     </table>
                 </section>
-            </div>
+            </div><!-- Fin de vista-catalogo -->
         </main>
     </div>
 
