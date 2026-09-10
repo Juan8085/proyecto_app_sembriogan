@@ -320,3 +320,83 @@ const eliminarImagenCarrusel = async (id) => {
         console.error('Error:', error);
     }
 };
+
+const formTestimonio = document.getElementById('form-testimonio');
+if (formTestimonio) {
+    formTestimonio.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const bodyData = {
+            productor: document.getElementById('testimonio-productor').value,
+            finca: document.getElementById('testimonio-finca').value,
+            comentario: document.getElementById('testimonio-comentario').value
+        };
+
+        try {
+            const res = await fetch('http://localhost:3000/api/testimonios', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyData)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Testimonio guardado con éxito');
+                formTestimonio.reset();
+                cargarTestimoniosAdmin();
+            }
+        } catch (err) {
+            console.error('Error:', err);
+        }
+    });
+}
+
+const cargarTestimoniosAdmin = async () => {
+    try {
+        const res = await fetch('http://localhost:3000/api/testimonios');
+        const data = await res.json();
+        if (data.success) {
+            const tbody = document.querySelector('#tabla-testimonios tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            data.data.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${t.productor}</strong><br><small>${t.finca}</small></td>
+                    <td>${t.comentario}</td>
+                    <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; background: ${t.aprobado ? '#dcfce7; color: #166534;' : '#fef9c3; color: #854d0e;'}">${t.aprobado ? 'Aprobado' : 'Pendiente'}</span></td>
+                    <td>
+                        ${!t.aprobado ? `<button onclick="aprobarTestimonio('${t._id}')" style="background:#22c55e; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-right: 5px;">Aprobar</button>` : ''}
+                        <button onclick="eliminarTestimonioAdmin('${t._id}')" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (e) {
+        console.error(e);
+    }
+};
+
+const aprobarTestimonio = async (id) => {
+    try {
+        const res = await fetch(`http://localhost:3000/api/testimonios/${id}/aprobar`, { method: 'PUT' });
+        const data = await res.json();
+        if (data.success) {
+            cargarTestimoniosAdmin();
+        }
+    } catch (e) {
+        console.error(e);
+    }
+};
+
+const eliminarTestimonioAdmin = async (id) => {
+    if(!confirm('¿Eliminar este testimonio?')) return;
+    await fetch(`http://localhost:3000/api/testimonios/${id}`, { method: 'DELETE' });
+    cargarTestimoniosAdmin();
+};
+
+const eliminarTestimonio = async (id) => {
+    if(!confirm('¿Eliminar testimonio?')) return;
+    await fetch(`http://localhost:3000/api/testimonios/${id}`, { method: 'DELETE' });
+    cargarTestimoniosAdmin();
+};

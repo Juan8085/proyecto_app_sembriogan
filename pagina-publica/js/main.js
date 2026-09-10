@@ -2,6 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarCatalogoPublico();
     configurarChatbot();
     cargarCarruselPublico();
+    cargarTestimoniosPublicos();
+    configurarFormularioTestimonio();
 });
 
 // ==========================================
@@ -175,4 +177,68 @@ const iniciarRotacionCarrusel = () => {
         slideActual = (slideActual + 1) % slides.length;
         slides[slideActual].classList.add('active');
     }, 5000);
+};
+
+const cargarTestimoniosPublicos = async () => {
+    try {
+        const res = await fetch('http://localhost:3000/api/testimonios/public');
+        const data = await res.json();
+        if (data.success) {
+            const grid = document.getElementById('testimonios-grid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            
+            if(data.data.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; color: #64748b;">Aún no hay testimonios publicados. ¡Sé el primero en compartir tu experiencia!</p>';
+                return;
+            }
+
+            data.data.forEach(t => {
+                const card = document.createElement('div');
+                card.style.background = 'white';
+                card.style.padding = '25px';
+                card.style.borderRadius = '10px';
+                card.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)';
+                card.style.textAlign = 'left';
+                card.innerHTML = `
+                    <p style="font-style: italic; color: #334155; margin-bottom: 15px;">"${t.comentario}"</p>
+                    <h4 style="color: var(--primary-color); font-size: 1.05rem;">${t.productor}</h4>
+                    <span style="font-size: 0.85rem; color: #64748b;">📍 ${t.finca}</span>
+                `;
+                grid.appendChild(card);
+            });
+        }
+    } catch (e) {
+        console.error('Error al cargar testimonios:', e);
+    }
+};
+
+// Envío de nuevo testimonio desde la web
+const configurarFormularioTestimonio = () => {
+    const form = document.getElementById('form-nuevo-testimonio');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            productor: document.getElementById('nuevo-productor').value,
+            finca: document.getElementById('nuevo-finca').value,
+            comentario: document.getElementById('nuevo-comentario').value
+        };
+
+        try {
+            const res = await fetch('http://localhost:3000/api/testimonios', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            alert(data.mensaje);
+            if (data.success) {
+                form.reset();
+            }
+        } catch (err) {
+            console.error('Error al enviar testimonio:', err);
+        }
+    });
 };

@@ -145,6 +145,41 @@
             <!-- =============================== -->
             <div id="vista-configuracion" style="display: none;">
                 <section class="card">
+                        <h2>Registrar Testimonio de Ganadero</h2>
+                        <form id="form-testimonio">
+                            <div class="form-group">
+                                <label for="testimonio-productor">Nombre del Productor:</label>
+                                <input type="text" id="testimonio-productor" required placeholder="Ej. Carlos Pérez">
+                            </div>
+                            <div class="form-group">
+                                <label for="testimonio-finca">Nombre de la Finca / Vereda:</label>
+                                <input type="text" id="testimonio-finca" required placeholder="Ej. Finca El Diamante, Garzón">
+                            </div>
+                            <div class="form-group">
+                                <label for="testimonio-comentario">Comentario o Experiencia:</label>
+                                <textarea id="testimonio-comentario" required rows="3" placeholder="Excelente servicio de biotecnología..." style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:4px;"></textarea>
+                            </div>
+                            <button type="submit" class="btn-primary">Guardar Testimonio</button>
+                        </form>
+                    </section>
+
+                    <section class="card">
+                        <h2>Testimonios Activos (MongoDB)</h2>
+                        <table id="tabla-testimonios">
+                            <thead>
+                                <tr>
+                                    <th>Productor</th>
+                                    <th>Finca</th>
+                                    <th>Comentario</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dinámico con JS -->
+                            </tbody>
+                        </table>
+                    </section>
+                    <section class="card">
                     <h2>Subir Imagen al Carrusel (Inicio)</h2>
                     <form id="form-carrusel" enctype="multipart/form-data">
                         <div class="form-group">

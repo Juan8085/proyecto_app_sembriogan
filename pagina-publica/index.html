@@ -44,6 +44,55 @@
         </div>
     </section>
 
+    <!-- Sección Nosotros / Historia -->
+    <section id="nosotros" class="about-section" style="padding: 70px 20px; background: white; text-align: center;">
+        <div style="max-width: 850px; margin: 0 auto;">
+            <h2 style="color: var(--primary-color); margin-bottom: 25px; font-size: 2.2rem;">Nuestra Historia en el Huila</h2>
+            <p style="font-size: 1.1rem; line-height: 1.7; color: #475569; margin-bottom: 20px;">
+                Fundada en Garzón, Huila, <strong>Sembriogan</strong> surge como una respuesta técnica e innovadora para potenciar la ganadería bovina de la región. Desde nuestros inicios, nos hemos consolidado como líderes en biotecnología reproductiva, optimizando los índices productivos y reproductivos de los hatos ganaderos mediante protocolos científicos avanzados.
+            </p>
+            <p style="font-size: 1.1rem; line-height: 1.7; color: #475569;">
+                Nuestro equipo combina la experiencia en campo con herramientas tecnológicas de vanguardia, acompañando al productor en cada paso —desde la selección genética y la transferencia de embriones hasta la asistencia clínica veterinaria especializada.
+            </p>
+        </div>
+    </section>
+
+    <!-- Sección de Testimonios y Formulario -->
+    <section id="testimonios" style="padding: 70px 20px; background: #f1f5f9; text-align: center;">
+        <h2 style="color: var(--text-dark); margin-bottom: 15px; font-size: 2.2rem;">Experiencias en el Campo</h2>
+        <p style="color: #64748b; margin-bottom: 40px;">Lo que dicen los productores que confían en nuestra genética y servicios.</p>
+        
+        <!-- Grid de Testimonios Aprobados -->
+        <div id="testimonios-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; max-width: 1000px; margin: 0 auto 50px auto;">
+            <!-- Renderizado dinámico -->
+        </div>
+
+        <!-- Formulario para que el usuario envíe su testimonio -->
+        <div style="background: white; max-width: 600px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: left;">
+            <h3 style="color: var(--primary-color); margin-bottom: 15px; text-align: center;">Comparte tu Experiencia con Sembriogan</h3>
+            <form id="form-nuevo-testimonio">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 5px;">Tu Nombre:</label>
+                    <input type="text" id="nuevo-productor" required placeholder="Ej. Hernán Cuéllar" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 5px;">Finca / Vereda:</label>
+                    <input type="text" id="nuevo-finca" required placeholder="Ej. Finca El Recuerdo, Garzón" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.9rem; font-weight: bold; margin-bottom: 5px;">Tu Comentario:</label>
+                    <textarea id="nuevo-comentario" required rows="3" placeholder="Cuéntanos cómo mejoró tu hato..." style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; border: none; cursor: pointer;">Enviar Testimonio</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Botón Flotante de WhatsApp (Ubicación inferior izquierda) -->
+    <a href="https://wa.me/573135543850?text=Hola%20Sembriogan,%20estoy%20interesado%20en%20sus%20servicios%20veterinarios" target="_blank" class="whatsapp-float">
+      💬
+    </a>
+
     <!-- Interfaz del Veterinario Asistente IA (Flotante) -->
     <div class="ai-chatbot">
         <button id="chatbot-toggle" class="chatbot-btn">🤖 Chat Veterinario IA</button>

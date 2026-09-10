@@ -271,3 +271,26 @@ body {
     border-radius: 4px;
     cursor: pointer;
 }
+
+.whatsapp-float {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    background: #25d366;
+    color: white;
+    border-radius: 50%;
+    width: 55px;
+    height: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 1000;
+    text-decoration: none;
+    transition: transform 0.3s ease;
+}
+
+.whatsapp-float:hover {
+    transform: scale(1.1);
+}
