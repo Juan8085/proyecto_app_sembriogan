@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sembriogan - Expertos en Genética Bovina</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Menú de Navegación -->
+    <nav class="navbar">
+        <div class="logo-container">
+            <img src="img/logo.png" alt="Logo Sembriogan" class="logo">
+            <!-- Eliminamos el <span> con el texto -->
+        </div>
+        <ul class="nav-links">
+            <li><a href="#inicio">Inicio</a></li>
+            <li><a href="#catalogo">Catálogo de Servicios</a></li>
+            <li><a href="#contacto">Contacto</a></li>
+        </ul>
+        <div class="cart-icon">🛒 <span id="cart-count">0</span></div>
+    </nav>
+
+    <!-- Banner Principal con Carrusel (Hero) -->
+    <header id="inicio" class="hero">
+        <!-- Imágenes del carrusel -->
+        <div class="carousel-slide active" style="background-image: linear-gradient(rgba(2, 132, 199, 0.7), rgba(3, 105, 161, 0.7)), url('https://images.unsplash.com/photo-1596733430284-f74372763f0d?auto=format&fit=crop&q=80&w=1200');"></div>
+        <div class="carousel-slide" style="background-image: linear-gradient(rgba(2, 132, 199, 0.7), rgba(3, 105, 161, 0.7)), url('https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&q=80&w=1200');"></div>
+        <div class="carousel-slide" style="background-image: linear-gradient(rgba(2, 132, 199, 0.7), rgba(3, 105, 161, 0.7)), url('https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?auto=format&fit=crop&q=80&w=1200');"></div>
+
+        <div class="hero-content">
+            <h1>Biotecnología Reproductiva para tu Ganadería</h1>
+            <p>Mejora la genética de tu hato con nuestros servicios especializados e insumos de alta calidad.</p>
+            <a href="#catalogo" class="btn-primary">Ver Catálogo</a>
+        </div>
+    </header>
+
+    <!-- Sección del Catálogo (E-commerce) -->
+    <section id="catalogo" class="catalog-section">
+        <h2>Nuestros Servicios y Productos</h2>
+        <div class="catalog-grid" id="catalog-grid">
+            <!-- Los productos se inyectarán aquí con JavaScript desde tu API -->
+            <p>Cargando catálogo desde el servidor...</p>
+        </div>
+    </section>
+
+    <!-- Interfaz del Veterinario Asistente IA (Flotante) -->
+    <div class="ai-chatbot">
+        <button id="chatbot-toggle" class="chatbot-btn">🤖 Chat Veterinario IA</button>
+        <div id="chatbot-window" class="chatbot-window hidden">
+            <div class="chat-header">
+                <h3>Asistente Sembriogan</h3>
+                <button id="close-chat">X</button>
+            </div>
+            <div class="chat-body" id="chat-body">
+                <div class="message ai-message">
+                    ¡Hola! Soy el asistente virtual de Sembriogan. ¿Tienes alguna duda sobre nuestros servicios, reproducción bovina o insumos?
+                </div>
+            </div>
+            <div class="chat-footer">
+                <input type="text" id="chat-input" placeholder="Escribe tu pregunta aquí...">
+                <button id="send-chat">Enviar</button>
+            </div>
+        </div>
+    </div>
+    <!-- Pie de Página (Contacto) -->
+    <footer id="contacto" class="footer-section">
+        <div class="footer-content">
+            <div class="footer-info">
+                <img src="img/logo.png" alt="Sembriogan Logo" style="height: 50px; margin-bottom: 15px;">
+                <p>Expertos en Genética Bovina y Biotecnología Reproductiva.</p>
+            </div>
+            <div class="footer-contact">
+                <h3>Contáctenos</h3>
+                <p>📍 Carrera 10 # 4 - 69 Garzón, Huila, Colombia</p>
+                <p>📞 +57 313 5543850</p>
+                <p>✉️ contactenos@sembriogan.com</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Sembriogan. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
