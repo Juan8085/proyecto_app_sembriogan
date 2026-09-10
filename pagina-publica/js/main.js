@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     cargarCatalogoPublico();
     configurarChatbot();
-    iniciarCarrusel();
+    cargarCarruselPublico();
 });
 
 // ==========================================
@@ -128,17 +128,51 @@ const configurarChatbot = () => {
 };
 
 // ==========================================
-// NUEVA FUNCIÓN: CARRUSEL DE IMÁGENES
+// CARRUSEL DINÁMICO DESDE EL BACKEND
 // ==========================================
-const iniciarCarrusel = () => {
-    const slides = document.querySelectorAll('.carousel-slide');
-    let slideActual = 0;
+const cargarCarruselPublico = async () => {
+    try {
+        const respuesta = await fetch('http://localhost:3000/api/carrusel');
+        const resultado = await respuesta.json();
 
-    if (slides.length === 0) return;
+        if (resultado.success && resultado.data.length > 0) {
+            const hero = document.getElementById('inicio');
+            
+            // Seleccionar y conservar solo el contenido de texto (hero-content)
+            const heroContent = hero.querySelector('.hero-content');
+            
+            // Limpiar slides anteriores si los hubiera
+            hero.querySelectorAll('.carousel-slide').forEach(slide => slide.remove());
+
+            // Inyectar dinámicamente cada imagen obtenida de MongoDB
+            resultado.data.forEach((item, index) => {
+                const urlImagen = `http://localhost:3000${item.imagen}`;
+                const slideDiv = document.createElement('div');
+                slideDiv.className = `carousel-slide ${index === 0 ? 'active' : ''}`;
+                slideDiv.style.backgroundImage = `linear-gradient(rgba(2, 132, 199, 0.7), rgba(3, 105, 161, 0.7)), url('${urlImagen}')`;
+                
+                // Insertar el slide antes del contenido de texto
+                hero.insertBefore(slideDiv, heroContent);
+            });
+
+            // Iniciar la rotación si hay más de una imagen
+            if (resultado.data.length > 1) {
+                iniciarRotacionCarrusel();
+            }
+        }
+    } catch (error) {
+        console.error('Error al cargar el carrusel público:', error);
+    }
+};
+
+const iniciarRotacionCarrusel = () => {
+    let slideActual = 0;
+    const slides = document.querySelectorAll('.carousel-slide');
+    if (slides.length <= 1) return;
 
     setInterval(() => {
         slides[slideActual].classList.remove('active');
         slideActual = (slideActual + 1) % slides.length;
         slides[slideActual].classList.add('active');
-    }, 5000); // Cambia de imagen cada 5 segundos
+    }, 5000);
 };
