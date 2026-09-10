@@ -7,6 +7,7 @@ const solicitudesRoutes = require('./routes/solicitudes.routes');
 const catalogoRoutes = require('./routes/catalogo.routes');
 const carruselRoutes = require('./routes/carrusel.routes');
 const testimonioRoutes = require('./routes/testimonio.routes');
+const iaRoutes = require('./routes/ia.routes');
 const path = require('path'); // Asegúrate de requerir path si no lo tienes
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +28,7 @@ app.use('/api/solicitudes', solicitudesRoutes); // <- ¡Esta línea faltaba!
 app.use('/api/catalogo', catalogoRoutes);
 app.use('/api/carrusel', carruselRoutes);
 app.use('/api/testimonios', testimonioRoutes);
+app.use('/api/ia', iaRoutes);
 
 // Ruta de prueba
 app.get('/api', (req, res) => {

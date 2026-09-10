@@ -16,12 +16,12 @@ const cargarCatalogoPublico = async () => {
 
         if (resultado.success) {
             const catalogGrid = document.getElementById('catalog-grid');
-            catalogGrid.innerHTML = ''; // Limpiamos el texto de "Cargando..."
+            if(!catalogGrid) return;
+            catalogGrid.innerHTML = ''; 
 
             const formatoCOP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
 
             resultado.data.forEach(item => {
-                // Si no hay imagen, usamos un color de fondo temporal o un placeholder
                 const urlImagen = item.imagen ? `http://localhost:3000${item.imagen}` : '';
                 const imgHtml = urlImagen 
                     ? `<img src="${urlImagen}" alt="${item.tipo}">` 
@@ -43,7 +43,8 @@ const cargarCatalogoPublico = async () => {
         }
     } catch (error) {
         console.error('Error al cargar el catálogo:', error);
-        document.getElementById('catalog-grid').innerHTML = '<p>Error al conectar con el servidor. El veterinario podría estar trabajando offline.</p>';
+        const grid = document.getElementById('catalog-grid');
+        if(grid) grid.innerHTML = '<p>Error al conectar con el servidor. El veterinario podría estar trabajando offline.</p>';
     }
 };
 
@@ -51,15 +52,14 @@ const cargarCatalogoPublico = async () => {
 // 2. SIMULACIÓN DE PASARELA DE PAGOS Y MODO OFFLINE
 // ==========================================
 window.iniciarCompra = (producto, precio) => {
-    // Si hay internet, esto abrirá el modal de Wompi/MercadoPago. 
-    // Si no hay internet (app veterinario), guardará la solicitud localmente en IndexedDB.
     const formatoCOP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
-    
     alert(`🛒 Iniciando proceso de compra seguro.\n\nProducto: ${producto}\nTotal a pagar: ${formatoCOP.format(precio)}\n\n(Aquí se desplegará el widget de pago o se guardará la orden offline en la tablet del veterinario).`);
     
-    // Sumamos visualmente al carrito
-    let count = parseInt(document.getElementById('cart-count').innerText);
-    document.getElementById('cart-count').innerText = count + 1;
+    let countElem = document.getElementById('cart-count');
+    if(countElem) {
+        let count = parseInt(countElem.innerText);
+        countElem.innerText = count + 1;
+    }
 };
 
 // ==========================================
@@ -72,6 +72,8 @@ const configurarChatbot = () => {
     const btnSend = document.getElementById('send-chat');
     const chatInput = document.getElementById('chat-input');
     const chatBody = document.getElementById('chat-body');
+
+    if (!btnToggle || !chatWindow) return;
 
     // Mensaje de bienvenida inicial personalizado
     chatBody.innerHTML = `
@@ -88,39 +90,41 @@ const configurarChatbot = () => {
     
     btnClose.addEventListener('click', () => chatWindow.classList.add('hidden'));
 
-    // Enviar mensaje
-    const enviarMensaje = () => {
+    // Función interna para procesar y enviar el mensaje
+    const enviarMensaje = async () => {
         const texto = chatInput.value.trim();
         if (!texto) return;
 
         // Mostrar mensaje del usuario
-        chatBody.innerHTML += `<div class="message" style="background: var(--primary-color); color: white; align-self: flex-end; margin-left: auto; max-width: 80%;">${texto}</div>`;
+        chatBody.innerHTML += `<div class="message" style="background: var(--primary-color); color: white; align-self: flex-end; margin-left: auto; max-width: 80%; padding: 10px; border-radius: 8px; margin-bottom: 10px;">${texto}</div>`;
         chatInput.value = '';
-        chatBody.scrollTop = chatBody.scrollHeight; // Auto-scroll
-
-        // Mostrar indicador de "Escribiendo..."
-        const idTyping = 'typing-' + Date.now();
-        chatBody.innerHTML += `<div id="${idTyping}" class="message ai-message" style="opacity: 0.7;"><i>Don Aso está escribiendo...</i></div>`;
         chatBody.scrollTop = chatBody.scrollHeight;
 
-        // Simulador de respuesta de IA (Aquí luego integraremos la API real)
-        setTimeout(() => {
-            document.getElementById(idTyping).remove(); // Quitar "escribiendo..."
-            
-            let respuestaIA = "Es una excelente consulta. Como asistente en entrenamiento, estoy aprendiendo sobre ese tema. ¿Quieres que uno de nuestros veterinarios te contacte directamente a tu finca?";
-            
-            const txtLower = texto.toLowerCase();
-            if(txtLower.includes("precio") || txtLower.includes("costo") || txtLower.includes("valor")) {
-                respuestaIA = "Nuestros costos varían según el procedimiento. Te invito a revisar el catálogo en esta misma página donde nuestros precios están actualizados.";
-            } else if(txtLower.includes("inseminacion") || txtLower.includes("iatf") || txtLower.includes("embriones")) {
-                respuestaIA = "La biotecnología reproductiva es nuestra especialidad. Aseguramos altas tasas de preñez trabajando con genética garantizada. ¡Puedes solicitar el servicio ahora mismo!";
-            } else if(txtLower.includes("hola") || txtLower.includes("buenos dias") || txtLower.includes("buenas")) {
-                respuestaIA = "¡Qué tal! ¿Buscas asistencia técnica para tu hato o necesitas algún insumo ganadero?";
-            }
+        // Indicador de escribiendo
+        const idTyping = 'typing-' + Date.now();
+        chatBody.innerHTML += `<div id="${idTyping}" class="message ai-message" style="opacity: 0.7;"><i>Don Aso está consultando la base de conocimiento veterinario...</i></div>`;
+        chatBody.scrollTop = chatBody.scrollHeight;
 
+        try {
+            const res = await fetch('http://localhost:3000/api/ia/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mensaje: texto })
+            });
+            const data = await res.json();
+            
+            const typingElem = document.getElementById(idTyping);
+            if (typingElem) typingElem.remove();
+            
+            const respuestaIA = data.success ? data.respuesta : "Lo siento, en este momento tengo problemas de conexión con el servidor.";
             chatBody.innerHTML += `<div class="message ai-message">${respuestaIA}</div>`;
             chatBody.scrollTop = chatBody.scrollHeight;
-        }, 1500);
+        } catch (err) {
+            const typingElem = document.getElementById(idTyping);
+            if (typingElem) typingElem.remove();
+            chatBody.innerHTML += `<div class="message ai-message">Error de red al consultar al asistente veterinario.</div>`;
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
     };
 
     btnSend.addEventListener('click', enviarMensaje);
@@ -130,7 +134,7 @@ const configurarChatbot = () => {
 };
 
 // ==========================================
-// CARRUSEL DINÁMICO DESDE EL BACKEND
+// 4. CARRUSEL DINÁMICO DESDE EL BACKEND
 // ==========================================
 const cargarCarruselPublico = async () => {
     try {
@@ -139,25 +143,20 @@ const cargarCarruselPublico = async () => {
 
         if (resultado.success && resultado.data.length > 0) {
             const hero = document.getElementById('inicio');
+            if(!hero) return;
             
-            // Seleccionar y conservar solo el contenido de texto (hero-content)
             const heroContent = hero.querySelector('.hero-content');
-            
-            // Limpiar slides anteriores si los hubiera
             hero.querySelectorAll('.carousel-slide').forEach(slide => slide.remove());
 
-            // Inyectar dinámicamente cada imagen obtenida de MongoDB
             resultado.data.forEach((item, index) => {
                 const urlImagen = `http://localhost:3000${item.imagen}`;
                 const slideDiv = document.createElement('div');
                 slideDiv.className = `carousel-slide ${index === 0 ? 'active' : ''}`;
                 slideDiv.style.backgroundImage = `linear-gradient(rgba(2, 132, 199, 0.7), rgba(3, 105, 161, 0.7)), url('${urlImagen}')`;
                 
-                // Insertar el slide antes del contenido de texto
                 hero.insertBefore(slideDiv, heroContent);
             });
 
-            // Iniciar la rotación si hay más de una imagen
             if (resultado.data.length > 1) {
                 iniciarRotacionCarrusel();
             }
@@ -179,6 +178,9 @@ const iniciarRotacionCarrusel = () => {
     }, 5000);
 };
 
+// ==========================================
+// 5. TESTIMONIOS PÚBLICOS Y FORMULARIO
+// ==========================================
 const cargarTestimoniosPublicos = async () => {
     try {
         const res = await fetch('http://localhost:3000/api/testimonios/public');
@@ -213,7 +215,6 @@ const cargarTestimoniosPublicos = async () => {
     }
 };
 
-// Envío de nuevo testimonio desde la web
 const configurarFormularioTestimonio = () => {
     const form = document.getElementById('form-nuevo-testimonio');
     if (!form) return;
