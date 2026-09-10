@@ -1,7 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Cargar datos iniciales
+    // 1. Cargar datos iniciales de todas las secciones
     cargarSolicitudes();
     cargarCatalogo();
+    cargarTestimoniosAdmin(); // <--- ¡AQUÍ ESTABA FALTANDO!
 
     // 2. Control de Navegación del Menú Lateral
     const navSolicitudes = document.getElementById('nav-solicitudes');
@@ -38,14 +39,15 @@ document.addEventListener('DOMContentLoaded', () => {
         tituloSeccion.textContent = 'Catálogo de Servicios';
     });
 
-    // Evento de la nueva pestaña
+    // Evento de la pestaña de configuración
     navConfiguracion.addEventListener('click', (e) => {
         e.preventDefault();
         ocultarVistas();
         vistaConfiguracion.style.display = 'block';
         navConfiguracion.classList.add('active');
         tituloSeccion.textContent = 'Configuración de la Página Web';
-        cargarCarruselAdmin(); // Carga las fotos al entrar a la pestaña
+        cargarCarruselAdmin(); // Carga las fotos del carrusel
+        cargarTestimoniosAdmin(); // <--- ¡Y AQUÍ TAMBIÉN PARA QUE SE ACTUALICEN!
     });
 
     // 3. Manejo de Formulario de Solicitudes

@@ -39,7 +39,8 @@ const crearTestimonio = async (req, res) => {
 const aprobarTestimonio = async (req, res) => {
     try {
         const { id } = req.params;
-        const actualizado = await Testimonio.findByIdAndUpdate(id, { aprobado: true }, { new: true });
+        // Cambiamos { new: true } por { returnDocument: 'after' } para evitar la advertencia de Mongoose
+        const actualizado = await Testimonio.findByIdAndUpdate(id, { aprobado: true }, { returnDocument: 'after' });
         res.status(200).json({ success: true, mensaje: "Testimonio aprobado y publicado", data: actualizado });
     } catch (error) {
         res.status(500).json({ success: false, mensaje: "Error al aprobar", error: error.message });
