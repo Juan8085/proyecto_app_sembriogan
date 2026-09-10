@@ -17,7 +17,7 @@
             <ul>
                 <li><a href="#" id="nav-solicitudes" class="active">Dashboard / Solicitudes</a></li>
                 <li><a href="#" id="nav-catalogo">Catálogo de Servicios</a></li>
-                <li><a href="#">Configuración</a></li>
+                <li><a href="#" id="nav-configuracion">Configuración (Web)</a></li>
             </ul>
         </aside>
 
@@ -140,6 +140,29 @@
                     </table>
                 </section>
             </div><!-- Fin de vista-catalogo -->
+            <!-- =============================== -->
+            <!-- VISTA 3: CONFIGURACIÓN (WEB)    -->
+            <!-- =============================== -->
+            <div id="vista-configuracion" style="display: none;">
+                <section class="card">
+                    <h2>Subir Imagen al Carrusel (Inicio)</h2>
+                    <form id="form-carrusel" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="imagen-carrusel">Seleccionar Imagen (Resolución horizontal recomendada):</label>
+                            <input type="file" id="imagen-carrusel" name="imagen" accept="image/*" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Agregar al Carrusel</button>
+                    </form>
+                </section>
+
+                <section class="card">
+                    <h2>Imágenes Activas en la Web (MongoDB)</h2>
+                    <!-- Usaremos un div con grid para mostrar las fotos como una galería -->
+                    <div id="galeria-carrusel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px;">
+                        <!-- Dinámico con JS -->
+                    </div>
+                </section>
+            </div><!-- Fin de vista-configuracion -->
         </main>
     </div>
 

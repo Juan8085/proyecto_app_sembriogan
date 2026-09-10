@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const conectarDB = require('./database/db');
 const solicitudesRoutes = require('./routes/solicitudes.routes');
 const catalogoRoutes = require('./routes/catalogo.routes');
+const carruselRoutes = require('./routes/carrusel.routes');
 const path = require('path'); // Asegúrate de requerir path si no lo tienes
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,8 +23,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Rutas de la API
 app.use('/api/solicitudes', solicitudesRoutes); // <- ¡Esta línea faltaba!
-
 app.use('/api/catalogo', catalogoRoutes);
+app.use('/api/carrusel', carruselRoutes);
 
 // Ruta de prueba
 app.get('/api', (req, res) => {

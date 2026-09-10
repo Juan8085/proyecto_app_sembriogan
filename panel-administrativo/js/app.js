@@ -6,26 +6,46 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Control de Navegación del Menú Lateral
     const navSolicitudes = document.getElementById('nav-solicitudes');
     const navCatalogo = document.getElementById('nav-catalogo');
+    const navConfiguracion = document.getElementById('nav-configuracion');
     const vistaSolicitudes = document.getElementById('vista-solicitudes');
     const vistaCatalogo = document.getElementById('vista-catalogo');
+    const vistaConfiguracion = document.getElementById('vista-configuracion');
     const tituloSeccion = document.getElementById('titulo-seccion');
+
+    // Función auxiliar para ocultar todo
+    const ocultarVistas = () => {
+        vistaSolicitudes.style.display = 'none';
+        vistaCatalogo.style.display = 'none';
+        vistaConfiguracion.style.display = 'none';
+        navSolicitudes.classList.remove('active');
+        navCatalogo.classList.remove('active');
+        navConfiguracion.classList.remove('active');
+    };
 
     navSolicitudes.addEventListener('click', (e) => {
         e.preventDefault();
+        ocultarVistas();
         vistaSolicitudes.style.display = 'block';
-        vistaCatalogo.style.display = 'none';
         navSolicitudes.classList.add('active');
-        navCatalogo.classList.remove('active');
         tituloSeccion.textContent = 'Gestión de Solicitudes';
     });
 
     navCatalogo.addEventListener('click', (e) => {
         e.preventDefault();
+        ocultarVistas();
         vistaCatalogo.style.display = 'block';
-        vistaSolicitudes.style.display = 'none';
         navCatalogo.classList.add('active');
-        navSolicitudes.classList.remove('active');
         tituloSeccion.textContent = 'Catálogo de Servicios';
+    });
+
+    // Evento de la nueva pestaña
+    navConfiguracion.addEventListener('click', (e) => {
+        e.preventDefault();
+        ocultarVistas();
+        vistaConfiguracion.style.display = 'block';
+        navConfiguracion.classList.add('active');
+        tituloSeccion.textContent = 'Configuración de la Página Web';
+        cargarCarruselAdmin(); // Carga las fotos al entrar a la pestaña
     });
 
     // 3. Manejo de Formulario de Solicitudes
@@ -94,6 +114,37 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// 5. Manejo de Formulario del Carrusel
+    const formCarrusel = document.getElementById('form-carrusel');
+    if (formCarrusel) {
+        formCarrusel.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const archivoInput = document.getElementById('imagen-carrusel');
+            if (!archivoInput.files[0]) return;
+
+            const formData = new FormData();
+            formData.append('imagen', archivoInput.files[0]);
+
+            try {
+                const respuesta = await fetch('http://localhost:3000/api/carrusel', {
+                    method: 'POST',
+                    body: formData
+                });
+                const resultado = await respuesta.json();
+
+                if (resultado.success) {
+                    alert('¡Imagen subida al carrusel exitosamente!');
+                    formCarrusel.reset();
+                    cargarCarruselAdmin(); // Recargar la galería
+                } else {
+                    alert('Error: ' + resultado.mensaje);
+                }
+            } catch (error) {
+                console.error('Error al subir imagen:', error);
+            }
+        });
+    }
 
 // ==========================================
 // FUNCIONES GLOBALES DE CARGA Y GESTIÓN
@@ -214,5 +265,58 @@ const cargarCatalogo = async () => {
         }
     } catch (error) {
         console.error('Error al cargar catálogo:', error);
+    }
+};
+
+const cargarCarruselAdmin = async () => {
+    try {
+        const respuesta = await fetch('http://localhost:3000/api/carrusel');
+        const resultado = await respuesta.json();
+
+        if (resultado.success) {
+            const galeria = document.getElementById('galeria-carrusel');
+            if (!galeria) return;
+            galeria.innerHTML = ''; 
+
+            resultado.data.forEach(item => {
+                const urlImagen = `http://localhost:3000${item.imagen}`;
+                
+                const cardContenedor = document.createElement('div');
+                cardContenedor.style.border = '1px solid #cbd5e1';
+                cardContenedor.style.borderRadius = '8px';
+                cardContenedor.style.padding = '10px';
+                cardContenedor.style.textAlign = 'center';
+                cardContenedor.style.background = '#fff';
+
+                cardContenedor.innerHTML = `
+                    <img src="${urlImagen}" alt="Carrusel" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+                    <button onclick="eliminarImagenCarrusel('${item._id}')" style="background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; width: 100%;">
+                        Eliminar
+                    </button>
+                `;
+                galeria.appendChild(cardContenedor);
+            });
+        }
+    } catch (error) {
+        console.error('Error al cargar carrusel:', error);
+    }
+};
+
+const eliminarImagenCarrusel = async (id) => {
+    if (!confirm('¿Estás seguro de eliminar esta imagen del carrusel de la página pública?')) return;
+
+    try {
+        const respuesta = await fetch(`http://localhost:3000/api/carrusel/${id}`, {
+            method: 'DELETE'
+        });
+        const resultado = await respuesta.json();
+
+        if (resultado.success) {
+            cargarCarruselAdmin(); // Recargamos para que desaparezca
+        } else {
+            alert('Error al eliminar: ' + resultado.mensaje);
+        }
+    } catch (error) {
+        console.error('Error:', error);
     }
 };
