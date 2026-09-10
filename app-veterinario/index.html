@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sembriogan - App Campo (Offline)</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="vet-container">
+        <!-- Encabezado de Campo -->
+        <header class="vet-header">
+            <h2>Sembriogan 🐂 <small>Modo Campo</small></h2>
+            <div id="network-status" class="status-badge offline">Verificando red...</div>
+        </header>
+
+        <!-- Formulario de Registro en Finca -->
+        <main class="vet-main">
+            <section class="card">
+                <h3>Nuevo Reporte Veterinario (Offline)</h3>
+                <form id="form-vet-offline">
+                    <div class="form-group">
+                        <label for="vet-productor">Productor / Propietario:</label>
+                        <input type="text" id="vet-productor" required placeholder="Nombre del ganadero">
+                    </div>
+                    <div class="form-group">
+                        <label for="vet-finca">Finca / Vereda:</label>
+                        <input type="text" id="vet-finca" required placeholder="Nombre de la finca">
+                    </div>
+                    <div class="form-group">
+                        <label for="vet-servicio">Procedimiento / Diagnóstico:</label>
+                        <select id="vet-servicio" required style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            <option value="Evaluación Ginecológica / Eco">Evaluación Ginecológica / Eco</option>
+                            <option value="Protocolo IATF">Protocolo IATF</option>
+                            <option value="Asistencia Obstétrica / Parto">Asistencia Obstétrica / Parto</option>
+                            <option value="Tratamiento Infección / Clínico">Tratamiento Infección / Clínico</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="vet-observaciones">Observaciones Clínicas:</label>
+                        <textarea id="vet-observaciones" rows="3" placeholder="Detalles de condición corporal, hallazgos..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%;">Guardar Registro (Local / Nube)</button>
+                </form>
+            </section>
+
+            <!-- Cola de Sincronización Local -->
+            <section class="card" style="margin-top: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Registros en Dispositivo</h3>
+                    <span id="sync-counter" style="background: #e2e8f0; padding: 4px 10px; border-radius: 12px; font-weight: bold;">0 pendientes</span>
+                </div>
+                <button id="btn-sync" class="btn-secondary" style="width: 100%; margin-top: 15px; background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer;">Sincronizar con el Servidor</button>
+                
+                <div id="lista-offline" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                    <!-- Se llena con IndexedDB -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
