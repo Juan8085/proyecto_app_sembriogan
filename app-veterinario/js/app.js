@@ -139,19 +139,24 @@ const sincronizarConServidor = async () => {
     }
 
     if (!db) return;
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    
+    // Transacción 1: Solo lectura para obtener los registros
+    const transaction = db.transaction([STORE_NAME], 'readonly');
     const store = transaction.objectStore(STORE_NAME);
     const request = store.getAll();
 
     request.onsuccess = async (e) => {
         const registros = e.target.result;
-        if (registros.length === 0) return;
+        if (registros.length === 0) {
+            alert('No hay registros pendientes por sincronizar.');
+            return;
+        }
 
-        let sincronizados = 0;
+        let idsParaBorrar = [];
 
+        // Hacemos las peticiones HTTP al servidor
         for (const reg of registros) {
             try {
-                // Mapeamos al modelo de solicitudes del backend general
                 const respuesta = await fetch('http://localhost:3000/api/solicitudes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -164,18 +169,24 @@ const sincronizarConServidor = async () => {
 
                 const resultado = await respuesta.json();
                 if (resultado.success) {
-                    // Si se subió con éxito, lo borramos de IndexedDB
-                    store.delete(reg.id);
-                    sincronizados++;
+                    idsParaBorrar.push(reg.id); // Guardamos el ID del registro exitoso
                 }
             } catch (err) {
                 console.error('Error sincronizando registro individual:', err);
             }
         }
 
-        if (sincronizados > 0) {
-            alert(`🔄 ¡Sincronización exitosa! Se subieron ${sincronizados} registros al servidor y panel administrativo.`);
-            actualizarContadorPendientes();
+        // Transacción 2: Abrimos una nueva transacción para borrar los que sí subieron
+        if (idsParaBorrar.length > 0) {
+            const deleteTx = db.transaction([STORE_NAME], 'readwrite');
+            const deleteStore = deleteTx.objectStore(STORE_NAME);
+            
+            idsParaBorrar.forEach(id => deleteStore.delete(id));
+
+            deleteTx.oncomplete = () => {
+                alert(`🔄 ¡Sincronización exitosa! Se subieron y limpiaron ${idsParaBorrar.length} registros locales.`);
+                actualizarContadorPendientes();
+            };
         }
     };
 };
