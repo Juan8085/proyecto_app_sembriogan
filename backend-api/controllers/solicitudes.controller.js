@@ -31,6 +31,9 @@ const crearSolicitud = async (req, res) => {
 
         const solicitudGuardada = await nuevaSolicitud.save();
 
+        // ⚡ Notificar a todos los paneles conectados en tiempo real
+        req.io.emit('actualizar-solicitudes');
+
         res.status(201).json({
             success: true,
             mensaje: "Solicitud registrada en la base de datos exitosamente",
@@ -62,6 +65,9 @@ const actualizarEstadoSolicitud = async (req, res) => {
         if (!solicitudActualizada) {
             return res.status(404).json({ success: false, mensaje: "Solicitud no encontrada" });
         }
+
+        // ⚡ Notificar cambios de estado en tiempo real
+        req.io.emit('actualizar-solicitudes');
 
         res.status(200).json({
             success: true,

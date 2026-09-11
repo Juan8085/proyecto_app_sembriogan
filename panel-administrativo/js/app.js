@@ -13,6 +13,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const vistaConfiguracion = document.getElementById('vista-configuracion');
     const tituloSeccion = document.getElementById('titulo-seccion');
 
+
+    // ==========================================
+    // CONEXIÓN WEBSOCKETS (TIEMPO REAL)
+    // ==========================================
+    const socket = io('http://localhost:3000');
+
+    socket.on('connect', () => {
+        console.log('⚡ Conectado al servidor WebSocket en tiempo real');
+    });
+
+    // Cuando el backend emita el evento, recargamos las solicitudes y KPIs automáticamente
+    socket.on('actualizar-solicitudes', () => {
+        console.log('🔄 Sincronización en tiempo real: actualizando tabla y KPIs');
+        cargarSolicitudes();
+    });
+    
     // Función auxiliar para ocultar todo
     const ocultarVistas = () => {
         vistaSolicitudes.style.display = 'none';
