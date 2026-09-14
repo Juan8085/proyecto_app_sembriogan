@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { obtenerContacto, actualizarContacto } = require('../controllers/contacto.controller');
+const { obtenerContactos, crearContacto, eliminarContacto } = require('../controllers/contacto.controller');
 
-router.get('/', obtenerContacto);
-router.post('/', actualizarContacto); // Usa POST para crear/actualizar el registro único
+router.get('/', obtenerContactos);
+router.post('/', crearContacto);
+router.delete('/:id', eliminarContacto);
 
 module.exports = router;

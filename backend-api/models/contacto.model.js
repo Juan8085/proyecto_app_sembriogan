@@ -1,7 +1,7 @@
 const { Schema, model } = require('mongoose');
 
 const ContactoSchema = new Schema({
-    sucursal: { type: String, required: true, default: "Sede Principal Garzón" },
+    sucursal: { type: String, required: true },
     direccion: { type: String, required: true },
     telefono: { type: String, required: true },
     email: { type: String, required: true },

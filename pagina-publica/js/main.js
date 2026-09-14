@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarCarruselPublico();
     cargarTestimoniosPublicos();
     configurarFormularioTestimonio();
+    cargarContactoPublico();
 });
 
 // ==========================================
@@ -326,4 +327,41 @@ const configurarFormularioTestimonio = () => {
             console.error('Error al enviar testimonio:', err);
         }
     });
+};
+// ==========================================
+// CONTACTO DINÁMICO (Múltiples Sedes)
+// ==========================================
+const cargarContactoPublico = async () => {
+    try {
+        const res = await fetch('http://localhost:3000/api/contacto');
+        const data = await res.json();
+        
+        if (data.success && data.data.length > 0) {
+            // 1. Dibuja todas las sedes en el Footer
+            const footerContact = document.querySelector('.footer-contact');
+            if (footerContact) {
+                let htmlSedes = '<h3>Nuestras Sedes</h3>';
+                
+                data.data.forEach(sede => {
+                    htmlSedes += `
+                        <div style="margin-bottom: 15px;">
+                            <p style="margin-bottom: 5px; font-weight: bold; color: var(--primary-color);">${sede.sucursal}</p>
+                            <p style="margin: 2px 0; font-size: 0.9rem;">📍 ${sede.direccion}</p>
+                            <p style="margin: 2px 0; font-size: 0.9rem;">📞 ${sede.telefono} | ✉️ ${sede.email}</p>
+                        </div>
+                    `;
+                });
+                
+                footerContact.innerHTML = htmlSedes;
+            }
+
+            // 2. El botón flotante de WhatsApp usará el número de la PRIMERA sede que hayas registrado (Sede Principal)
+            const btnWpp = document.querySelector('.whatsapp-float');
+            if (btnWpp) {
+                btnWpp.href = `https://wa.me/${data.data[0].whatsapp}?text=Hola%20Sembriogan,%20estoy%20interesado%20en%20sus%20servicios%20veterinarios`;
+            }
+        }
+    } catch (e) {
+        console.error('Error al cargar las sedes:', e);
+    }
 };

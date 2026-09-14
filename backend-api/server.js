@@ -1,22 +1,23 @@
 require('dotenv').config();
 const express = require('express');
-const http = require('http'); // Servidor HTTP nativo para Socket.io
-const { Server } = require('socket.io'); // Importar Socket.io
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const morgan = require('morgan');
 const conectarDB = require('./database/db');
+const path = require('path');
+
+// Importar rutas
 const solicitudesRoutes = require('./routes/solicitudes.routes');
 const catalogoRoutes = require('./routes/catalogo.routes');
 const carruselRoutes = require('./routes/carrusel.routes');
 const testimonioRoutes = require('./routes/testimonio.routes');
 const iaRoutes = require('./routes/ia.routes');
-const path = require('path');
+const contactoRoutes = require('./routes/contacto.routes'); // <-- AQUI ESTA LA RUTA
 
 const app = express();
-const server = http.createServer(app); // Creamos el servidor HTTP envolviendo Express
-const io = new Server(server, {
-    cors: { origin: '*' }
-}); // Inicializamos Socket.io con CORS abierto
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
 
 const PORT = process.env.PORT || 3000;
 
@@ -24,40 +25,34 @@ const PORT = process.env.PORT || 3000;
 conectarDB();
 
 // Middlewares
-app.use('/api/contacto', require('./routes/contacto.routes'));
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/app-veterinario', express.static(path.join(__dirname, '../app-veterinario')));
 
-// Inyectar la instancia de Socket.io en las peticiones (req.io)
+// Sockets
 app.use((req, res, next) => {
     req.io = io;
     next();
 });
 
-// Rutas de la API
+// Registrar Endpoints
 app.use('/api/solicitudes', solicitudesRoutes);
 app.use('/api/catalogo', catalogoRoutes);
 app.use('/api/carrusel', carruselRoutes);
 app.use('/api/testimonios', testimonioRoutes);
 app.use('/api/ia', iaRoutes);
+app.use('/api/contacto', contactoRoutes); // <-- AQUI SE INYECTA EN EXPRESS
 
-// Ruta de prueba
 app.get('/api', (req, res) => {
-    res.json({ 
-        mensaje: 'API REST de Sembriogan inicializada correctamente',
-        estado: 'Online' 
-    });
+    res.json({ mensaje: 'API REST de Sembriogan inicializada', estado: 'Online' });
 });
 
-// Evento de conexión de Socket.io
 io.on('connection', (socket) => {
     console.log('⚡ Cliente conectado por WebSocket:', socket.id);
 });
 
-// IMPORTANTE: Usamos server.listen en lugar de app.listen para activar Socket.io
 server.listen(PORT, () => {
     console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 });

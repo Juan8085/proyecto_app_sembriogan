@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Cargar datos iniciales de todas las secciones
     cargarSolicitudes();
     cargarCatalogo();
-    cargarTestimoniosAdmin(); // <--- ¡AQUÍ ESTABA FALTANDO!
+    cargarTestimoniosAdmin();
+    cargarContactosAdmin();
 
     // 2. Control de Navegación del Menú Lateral
     const navSolicitudes = document.getElementById('nav-solicitudes');
@@ -63,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         navConfiguracion.classList.add('active');
         tituloSeccion.textContent = 'Configuración de la Página Web';
         cargarCarruselAdmin(); // Carga las fotos del carrusel
-        cargarTestimoniosAdmin(); // <--- ¡Y AQUÍ TAMBIÉN PARA QUE SE ACTUALICEN!
+        cargarTestimoniosAdmin();
     });
 
     // 3. Manejo de Formulario de Solicitudes
@@ -418,3 +419,86 @@ const eliminarTestimonio = async (id) => {
     await fetch(`http://localhost:3000/api/testimonios/${id}`, { method: 'DELETE' });
     cargarTestimoniosAdmin();
 };
+
+// ==========================================
+// GESTIÓN DE SUCURSALES (A PRUEBA DE FALLOS)
+// ==========================================
+
+// 1. Delegación de eventos para el formulario (Siempre funcionará)
+document.addEventListener('submit', async (e) => {
+    if (e.target && e.target.id === 'form-contacto') {
+        e.preventDefault(); // Evita que la página se recargue
+        
+        const payload = {
+            sucursal: document.getElementById('contacto-sucursal').value,
+            direccion: document.getElementById('contacto-direccion').value,
+            telefono: document.getElementById('contacto-telefono').value,
+            email: document.getElementById('contacto-email').value,
+            whatsapp: document.getElementById('contacto-whatsapp').value
+        };
+
+        try {
+            const res = await fetch('http://localhost:3000/api/contacto', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                alert('¡Sucursal agregada exitosamente!');
+                e.target.reset(); // Limpiar los campos
+                cargarContactosAdmin(); // Actualizar la tabla
+            } else {
+                alert('Error al guardar: ' + data.mensaje);
+            }
+        } catch (err) {
+            console.error('Error al agregar sucursal:', err);
+            alert('Error de conexión con el servidor.');
+        }
+    }
+});
+
+// 2. Cargar las sucursales en la tabla
+const cargarContactosAdmin = async () => {
+    try {
+        const res = await fetch('http://localhost:3000/api/contacto');
+        const data = await res.json();
+        if (data.success) {
+            const tbody = document.querySelector('#tabla-contactos tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            data.data.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${c.sucursal}</strong></td>
+                    <td>${c.direccion}</td>
+                    <td>📞 ${c.telefono} <br> ✉️ ${c.email} <br> 💬 ${c.whatsapp}</td>
+                    <td>
+                        <button onclick="eliminarSucursal('${c._id}')" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Eliminar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (error) {
+        console.error('Error al cargar sucursales:', error);
+    }
+};
+
+// 3. Eliminar una sucursal
+const eliminarSucursal = async (id) => {
+    if(!confirm('¿Estás seguro de eliminar esta sucursal de la página web?')) return;
+    try {
+        await fetch(`http://localhost:3000/api/contacto/${id}`, { method: 'DELETE' });
+        cargarContactosAdmin();
+    } catch (error) {
+        console.error(error);
+    }
+};
+
+// Asegurar que la tabla cargue cuando el panel inicie
+document.addEventListener('DOMContentLoaded', () => {
+    cargarContactosAdmin();
+});
