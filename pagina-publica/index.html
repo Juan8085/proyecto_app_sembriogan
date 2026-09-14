@@ -11,14 +11,18 @@
     <nav class="navbar">
         <div class="logo-container">
             <img src="img/logo.png" alt="Logo Sembriogan" class="logo">
-            <!-- Eliminamos el <span> con el texto -->
         </div>
         <ul class="nav-links">
             <li><a href="#inicio">Inicio</a></li>
             <li><a href="#catalogo">Catálogo de Servicios</a></li>
             <li><a href="#contacto">Contacto</a></li>
+            <!-- Colocamos el carrito dentro de la lista para mantener la semántica -->
+            <li>
+                <a href="#" id="btn-abrir-carrito" class="cart-icon" style="text-decoration: none; font-size: 1.2rem;">
+                    🛒 <span id="cart-count" style="background: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.9rem;">0</span>
+                </a>
+            </li>
         </ul>
-        <div class="cart-icon">🛒 <span id="cart-count">0</span></div>
     </nav>
 
     <!-- Banner Principal con Carrusel (Hero) -->
@@ -112,7 +116,8 @@
             </div>
         </div>
     </div>
-    <!-- Pie de Página (Contacto) -->
+
+        <!-- Pie de Página (Contacto) -->
     <footer id="contacto" class="footer-section">
         <div class="footer-content">
             <div class="footer-info">
@@ -130,6 +135,21 @@
             <p>&copy; 2026 Sembriogan. Todos los derechos reservados.</p>
         </div>
     </footer>
+
+    <!-- Modal del Carrito de Compras -->
+    <div id="modal-carrito" style="display: none; position: fixed; top: 0; right: 0; width: 350px; height: 100vh; background: white; box-shadow: -4px 0 15px rgba(0,0,0,0.1); z-index: 2000; flex-direction: column;">
+        <div style="padding: 20px; background: var(--primary-color); color: white; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">🛒 Tu Pedido</h3>
+            <button id="cerrar-carrito" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <div id="items-carrito" style="flex: 1; padding: 20px; overflow-y: auto;">
+            <!-- Items dinámicos -->
+        </div>
+        <div style="padding: 20px; border-top: 1px solid #cbd5e1; background: #f8fafc;">
+            <h3 style="margin-bottom: 15px; display: flex; justify-content: space-between;">Total: <span id="total-carrito">$0</span></h3>
+            <button onclick="procesarPagoWeb()" class="btn-primary" style="width: 100%; background: #22c55e; border: none;">Ir a Pagar</button>
+        </div>
+    </div>
 
     <script src="js/main.js"></script>
 </body>

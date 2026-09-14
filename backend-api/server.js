@@ -24,6 +24,7 @@ const PORT = process.env.PORT || 3000;
 conectarDB();
 
 // Middlewares
+app.use('/api/contacto', require('./routes/contacto.routes'));
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());

@@ -49,17 +49,101 @@ const cargarCatalogoPublico = async () => {
 };
 
 // ==========================================
-// 2. SIMULACIÓN DE PASARELA DE PAGOS Y MODO OFFLINE
+// 2. CARRITO DE COMPRAS PÚBLICO Y PAGOS
 // ==========================================
+let carritoWeb = [];
+const formatoCOP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
+// Referencias al DOM del carrito
+const modalCarrito = document.getElementById('modal-carrito');
+const itemsCarritoContenedor = document.getElementById('items-carrito');
+const totalCarritoElem = document.getElementById('total-carrito');
+const btnCerrarCarrito = document.getElementById('cerrar-carrito');
+const btnAbrirCarrito = document.getElementById('btn-abrir-carrito');
+
+// Cerrar carrito
+if (btnCerrarCarrito) {
+    btnCerrarCarrito.addEventListener('click', (e) => {
+        e.preventDefault();
+        modalCarrito.style.display = 'none';
+    });
+}
+
+// Abrir carrito desde el ícono
+if (btnAbrirCarrito) {
+    btnAbrirCarrito.addEventListener('click', (e) => {
+        e.preventDefault();
+        actualizarInterfazCarrito();
+        modalCarrito.style.display = 'flex';
+    });
+}
+
 window.iniciarCompra = (producto, precio) => {
-    const formatoCOP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
-    alert(`🛒 Iniciando proceso de compra seguro.\n\nProducto: ${producto}\nTotal a pagar: ${formatoCOP.format(precio)}\n\n(Aquí se desplegará el widget de pago o se guardará la orden offline en la tablet del veterinario).`);
+    // Agregar al array
+    carritoWeb.push({ producto, precio });
     
+    // Actualizar icono de carrito en el menú (si existe)
     let countElem = document.getElementById('cart-count');
-    if(countElem) {
-        let count = parseInt(countElem.innerText);
-        countElem.innerText = count + 1;
+    if(countElem) countElem.innerText = carritoWeb.length;
+
+    actualizarInterfazCarrito();
+    modalCarrito.style.display = 'flex'; // Abrir el panel lateral
+};
+
+const actualizarInterfazCarrito = () => {
+    if (!itemsCarritoContenedor) return;
+    
+    itemsCarritoContenedor.innerHTML = '';
+    let total = 0;
+
+    if (carritoWeb.length === 0) {
+        itemsCarritoContenedor.innerHTML = '<p style="color: #64748b; text-align: center; margin-top: 20px;">El carrito está vacío.</p>';
+        totalCarritoElem.innerText = '$0';
+        return;
     }
+
+    carritoWeb.forEach((item, index) => {
+        total += item.precio;
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.justifyContent = 'space-between';
+        div.style.alignItems = 'center';
+        div.style.marginBottom = '15px';
+        div.style.paddingBottom = '10px';
+        div.style.borderBottom = '1px solid #e2e8f0';
+
+        div.innerHTML = `
+            <div>
+                <h4 style="margin: 0; color: #0f172a; font-size: 0.95rem;">${item.producto}</h4>
+                <span style="color: var(--primary-color); font-weight: bold; font-size: 0.9rem;">${formatoCOP.format(item.precio)}</span>
+            </div>
+            <button onclick="eliminarDelCarrito(${index})" style="background: #ef4444; color: white; border: none; border-radius: 4px; padding: 5px 8px; cursor: pointer;">X</button>
+        `;
+        itemsCarritoContenedor.appendChild(div);
+    });
+
+    totalCarritoElem.innerText = formatoCOP.format(total);
+};
+
+window.eliminarDelCarrito = (index) => {
+    carritoWeb.splice(index, 1);
+    let countElem = document.getElementById('cart-count');
+    if(countElem) countElem.innerText = carritoWeb.length;
+    actualizarInterfazCarrito();
+};
+
+window.procesarPagoWeb = () => {
+    if (carritoWeb.length === 0) {
+        alert('Agrega al menos un servicio al carrito.');
+        return;
+    }
+    
+    // Aquí integraremos el widget de Wompi / MercadoPago en la siguiente fase.
+    // Por ahora, generamos la orden hacia WhatsApp o el Backend.
+    const resumen = carritoWeb.map(i => i.producto).join(', ');
+    const total = carritoWeb.reduce((acc, curr) => acc + curr.precio, 0);
+    
+    alert(`Redirigiendo a Pasarela de Pagos...\n\nOrden: ${resumen}\nTotal a debitar: ${formatoCOP.format(total)}`);
 };
 
 // ==========================================
