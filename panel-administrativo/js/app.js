@@ -1,4 +1,28 @@
-document.addEventListener('DOMContentLoaded', () => {
+// ==========================================
+// SEGURIDAD: VERIFICACIÓN DE SESIÓN (JWT)
+// ==========================================
+const token = localStorage.getItem('tokenSembriogan');
+const usuarioData = JSON.parse(localStorage.getItem('usuarioSembriogan'));
+
+// Si no hay token, lo devolvemos a patadas al login
+if (!token) {
+    window.location.href = 'login.html';
+}document.addEventListener('DOMContentLoaded', () => {
+
+    // Mostrar el nombre del usuario logueado
+    if (usuarioData && usuarioData.nombre) {
+        document.getElementById('nombre-usuario').textContent = `${usuarioData.nombre} (${usuarioData.rol})`;
+    }
+
+    // Lógica para cerrar sesión
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            localStorage.removeItem('tokenSembriogan');
+            localStorage.removeItem('usuarioSembriogan');
+            window.location.href = 'login.html';
+        });
+    }
     // 1. Cargar datos iniciales de todas las secciones
     cargarSolicitudes();
     cargarCatalogo();
@@ -171,7 +195,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const cargarSolicitudes = async () => {
     try {
-        const respuesta = await fetch('http://localhost:3000/api/solicitudes');
+        // Le añadimos el header de Authorization con el token
+        const respuesta = await fetch('http://localhost:3000/api/solicitudes', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         const resultado = await respuesta.json();
 
         if (resultado.success) {
@@ -240,7 +269,10 @@ const actualizarEstado = async (id, nuevoEstado) => {
     try {
         const respuesta = await fetch(`http://localhost:3000/api/solicitudes/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // <- Aquí enviamos el pase de Admin
+            },
             body: JSON.stringify({ estado: nuevoEstado })
         });
         

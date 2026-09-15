@@ -1,14 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { obtenerSolicitudes, crearSolicitud, actualizarEstadoSolicitud } = require('../controllers/solicitudes.controller');
+const { obtenerSolicitudes, crearSolicitud, actualizarEstado } = require('../controllers/solicitudes.controller');
 
-// GET /api/solicitudes - Listar todas
-router.get('/', obtenerSolicitudes);
+// Importamos a nuestro vigilante
+const { verificarToken, esAdmin } = require('../middlewares/auth.middleware');
 
-// POST /api/solicitudes - Crear una nueva
+// 🔒 Rutas Protegidas:
+// Para ver las solicitudes, OBLIGAMOS a que tenga un token válido (verificarToken)
+router.get('/', verificarToken, obtenerSolicitudes);
+
+// Para actualizar estados, OBLIGAMOS a que tenga un token Y que además sea Administrador
+router.put('/:id', verificarToken, esAdmin, actualizarEstado);
+
+// 🔓 Rutas Públicas:
+// Cualquiera puede CREAR una solicitud (ya sea desde la web pública con Wompi o el formulario)
 router.post('/', crearSolicitud);
-
-// PUT /api/solicitudes/:id - Actualizar estado (¡Esta es la nueva ruta!)
-router.put('/:id', actualizarEstadoSolicitud);
 
 module.exports = router;

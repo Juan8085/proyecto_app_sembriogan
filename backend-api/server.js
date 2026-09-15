@@ -13,7 +13,8 @@ const catalogoRoutes = require('./routes/catalogo.routes');
 const carruselRoutes = require('./routes/carrusel.routes');
 const testimonioRoutes = require('./routes/testimonio.routes');
 const iaRoutes = require('./routes/ia.routes');
-const contactoRoutes = require('./routes/contacto.routes'); // <-- AQUI ESTA LA RUTA
+const contactoRoutes = require('./routes/contacto.routes');
+const authRoutes = require('./routes/auth.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -43,7 +44,8 @@ app.use('/api/catalogo', catalogoRoutes);
 app.use('/api/carrusel', carruselRoutes);
 app.use('/api/testimonios', testimonioRoutes);
 app.use('/api/ia', iaRoutes);
-app.use('/api/contacto', contactoRoutes); // <-- AQUI SE INYECTA EN EXPRESS
+app.use('/api/contacto', contactoRoutes);
+app.use('/api/auth', authRoutes);
 
 app.get('/api', (req, res) => {
     res.json({ mensaje: 'API REST de Sembriogan inicializada', estado: 'Online' });

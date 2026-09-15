@@ -23,9 +23,12 @@
 
         <!-- Contenido Principal -->
         <main class="main-content">
-            <header class="top-header">
+            <header class="top-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h1 id="titulo-seccion">Gestión de Solicitudes</h1>
-                <span class="user-role">Administrador</span>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span class="user-role" id="nombre-usuario" style="font-weight: bold; color: var(--primary-color);">Cargando...</span>
+                    <button id="btn-logout" style="background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Salir</button>
+                </div>
             </header>
 
             <!-- =============================== -->

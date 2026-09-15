@@ -45,7 +45,7 @@ const crearSolicitud = async (req, res) => {
 };
 
 // Actualizar el estado de una solicitud
-const actualizarEstadoSolicitud = async (req, res) => {
+const actualizarEstado = async (req, res) => {
     try {
         const { id } = req.params;
         const { estado } = req.body;
@@ -82,5 +82,5 @@ const actualizarEstadoSolicitud = async (req, res) => {
 module.exports = {
     obtenerSolicitudes,
     crearSolicitud,
-    actualizarEstadoSolicitud // <- Añade esto
+    actualizarEstado, // <- Añade esto
 };
