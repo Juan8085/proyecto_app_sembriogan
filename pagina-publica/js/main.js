@@ -135,16 +135,64 @@ window.eliminarDelCarrito = (index) => {
 
 window.procesarPagoWeb = () => {
     if (carritoWeb.length === 0) {
-        alert('Agrega al menos un servicio al carrito.');
+        alert('Agrega al menos un servicio al carrito para poder pagar.');
         return;
     }
     
-    // Aquí integraremos el widget de Wompi / MercadoPago en la siguiente fase.
-    // Por ahora, generamos la orden hacia WhatsApp o el Backend.
+    // Calculamos el total y los nombres de los servicios
     const resumen = carritoWeb.map(i => i.producto).join(', ');
     const total = carritoWeb.reduce((acc, curr) => acc + curr.precio, 0);
+    const referenciaUnica = 'SEMBRIOGAN-' + Date.now();
     
-    alert(`Redirigiendo a Pasarela de Pagos...\n\nOrden: ${resumen}\nTotal a debitar: ${formatoCOP.format(total)}`);
+    // Instanciamos el Checkout de Wompi
+    const checkout = new WidgetCheckout({
+        currency: 'COP',
+        amountInCents: total * 100, // Wompi procesa en centavos
+        reference: referenciaUnica,
+        publicKey: 'pub_test_ljKW2orNya3GoWqfTCl1wu6vOy50mnnh', // <--- Tu llave pub_test_
+        // ¡ELIMINAMOS EL redirectUrl POR COMPLETO!
+        taxes: {
+            vat: { amountInCents: 0 }
+        }
+    });
+
+    // Abrimos la pasarela
+    checkout.open((result) => {
+        const transaction = result.transaction;
+        
+        if (transaction.status === 'APPROVED') {
+            alert(`✅ ¡Pago Exitoso!\nReferencia: ${transaction.id}\nServicios: ${resumen}`);
+            
+            // Enviar orden al backend
+            registrarOrdenPagada(resumen, total, transaction.id);
+            
+            // Limpiamos carrito
+            carritoWeb = [];
+            let countElem = document.getElementById('cart-count');
+            if(countElem) countElem.innerText = '0';
+            actualizarInterfazCarrito();
+            document.getElementById('modal-carrito').style.display = 'none';
+        } else {
+            alert('❌ El pago no pudo ser procesado. Estado: ' + transaction.status);
+        }
+    });
+};
+
+// Función para enviar la orden confirmada a tu base de datos y panel administrativo
+const registrarOrdenPagada = async (servicios, total, idTransaccion) => {
+    try {
+        await fetch('http://localhost:3000/api/solicitudes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                productor: "Cliente Web (Pago Wompi)",
+                finca: "Ref: " + idTransaccion,
+                servicio: `[PAGADO ONLINE] ${servicios} (Total: $${total})`
+            })
+        });
+    } catch (e) {
+        console.error('Error al registrar la solicitud pagada en la BD:', e);
+    }
 };
 
 // ==========================================
