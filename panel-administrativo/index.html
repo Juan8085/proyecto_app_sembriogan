@@ -18,6 +18,7 @@
                 <li><a href="#" id="nav-solicitudes" class="active">Dashboard / Solicitudes</a></li>
                 <li><a href="#" id="nav-catalogo">Catálogo de Servicios</a></li>
                 <li><a href="#" id="nav-configuracion">Configuración (Web)</a></li>
+                <li><a href="#" id="nav-usuarios">Gestión de Personal</a></li>
             </ul>
         </aside>
 
@@ -244,6 +245,37 @@
                             <!-- Dinámico con JS -->
                         </tbody>
                     </table>
+                </section>
+            </div>
+
+            <!-- =============================== -->
+            <!-- VISTA 4: GESTIÓN DE USUARIOS      -->
+            <!-- =============================== -->
+            <div id="vista-usuarios" style="display: none;">
+                <section class="card">
+                    <h2>Registrar Nuevo Usuario / Veterinario</h2>
+                    <form id="form-usuario">
+                        <div class="form-group">
+                            <label for="nuevo-nombre">Nombre Completo:</label>
+                            <input type="text" id="nuevo-nombre" required placeholder="Ej. Dr. Carlos Pérez">
+                        </div>
+                        <div class="form-group">
+                            <label for="nuevo-email">Correo Electrónico:</label>
+                            <input type="email" id="nuevo-email" required placeholder="veterinario@sembriogan.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="nuevo-password">Contraseña Temporal:</label>
+                            <input type="password" id="nuevo-password" required placeholder="********">
+                        </div>
+                        <div class="form-group">
+                            <label for="nuevo-rol">Rol en la Empresa:</label>
+                            <select id="nuevo-rol" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                                <option value="Veterinario">Veterinario / Operador</option>
+                                <option value="Admin">Administrador</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary">Crear Cuenta</button>
+                    </form>
                 </section>
             </div>
         </main>

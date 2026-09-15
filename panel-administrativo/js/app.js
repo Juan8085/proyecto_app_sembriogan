@@ -4,14 +4,19 @@
 const token = localStorage.getItem('tokenSembriogan');
 const usuarioData = JSON.parse(localStorage.getItem('usuarioSembriogan'));
 
-// Si no hay token, lo devolvemos a patadas al login
+// Si no hay token, lo devolvemos al login
 if (!token) {
     window.location.href = 'login.html';
-}document.addEventListener('DOMContentLoaded', () => {
+}
+
+document.addEventListener('DOMContentLoaded', () => {
 
     // Mostrar el nombre del usuario logueado
     if (usuarioData && usuarioData.nombre) {
-        document.getElementById('nombre-usuario').textContent = `${usuarioData.nombre} (${usuarioData.rol})`;
+        const nombreUsuarioElem = document.getElementById('nombre-usuario');
+        if (nombreUsuarioElem) {
+            nombreUsuarioElem.textContent = `${usuarioData.nombre} (${usuarioData.rol})`;
+        }
     }
 
     // Lógica para cerrar sesión
@@ -23,6 +28,7 @@ if (!token) {
             window.location.href = 'login.html';
         });
     }
+
     // 1. Cargar datos iniciales de todas las secciones
     cargarSolicitudes();
     cargarCatalogo();
@@ -33,11 +39,14 @@ if (!token) {
     const navSolicitudes = document.getElementById('nav-solicitudes');
     const navCatalogo = document.getElementById('nav-catalogo');
     const navConfiguracion = document.getElementById('nav-configuracion');
+    const navUsuarios = document.getElementById('nav-usuarios');
+
     const vistaSolicitudes = document.getElementById('vista-solicitudes');
     const vistaCatalogo = document.getElementById('vista-catalogo');
     const vistaConfiguracion = document.getElementById('vista-configuracion');
+    const vistaUsuarios = document.getElementById('vista-usuarios');
+    
     const tituloSeccion = document.getElementById('titulo-seccion');
-
 
     // ==========================================
     // CONEXIÓN WEBSOCKETS (TIEMPO REAL)
@@ -48,48 +57,66 @@ if (!token) {
         console.log('⚡ Conectado al servidor WebSocket en tiempo real');
     });
 
-    // Cuando el backend emita el evento, recargamos las solicitudes y KPIs automáticamente
     socket.on('actualizar-solicitudes', () => {
         console.log('🔄 Sincronización en tiempo real: actualizando tabla y KPIs');
         cargarSolicitudes();
     });
     
-    // Función auxiliar para ocultar todo
+    // Función auxiliar para ocultar todas las vistas
     const ocultarVistas = () => {
-        vistaSolicitudes.style.display = 'none';
-        vistaCatalogo.style.display = 'none';
-        vistaConfiguracion.style.display = 'none';
-        navSolicitudes.classList.remove('active');
-        navCatalogo.classList.remove('active');
-        navConfiguracion.classList.remove('active');
+        if (vistaSolicitudes) vistaSolicitudes.style.display = 'none';
+        if (vistaCatalogo) vistaCatalogo.style.display = 'none';
+        if (vistaConfiguracion) vistaConfiguracion.style.display = 'none';
+        if (vistaUsuarios) vistaUsuarios.style.display = 'none';
+
+        if (navSolicitudes) navSolicitudes.classList.remove('active');
+        if (navCatalogo) navCatalogo.classList.remove('active');
+        if (navConfiguracion) navConfiguracion.classList.remove('active');
+        if (navUsuarios) navUsuarios.classList.remove('active');
     };
 
-    navSolicitudes.addEventListener('click', (e) => {
-        e.preventDefault();
-        ocultarVistas();
-        vistaSolicitudes.style.display = 'block';
-        navSolicitudes.classList.add('active');
-        tituloSeccion.textContent = 'Gestión de Solicitudes';
-    });
+    if (navSolicitudes) {
+        navSolicitudes.addEventListener('click', (e) => {
+            e.preventDefault();
+            ocultarVistas();
+            vistaSolicitudes.style.display = 'block';
+            navSolicitudes.classList.add('active');
+            tituloSeccion.textContent = 'Gestión de Solicitudes';
+        });
+    }
 
-    navCatalogo.addEventListener('click', (e) => {
-        e.preventDefault();
-        ocultarVistas();
-        vistaCatalogo.style.display = 'block';
-        navCatalogo.classList.add('active');
-        tituloSeccion.textContent = 'Catálogo de Servicios';
-    });
+    if (navCatalogo) {
+        navCatalogo.addEventListener('click', (e) => {
+            e.preventDefault();
+            ocultarVistas();
+            vistaCatalogo.style.display = 'block';
+            navCatalogo.classList.add('active');
+            tituloSeccion.textContent = 'Catálogo de Servicios';
+        });
+    }
 
-    // Evento de la pestaña de configuración
-    navConfiguracion.addEventListener('click', (e) => {
-        e.preventDefault();
-        ocultarVistas();
-        vistaConfiguracion.style.display = 'block';
-        navConfiguracion.classList.add('active');
-        tituloSeccion.textContent = 'Configuración de la Página Web';
-        cargarCarruselAdmin(); // Carga las fotos del carrusel
-        cargarTestimoniosAdmin();
-    });
+    if (navConfiguracion) {
+        navConfiguracion.addEventListener('click', (e) => {
+            e.preventDefault();
+            ocultarVistas();
+            vistaConfiguracion.style.display = 'block';
+            navConfiguracion.classList.add('active');
+            tituloSeccion.textContent = 'Configuración de la Página Web';
+            cargarCarruselAdmin();
+            cargarTestimoniosAdmin();
+            cargarContactosAdmin();
+        });
+    }
+
+    if (navUsuarios) {
+        navUsuarios.addEventListener('click', (e) => {
+            e.preventDefault();
+            ocultarVistas();
+            vistaUsuarios.style.display = 'block';
+            navUsuarios.classList.add('active');
+            tituloSeccion.textContent = 'Gestión de Personal y Roles';
+        });
+    }
 
     // 3. Manejo de Formulario de Solicitudes
     const formSolicitud = document.getElementById('form-solicitud');
@@ -140,7 +167,7 @@ if (!token) {
             try {
                 const respuesta = await fetch('http://localhost:3000/api/catalogo', {
                     method: 'POST',
-                    body: formData // Sin headers de tipo de contenido para permitir FormData
+                    body: formData
                 });
                 const resultado = await respuesta.json();
 
@@ -156,9 +183,8 @@ if (!token) {
             }
         });
     }
-});
 
-// 5. Manejo de Formulario del Carrusel
+    // 5. Manejo de Formulario del Carrusel
     const formCarrusel = document.getElementById('form-carrusel');
     if (formCarrusel) {
         formCarrusel.addEventListener('submit', async (e) => {
@@ -179,7 +205,7 @@ if (!token) {
                 if (resultado.success) {
                     alert('¡Imagen subida al carrusel exitosamente!');
                     formCarrusel.reset();
-                    cargarCarruselAdmin(); // Recargar la galería
+                    cargarCarruselAdmin();
                 } else {
                     alert('Error: ' + resultado.mensaje);
                 }
@@ -189,13 +215,50 @@ if (!token) {
         });
     }
 
+    // 6. Manejo de Formulario de Registro de Usuarios (Veterinarios/Admin)
+    const formUsuario = document.getElementById('form-usuario');
+    if (formUsuario) {
+        formUsuario.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const payload = {
+                nombre: document.getElementById('nuevo-nombre').value,
+                email: document.getElementById('nuevo-email').value,
+                password: document.getElementById('nuevo-password').value,
+                rol: document.getElementById('nuevo-rol').value
+            };
+
+            try {
+                const res = await fetch('http://localhost:3000/api/auth/registro', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    alert('¡Cuenta creada exitosamente para el personal!');
+                    formUsuario.reset();
+                } else {
+                    alert('Error: ' + data.mensaje);
+                }
+            } catch (err) {
+                console.error('Error al registrar usuario:', err);
+                alert('Error de conexión con el servidor.');
+            }
+        });
+    }
+});
+
 // ==========================================
 // FUNCIONES GLOBALES DE CARGA Y GESTIÓN
 // ==========================================
 
 const cargarSolicitudes = async () => {
     try {
-        // Le añadimos el header de Authorization con el token
         const respuesta = await fetch('http://localhost:3000/api/solicitudes', {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -214,16 +277,14 @@ const cargarSolicitudes = async () => {
             let completadas = 0;
             let ventasTotales = 0;
 
-            // Formateador de moneda colombiana
             const formatoCOP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
 
             resultado.data.forEach(solicitud => {
-                // Conteo de KPIs según estado
                 if (solicitud.estado === 'Pendiente') pendientes++;
                 if (solicitud.estado === 'En Proceso') enProceso++;
                 if (solicitud.estado === 'Completadas' || solicitud.estado === 'Completada') {
                     completadas++;
-                    ventasTotales += (solicitud.costo || 150000); // Estimado base o costo real del servicio
+                    ventasTotales += (solicitud.costo || 150000);
                 }
 
                 const fila = document.createElement('tr');
@@ -245,7 +306,6 @@ const cargarSolicitudes = async () => {
                 tbody.appendChild(fila);
             });
 
-            // Actualizar los elementos visuales de las tarjetas KPIs
             document.getElementById('kpi-total').textContent = total;
             document.getElementById('kpi-pendientes').textContent = pendientes;
             document.getElementById('kpi-proceso').textContent = enProceso;
@@ -271,7 +331,7 @@ const actualizarEstado = async (id, nuevoEstado) => {
             method: 'PUT',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // <- Aquí enviamos el pase de Admin
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ estado: nuevoEstado })
         });
@@ -363,7 +423,7 @@ const eliminarImagenCarrusel = async (id) => {
         const resultado = await respuesta.json();
 
         if (resultado.success) {
-            cargarCarruselAdmin(); // Recargamos para que desaparezca
+            cargarCarruselAdmin();
         } else {
             alert('Error al eliminar: ' + resultado.mensaje);
         }
@@ -372,6 +432,9 @@ const eliminarImagenCarrusel = async (id) => {
     }
 };
 
+// ==========================================
+// GESTIÓN DE TESTIMONIOS
+// ==========================================
 const formTestimonio = document.getElementById('form-testimonio');
 if (formTestimonio) {
     formTestimonio.addEventListener('submit', async (e) => {
@@ -446,20 +509,12 @@ const eliminarTestimonioAdmin = async (id) => {
     cargarTestimoniosAdmin();
 };
 
-const eliminarTestimonio = async (id) => {
-    if(!confirm('¿Eliminar testimonio?')) return;
-    await fetch(`http://localhost:3000/api/testimonios/${id}`, { method: 'DELETE' });
-    cargarTestimoniosAdmin();
-};
-
 // ==========================================
-// GESTIÓN DE SUCURSALES (A PRUEBA DE FALLOS)
+// GESTIÓN DE SUCURSALES
 // ==========================================
-
-// 1. Delegación de eventos para el formulario (Siempre funcionará)
 document.addEventListener('submit', async (e) => {
     if (e.target && e.target.id === 'form-contacto') {
-        e.preventDefault(); // Evita que la página se recargue
+        e.preventDefault();
         
         const payload = {
             sucursal: document.getElementById('contacto-sucursal').value,
@@ -479,8 +534,8 @@ document.addEventListener('submit', async (e) => {
             
             if (data.success) {
                 alert('¡Sucursal agregada exitosamente!');
-                e.target.reset(); // Limpiar los campos
-                cargarContactosAdmin(); // Actualizar la tabla
+                e.target.reset();
+                cargarContactosAdmin();
             } else {
                 alert('Error al guardar: ' + data.mensaje);
             }
@@ -491,7 +546,6 @@ document.addEventListener('submit', async (e) => {
     }
 });
 
-// 2. Cargar las sucursales en la tabla
 const cargarContactosAdmin = async () => {
     try {
         const res = await fetch('http://localhost:3000/api/contacto');
@@ -519,7 +573,6 @@ const cargarContactosAdmin = async () => {
     }
 };
 
-// 3. Eliminar una sucursal
 const eliminarSucursal = async (id) => {
     if(!confirm('¿Estás seguro de eliminar esta sucursal de la página web?')) return;
     try {
@@ -529,8 +582,3 @@ const eliminarSucursal = async (id) => {
         console.error(error);
     }
 };
-
-// Asegurar que la tabla cargue cuando el panel inicie
-document.addEventListener('DOMContentLoaded', () => {
-    cargarContactosAdmin();
-});
