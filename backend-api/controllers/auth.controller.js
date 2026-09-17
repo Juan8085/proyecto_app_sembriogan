@@ -7,26 +7,35 @@ const registrarUsuario = async (req, res) => {
     try {
         const { nombre, email, password, rol } = req.body;
 
-        // Verificar si el correo ya existe
+        // Verificar si ya existe el correo
         const existeUsuario = await Usuario.findOne({ email });
         if (existeUsuario) {
             return res.status(400).json({ success: false, mensaje: "El correo ya está registrado" });
         }
 
-        // Encriptar la contraseña (hash)
+        // REGLA INTELIGENTE: Contar cuántos usuarios hay en total en la BD
+        const totalUsuarios = await Usuario.countDocuments();
+
+        let rolAsignado = rol || 'Cliente';
+
+        // Si la base de datos está COMPLETAMENTE VACÍA, el primer usuario SERÁ ADMIN por fuerza
+        if (totalUsuarios === 0) {
+            rolAsignado = 'Admin';
+        }
+
+        // Encriptar contraseña
         const salt = await bcrypt.genSalt(10);
         const passwordEncriptado = await bcrypt.hash(password, salt);
 
-        // Crear y guardar el usuario
         const nuevoUsuario = new Usuario({
             nombre,
             email,
             password: passwordEncriptado,
-            rol: rol || 'Cliente'
+            rol: rolAsignado
         });
 
         await nuevoUsuario.save();
-        res.status(201).json({ success: true, mensaje: "Usuario registrado con éxito" });
+        res.status(201).json({ success: true, mensaje: `Usuario registrado con éxito como ${rolAsignado}` });
 
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
