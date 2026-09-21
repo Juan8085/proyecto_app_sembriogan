@@ -716,5 +716,64 @@ const restablecerPassword = async (id) => {
     } catch (e) { console.error(e); }
 };
 
-// Llama a esta función cuando el usuario haga clic en la pestaña de Gestión de Personal
-// (Asegúrate de agregar cargarUsuariosAdmin(); dentro del evento de clic de navUsuarios en tu app.js)
+// ==========================================
+// EXPORTAR INFORMACIÓN A EXCEL (CSV)
+// ==========================================
+
+const descargarArchivoCSV = (nombreArchivo, contenidoCSV) => {
+    // Añadimos el BOM (\uFEFF) para que Excel reconozca las tildes y eñes correctamente
+    const blob = new Blob(["\uFEFF" + contenidoCSV], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', nombreArchivo);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+const exportarExcelSolicitudes = async () => {
+    try {
+        const respuesta = await fetch('http://localhost:3000/api/solicitudes', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const resultado = await respuesta.json();
+
+        if (resultado.success && resultado.data.length > 0) {
+            let csv = "Productor,Finca,Servicio,Estado,Fecha\n";
+            resultado.data.forEach(s => {
+                csv += `"${s.productor}","${s.finca}","${s.servicio}","${s.estado}","${s.fecha}"\n`;
+            });
+            descargarArchivoCSV(`Reporte_Solicitudes_Sembriogan_${Date.now()}.csv`, csv);
+        } else {
+            alert('No hay solicitudes registradas para exportar.');
+        }
+    } catch (e) {
+        console.error('Error al exportar solicitudes:', e);
+        alert('Error al generar el archivo Excel.');
+    }
+};
+
+const exportarExcelGenetica = async () => {
+    try {
+        const respuesta = await fetch('http://localhost:3000/api/registro-genetico', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const resultado = await respuesta.json();
+
+        if (resultado.success && resultado.data.length > 0) {
+            let csv = "Productor,Finca,Chapeta Vaca,Tecnica,Genetica Utilizada,Fecha Procedimiento,Fecha Palpacion,Estado Prenez,Veterinario\n";
+            resultado.data.forEach(r => {
+                const fProc = r.fechaProcedimiento ? new Date(r.fechaProcedimiento).toLocaleDateString('es-CO') : '';
+                const fPalp = r.fechaPalpacion ? new Date(r.fechaPalpacion).toLocaleDateString('es-CO') : '';
+                csv += `"${r.productor}","${r.finca}","${r.animalId}","${r.tipoProcedimiento}","${r.geneticaUtilizada}","${fProc}","${fPalp}","${r.estadoPrenez}","${r.veterinarioAsignado}"\n`;
+            });
+            descargarArchivoCSV(`Reporte_Genetica_Sembriogan_${Date.now()}.csv`, csv);
+        } else {
+            alert('No hay registros genéticos para exportar.');
+        }
+    } catch (e) {
+        console.error('Error al exportar genética:', e);
+        alert('Error al generar el archivo Excel.');
+    }
+};

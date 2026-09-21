@@ -37,6 +37,10 @@
             <!-- VISTA 1: SOLICITUDES            -->
             <!-- =============================== -->
             <div id="vista-solicitudes">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h2 style="margin: 0;">Gestión de Solicitudes de Servicios</h2>
+                    <button onclick="exportarExcelSolicitudes()" style="background: #10b981; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">📊 Exportar Excel</button>
+                </div>
                 <!-- Tarjetas de KPIs y Métricas -->
                 <div class="kpi-container">
                     <div class="kpi-card">
@@ -304,6 +308,10 @@
             <div id="vista-genetica" style="display: none;">
                 <section class="card">
                     <h2>Historial de Biotecnología Reproductiva (IA, IATF, TE)</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h2 style="margin: 0;">Historial de Biotecnología Reproductiva</h2>
+                        <button onclick="exportarExcelGenetica()" style="background: #10b981; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">📊 Exportar Excel</button>
+                    </div>
                     <table id="tabla-genetica">
                         <thead>
                             <tr>

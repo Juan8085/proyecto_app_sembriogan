@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (vistaHistorial) vistaHistorial.classList.add('hidden');
         
         if (tabRegistro) tabRegistro.classList.remove('active');
-        if (tabOtros) tabOtros.classList.remove('active');
+        if (tabOtros) tabOtros.classList.remove('active'); // Corregido: tabOtros en lugar de tabOthers
         if (tabTienda) tabTienda.classList.remove('active');
         if (tabHistorial) tabHistorial.classList.remove('active');
     };
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4. Guardar Registro Genético
+    // 4. Guardar Registro Genético (Robusto para Offline)
     const formGenetica = document.getElementById('form-genetica');
     if (formGenetica) {
         formGenetica.addEventListener('submit', async (e) => {
@@ -100,15 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 veterinarioAsignado: datosVet.nombre
             };
 
-            if (!navigator.onLine) {
-                let offlineData = JSON.parse(localStorage.getItem('sembriogan_offline_genetica')) || [];
-                offlineData.push(payload);
-                localStorage.setItem('sembriogan_offline_genetica', JSON.stringify(offlineData));
-                alert('📱 Sin conexión. Registro guardado en el celular.');
-                formGenetica.reset();
-                return;
-            }
-
             try {
                 const res = await fetch('http://localhost:3000/api/registro-genetico', {
                     method: 'POST',
@@ -116,28 +107,60 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
+                
                 if (data.success) {
                     alert('¡Procedimiento guardado exitosamente en la nube!');
                     formGenetica.reset();
+                } else {
+                    throw new Error(data.mensaje || 'Error al guardar');
                 }
             } catch (error) {
-                alert('Error de conexión.');
+                let offlineData = JSON.parse(localStorage.getItem('sembriogan_offline_genetica')) || [];
+                offlineData.push(payload);
+                localStorage.setItem('sembriogan_offline_genetica', JSON.stringify(offlineData));
+                alert('📱 Sin conexión detectada. Registro guardado localmente en el dispositivo. Se sincronizará automáticamente al restablecer la señal.');
+                formGenetica.reset();
             }
         });
     }
 
-    // 5. Tienda / POS Wompi
+    // 5. Tienda / POS Wompi Dinámica (Cargada desde el Catálogo)
     const posProducto = document.getElementById('pos-producto');
     const posCantidad = document.getElementById('pos-cantidad');
     const posTotalText = document.getElementById('pos-total-text');
-    let totalPagoWompi = 50000;
-    let nombreProductoPago = 'Pajilla Angus';
+    let totalPagoWompi = 0;
+    let nombreProductoPago = '';
+
+    const cargarCatalogoPOS = async () => {
+        if (!posProducto) return;
+        try {
+            const res = await fetch('http://localhost:3000/api/catalogo');
+            const data = await res.json();
+
+            if (data.success && data.data.length > 0) {
+                posProducto.innerHTML = '';
+                data.data.forEach((item) => {
+                    const option = document.createElement('option');
+                    option.value = `${item.costo}|${item.tipo}`;
+                    option.textContent = `${item.tipo} - $${new Intl.NumberFormat('es-CO').format(item.costo)}`;
+                    posProducto.appendChild(option);
+                });
+                calcularTotalPOS();
+            } else {
+                posProducto.innerHTML = '<option value="0|Sin productos">No hay productos disponibles</option>';
+            }
+        } catch (error) {
+            console.error('Error al cargar catálogo para POS:', error);
+        }
+    };
 
     const calcularTotalPOS = () => {
         if (!posProducto || !posCantidad || !posTotalText) return;
+        if (!posProducto.value) return;
+        
         const valores = posProducto.value.split('|');
-        const precioUnitario = parseInt(valores[0]);
-        nombreProductoPago = valores[1];
+        const precioUnitario = parseInt(valores[0]) || 0;
+        nombreProductoPago = valores[1] || 'Servicio Sembriogan';
         const cantidad = parseInt(posCantidad.value) || 1;
         
         totalPagoWompi = precioUnitario * cantidad;
@@ -147,11 +170,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (posProducto) posProducto.addEventListener('change', calcularTotalPOS);
     if (posCantidad) posCantidad.addEventListener('input', calcularTotalPOS);
 
+    cargarCatalogoPOS();
+
     const btnPagarWompi = document.getElementById('btn-pagar-wompi');
     if (btnPagarWompi) {
         btnPagarWompi.addEventListener('click', () => {
             if (!navigator.onLine) {
                 alert('❌ Necesitas conexión a internet para procesar pagos con tarjeta en Wompi.');
+                return;
+            }
+
+            if (totalPagoWompi <= 0) {
+                alert('❌ Selecciona un producto válido.');
                 return;
             }
 
@@ -177,7 +207,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Cargar Historial
+// Detectar cuando vuelva el internet y enviar los datos pendientes
+window.addEventListener('online', async () => {
+    let offlineData = JSON.parse(localStorage.getItem('sembriogan_offline_genetica')) || [];
+    if (offlineData.length > 0) {
+        alert(`🔄 Conexión restablecida. Sincronizando ${offlineData.length} registros pendientes a la nube...`);
+        try {
+            for (let payload of offlineData) {
+                await fetch('http://localhost:3000/api/registro-genetico', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+            }
+            localStorage.removeItem('sembriogan_offline_genetica');
+            alert('✅ ¡Sincronización completada con éxito!');
+            cargarMiHistorial();
+        } catch (err) {
+            console.error('Error al sincronizar datos offline:', err);
+        }
+    }
+});
+
+// Cargar Historial y permitir actualización de diagnóstico
 const cargarMiHistorial = async () => {
     const lista = document.getElementById('lista-historial');
     if (!lista) return;
@@ -200,19 +252,59 @@ const cargarMiHistorial = async () => {
 
             misRegistros.forEach(reg => {
                 const fecha = new Date(reg.fechaProcedimiento).toLocaleDateString('es-CO');
+                const fechaPalp = reg.fechaPalpacion ? new Date(reg.fechaPalpacion).toLocaleDateString('es-CO') : 'Pendiente';
+                
                 const card = document.createElement('div');
                 card.className = 'historial-card';
+                
+                let accionesHTML = '';
+                if (reg.estadoPrenez === 'Pendiente') {
+                    accionesHTML = `
+                        <div style="margin-top: 10px; display: flex; gap: 8px;">
+                            <button onclick="cambiarEstadoPrenez('${reg._id}', 'Preñada')" style="flex:1; background: #22c55e; color: white; border: none; padding: 8px; border-radius: 4px; font-weight: bold; cursor: pointer;">✅ Preñada</button>
+                            <button onclick="cambiarEstadoPrenez('${reg._id}', 'Vacía')" style="flex:1; background: #ef4444; color: white; border: none; padding: 8px; border-radius: 4px; font-weight: bold; cursor: pointer;">❌ Vacía</button>
+                        </div>
+                    `;
+                }
+
                 card.innerHTML = `
                     <h4>Chapeta: ${reg.animalId} (${reg.tipoProcedimiento})</h4>
-                    <p><strong>Productor:</strong> ${reg.productor} - ${reg.finca}</p>
+                    <p><strong>Productor:</strong> ${reg.productor} (${reg.finca})</p>
                     <p><strong>Genética:</strong> ${reg.geneticaUtilizada}</p>
-                    <p><strong>Fecha Proc:</strong> ${fecha}</p>
-                    <p><strong>Estado:</strong> <span style="color: ${reg.estadoPrenez === 'Pendiente' ? '#d97706' : '#166534'}">${reg.estadoPrenez}</span></p>
+                    <p><strong>Fecha Proc:</strong> ${fecha} | <strong>Control Est.:</strong> ${fechaPalp}</p>
+                    <p><strong>Estado:</strong> <span style="color: ${reg.estadoPrenez === 'Pendiente' ? '#d97706' : (reg.estadoPrenez === 'Preñada' ? '#166534' : '#991b1b')}; font-weight:bold;">${reg.estadoPrenez}</span></p>
+                    ${accionesHTML}
                 `;
                 lista.appendChild(card);
             });
         }
     } catch (error) {
         lista.innerHTML = '<p style="text-align:center; color:red;">Error al cargar el historial.</p>';
+    }
+};
+
+// Función global para actualizar el estado desde los botones de la card
+window.cambiarEstadoPrenez = async (id, nuevoEstado) => {
+    if (!confirm(`¿Confirmar diagnóstico como: ${nuevoEstado}?`)) return;
+
+    try {
+        const res = await fetch(`http://localhost:3000/api/registro-genetico/${id}`, {
+            method: 'PUT',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ estadoPrenez: nuevoEstado })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert('¡Diagnóstico actualizado con éxito y sincronizado con la oficina!');
+            cargarMiHistorial();
+        } else {
+            alert('Error al actualizar: ' + data.mensaje);
+        }
+    } catch (error) {
+        alert('Error de red al actualizar el estado.');
     }
 };
