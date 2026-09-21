@@ -3,6 +3,8 @@
 // ==========================================
 const token = localStorage.getItem('tokenSembriogan');
 const usuarioData = JSON.parse(localStorage.getItem('usuarioSembriogan'));
+const navGenetica = document.getElementById('nav-genetica');
+const vistaGenetica = document.getElementById('vista-genetica');
 
 // Si no hay token, lo devolvemos al login
 if (!token) {
@@ -68,6 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (vistaCatalogo) vistaCatalogo.style.display = 'none';
         if (vistaConfiguracion) vistaConfiguracion.style.display = 'none';
         if (vistaUsuarios) vistaUsuarios.style.display = 'none';
+        if (vistaGenetica) vistaGenetica.style.display = 'none';
+        if (navGenetica) navGenetica.classList.remove('active');
 
         if (navSolicitudes) navSolicitudes.classList.remove('active');
         if (navCatalogo) navCatalogo.classList.remove('active');
@@ -117,6 +121,22 @@ document.addEventListener('DOMContentLoaded', () => {
             tituloSeccion.textContent = 'Gestión de Personal y Roles';
         });
     }
+
+    if (navGenetica) {
+        navGenetica.addEventListener('click', (e) => {
+            e.preventDefault();
+            ocultarVistas();
+            vistaGenetica.style.display = 'block';
+            navGenetica.classList.add('active');
+            tituloSeccion.textContent = 'Trazabilidad Genética Reproductiva';
+            cargarRegistrosGeneticos(); // Llama a la BD al entrar
+        });
+    }
+
+    // Actualización en tiempo real si un Vet envía un dato desde la finca
+    socket.on('nuevo-registro-genetico', () => {
+        cargarRegistrosGeneticos();
+    });
 
     // 3. Manejo de Formulario de Solicitudes
     const formSolicitud = document.getElementById('form-solicitud');
@@ -580,5 +600,50 @@ const eliminarSucursal = async (id) => {
         cargarContactosAdmin();
     } catch (error) {
         console.error(error);
+    }
+};
+
+// ==========================================
+// GESTIÓN DE TRAZABILIDAD GENÉTICA
+// ==========================================
+const cargarRegistrosGeneticos = async () => {
+    try {
+        const respuesta = await fetch('http://localhost:3000/api/registro-genetico', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const resultado = await respuesta.json();
+        
+        if (resultado.success) {
+            const tbody = document.querySelector('#tabla-genetica tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            resultado.data.forEach(reg => {
+                const tr = document.createElement('tr');
+                
+                // Formatear fechas para que se vean bien
+                const fechaProc = new Date(reg.fechaProcedimiento).toLocaleDateString('es-CO');
+                const fechaPalp = reg.fechaPalpacion ? new Date(reg.fechaPalpacion).toLocaleDateString('es-CO') : 'Pendiente';
+                
+                // Colores para la técnica y el resultado
+                const colorTecnica = reg.tipoProcedimiento === 'TE' ? '#fce7f3; color: #db2777' : '#e0f2fe; color: #0284c7';
+                let colorPrenez = '#fef9c3; color: #854d0e'; // Pendiente (Amarillo)
+                if(reg.estadoPrenez === 'Preñada') colorPrenez = '#dcfce7; color: #166534'; // Verde
+                if(reg.estadoPrenez === 'Vacía' || reg.estadoPrenez === 'Aborto') colorPrenez = '#fee2e2; color: #991b1b'; // Rojo
+
+                tr.innerHTML = `
+                    <td><strong>${reg.productor}</strong><br><small>📍 ${reg.finca}</small></td>
+                    <td><span style="font-weight: bold; font-size: 1.1rem;">${reg.animalId}</span></td>
+                    <td><span style="background: ${colorTecnica}; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem;">${reg.tipoProcedimiento}</span></td>
+                    <td>🐂 ${reg.geneticaUtilizada}</td>
+                    <td><small><strong>Proc:</strong> ${fechaProc}<br><strong>Rev:</strong> ${fechaPalp}</small></td>
+                    <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; background: ${colorPrenez}">${reg.estadoPrenez}</span></td>
+                    <td>👨‍⚕️ ${reg.veterinarioAsignado}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (error) {
+        console.error('Error al cargar historial genético:', error);
     }
 };
