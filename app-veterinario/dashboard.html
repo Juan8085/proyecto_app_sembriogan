@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dashboard - Veterinario</title>
+    <style>
+        :root {
+            --primary: #0284c7;
+            --secondary: #22c55e;
+            --dark: #0f172a;
+            --light: #f1f5f9;
+            --white: #ffffff;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--light); color: var(--dark); padding-bottom: 70px; }
+        
+        /* Cabecera */
+        header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        header h1 { font-size: 1.2rem; }
+        .btn-logout { background: transparent; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
+        
+        /* Contenedor Principal */
+        .container { padding: 20px; }
+        .card { background: var(--white); border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        /* Formulario Móvil */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.9rem; color: #475569; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; background: #f8fafc; }
+        .btn-submit { width: 100%; background: var(--secondary); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(34,197,94,0.2); }
+        .btn-submit:active { transform: scale(0.98); }
+
+        /* Navegación Inferior (Estilo App) */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #e2e8f0; }
+        .nav-item { flex: 1; text-align: center; padding: 15px 0; color: #64748b; font-weight: bold; font-size: 0.9rem; cursor: pointer; }
+        .nav-item.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        .hidden { display: none; }
+        
+        /* Tarjetas de Historial */
+        .historial-card { border-left: 4px solid var(--primary); background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 10px; }
+        .historial-card h4 { color: var(--primary); margin-bottom: 5px; }
+        .historial-card p { font-size: 0.85rem; color: #475569; margin-bottom: 3px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>Sembriogan</h1>
+            <small id="nombre-vet">Dr. Veterinario</small>
+        </div>
+        <button id="btn-logout" class="btn-logout">Salir</button>
+    </header>
+
+    <div class="container" id="vista-registro">
+        <div class="card">
+            <h2 style="margin-bottom: 15px; font-size: 1.3rem;">Registrar Procedimiento</h2>
+            <form id="form-genetica">
+                <div class="form-group">
+                    <label>Productor / Dueño:</label>
+                    <input type="text" id="reg-productor" required placeholder="Ej. Juan Pérez">
+                </div>
+                <div class="form-group">
+                    <label>Nombre de la Finca:</label>
+                    <input type="text" id="reg-finca" required placeholder="Ej. La Esperanza">
+                </div>
+                <div class="form-group">
+                    <label>Vaca (Chapeta / Nombre):</label>
+                    <input type="text" id="reg-animal" required placeholder="Ej. Vaca 450 o Lola">
+                </div>
+                <div class="form-group">
+                    <label>Técnica Reproductiva:</label>
+                    <select id="reg-tecnica" required>
+                        <option value="IA">IA (Inseminación Artificial)</option>
+                        <option value="IATF">IATF (Tiempo Fijo)</option>
+                        <option value="TE">TE (Transferencia de Embriones)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Genética Utilizada (Toro):</label>
+                    <input type="text" id="reg-genetica" required placeholder="Ej. Toro Brahman 'El Jefe'">
+                </div>
+                <button type="submit" class="btn-submit">Guardar en Sistema</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container hidden" id="vista-historial">
+        <h2 style="margin-bottom: 15px; font-size: 1.3rem;">Mis Últimos Registros</h2>
+        <div id="lista-historial">
+            <!-- Dinámico con JS -->
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" id="tab-registro">📝 Nuevo Registro</div>
+        <div class="nav-item" id="tab-historial">📋 Mi Historial</div>
+    </nav>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

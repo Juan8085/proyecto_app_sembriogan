@@ -2,95 +2,53 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sembriogan - App Campo (Offline)</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sembriogan - App Veterinario</title>
+    <style>
+        :root {
+            --primary: #0284c7;
+            --secondary: #22c55e;
+            --dark: #0f172a;
+            --light: #f8fafc;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--light); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
+        .login-box { background: white; width: 100%; max-width: 400px; padding: 30px 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); text-align: center; }
+        .login-box img { max-width: 120px; margin-bottom: 20px; }
+        .login-box h2 { color: var(--dark); font-size: 1.5rem; margin-bottom: 5px; }
+        .login-box p { color: #64748b; font-size: 0.9rem; margin-bottom: 25px; }
+        
+        .input-group { text-align: left; margin-bottom: 20px; }
+        .input-group label { display: block; font-size: 0.85rem; color: #475569; margin-bottom: 5px; font-weight: 600; }
+        .input-group input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; outline: none; }
+        .input-group input:focus { border-color: var(--primary); }
+        
+        .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        .error-msg { color: #ef4444; font-size: 0.85rem; margin-top: 15px; display: none; }
+    </style>
 </head>
 <body>
-    <div class="vet-container">
-        <!-- Encabezado de Campo -->
-        <header class="vet-header">
-            <h2>Sembriogan 🐂 <small>Modo Campo</small></h2>
-            <div id="network-status" class="status-badge offline">Verificando red...</div>
-        </header>
 
-        <!-- Navegación interna de la App -->
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <button onclick="cambiarVista('reportes')" id="btn-v-reportes" class="btn-tab active" style="flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Reportes Clínicos</button>
-            <button onclick="cambiarVista('catalogo')" id="btn-v-catalogo" class="btn-tab" style="flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; background: #e2e8f0;">Catálogo y Carrito</button>
-        </div>
-
-        <main class="vet-main">
-            <!-- VISTA 1: REPORTES CLÍNICOS -->
-            <div id="vista-reportes">
-                <section class="card">
-                    <h3>Nuevo Reporte Veterinario (Offline)</h3>
-                    <form id="form-vet-offline">
-                        <div class="form-group">
-                            <label for="vet-productor">Productor / Propietario:</label>
-                            <input type="text" id="vet-productor" required placeholder="Nombre del ganadero">
-                        </div>
-                        <div class="form-group">
-                            <label for="vet-finca">Finca / Vereda:</label>
-                            <input type="text" id="vet-finca" required placeholder="Nombre de la finca">
-                        </div>
-                        <div class="form-group">
-                            <label for="vet-servicio">Procedimiento / Diagnóstico:</label>
-                            <select id="vet-servicio" required style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                                <option value="Evaluación Ginecológica / Eco">Evaluación Ginecológica / Eco</option>
-                                <option value="Protocolo IATF">Protocolo IATF</option>
-                                <option value="Asistencia Obstétrica / Parto">Asistencia Obstétrica / Parto</option>
-                                <option value="Tratamiento Infección / Clínico">Tratamiento Infección / Clínico</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="vet-observaciones">Observaciones Clínicas:</label>
-                            <textarea id="vet-observaciones" rows="3" placeholder="Detalles de condición corporal, hallazgos..."></textarea>
-                        </div>
-                        <button type="submit" class="btn-primary" style="width: 100%;">Guardar Reporte Local</button>
-                    </form>
-                </section>
+    <div class="login-box">
+        <!-- Puedes usar tu logo aquí si lo copiaste a la carpeta img -->
+        <h2 style="color: var(--primary)">Sembriogan 🐂</h2>
+        <p>Portal Operativo de Campo</p>
+        
+        <form id="form-login-vet">
+            <div class="input-group">
+                <label for="email">Correo Institucional</label>
+                <input type="email" id="email" required placeholder="tu-correo@sembriogan.com">
             </div>
-
-            <!-- VISTA 2: CATÁLOGO Y CARRITO OFFLINE -->
-            <div id="vista-catalogo" style="display: none;">
-                <section class="card">
-                    <h3>Catálogo Sembriogan (Disponible en Campo)</h3>
-                    <div id="vet-catalog-grid" style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 15px;">
-                        <!-- Dinámico desde IndexedDB / API -->
-                    </div>
-                </section>
-
-                <section class="card" style="margin-top: 20px; background: #f8fafc; border: 2px dashed #0284c7;">
-                    <h3>🛒 Carrito de Pedidos en Finca</h3>
-                    <div id="vet-carrito-items" style="margin: 10px 0; font-size: 0.95rem;">
-                        <p style="color: #64748b;">No hay productos agregados.</p>
-                    </div>
-                    <div class="form-group" style="margin-top: 15px;">
-                        <input type="text" id="cart-productor" placeholder="Nombre del Productor (Cliente)" required>
-                    </div>
-                    <div class="form-group">
-                        <input type="text" id="cart-finca" placeholder="Finca del Cliente" required>
-                    </div>
-                    <button id="btn-procesar-pedido" class="btn-primary" style="width: 100%; background: #25d366;" onclick="guardarPedidoOffline()">Guardar Pedido / Orden Offline</button>
-                </section>
+            <div class="input-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" required placeholder="••••••••">
             </div>
-
-            <!-- Cola de Sincronización General -->
-            <section class="card" style="margin-top: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3>Registros Pendientes</h3>
-                    <span id="sync-counter" style="background: #e2e8f0; padding: 4px 10px; border-radius: 12px; font-weight: bold;">0 pendientes</span>
-                </div>
-                <button id="btn-sync" class="btn-secondary" style="width: 100%; margin-top: 15px; background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer;">Sincronizar con el Servidor</button>
-                
-                <div id="lista-offline" style="margin-top: 15px; max-height: 150px; overflow-y: auto;">
-                    <!-- Se llena con IndexedDB -->
-                </div>
-            </section>
-        </main>
+            <button type="submit" class="btn">Iniciar Jornada</button>
+        </form>
+        <div id="error-msg" class="error-msg"></div>
     </div>
 
-    <script src="js/app.js"></script>
+    <script src="js/login.js"></script>
 </body>
 </html>
