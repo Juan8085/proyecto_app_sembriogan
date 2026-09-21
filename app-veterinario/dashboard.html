@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dashboard - Veterinario</title>
+    <link rel="manifest" href="manifest.json">
+    <script type="text/javascript" src="https://checkout.wompi.co/widget.js"></script>
     <style>
         :root {
             --primary: #0284c7;
@@ -15,30 +17,25 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background-color: var(--light); color: var(--dark); padding-bottom: 70px; }
         
-        /* Cabecera */
         header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         header h1 { font-size: 1.2rem; }
         .btn-logout { background: transparent; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
         
-        /* Contenedor Principal */
         .container { padding: 20px; }
         .card { background: var(--white); border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
-        /* Formulario Móvil */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.9rem; color: #475569; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; background: #f8fafc; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; background: #f8fafc; }
         .btn-submit { width: 100%; background: var(--secondary); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(34,197,94,0.2); }
         .btn-submit:active { transform: scale(0.98); }
 
-        /* Navegación Inferior (Estilo App) */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #e2e8f0; }
-        .nav-item { flex: 1; text-align: center; padding: 15px 0; color: #64748b; font-weight: bold; font-size: 0.9rem; cursor: pointer; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #e2e8f0; z-index: 1000; }
+        .nav-item { flex: 1; text-align: center; padding: 15px 0; color: #64748b; font-weight: bold; font-size: 0.8rem; cursor: pointer; }
         .nav-item.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
 
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         
-        /* Tarjetas de Historial */
         .historial-card { border-left: 4px solid var(--primary); background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 10px; }
         .historial-card h4 { color: var(--primary); margin-bottom: 5px; }
         .historial-card p { font-size: 0.85rem; color: #475569; margin-bottom: 3px; }
@@ -54,9 +51,10 @@
         <button id="btn-logout" class="btn-logout">Salir</button>
     </header>
 
+    <!-- VISTA 1: GENÉTICA -->
     <div class="container" id="vista-registro">
         <div class="card">
-            <h2 style="margin-bottom: 15px; font-size: 1.3rem;">Registrar Procedimiento</h2>
+            <h2 style="margin-bottom: 15px; font-size: 1.3rem;">Registrar Genética</h2>
             <form id="form-genetica">
                 <div class="form-group">
                     <label>Productor / Dueño:</label>
@@ -68,35 +66,92 @@
                 </div>
                 <div class="form-group">
                     <label>Vaca (Chapeta / Nombre):</label>
-                    <input type="text" id="reg-animal" required placeholder="Ej. Vaca 450 o Lola">
+                    <input type="text" id="reg-animal" required placeholder="Ej. Vaca 450">
                 </div>
                 <div class="form-group">
-                    <label>Técnica Reproductiva:</label>
+                    <label>Técnica:</label>
                     <select id="reg-tecnica" required>
                         <option value="IA">IA (Inseminación Artificial)</option>
                         <option value="IATF">IATF (Tiempo Fijo)</option>
-                        <option value="TE">TE (Transferencia de Embriones)</option>
+                        <option value="TE">TE (Transferencia Embriones)</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Genética Utilizada (Toro):</label>
-                    <input type="text" id="reg-genetica" required placeholder="Ej. Toro Brahman 'El Jefe'">
+                    <label>Genética (Toro / Embrión):</label>
+                    <input type="text" id="reg-genetica" required placeholder="Ej. Toro Brahman El Jefe">
                 </div>
-                <button type="submit" class="btn-submit">Guardar en Sistema</button>
+                <button type="submit" class="btn-submit">Guardar Procedimiento</button>
             </form>
         </div>
     </div>
 
+    <!-- VISTA 2: OTROS PROCEDIMIENTOS -->
+    <div class="container hidden" id="vista-otros">
+        <div class="card">
+            <h2 style="margin-bottom: 15px; font-size: 1.3rem;">Otros Procedimientos</h2>
+            <form id="form-otros">
+                <div class="form-group">
+                    <label>Productor:</label>
+                    <input type="text" id="otro-productor" required placeholder="Ej. Juan Pérez">
+                </div>
+                <div class="form-group">
+                    <label>Finca:</label>
+                    <input type="text" id="otro-finca" required placeholder="Ej. La Esperanza">
+                </div>
+                <div class="form-group">
+                    <label>Animal / Lote:</label>
+                    <input type="text" id="otro-animal" required placeholder="Ej. Vaca 450">
+                </div>
+                <div class="form-group">
+                    <label>Tipo:</label>
+                    <input type="text" id="otro-tipo" required placeholder="Ej. Vacunación, Parto...">
+                </div>
+                <div class="form-group">
+                    <label>Observaciones:</label>
+                    <textarea id="otro-obs" required rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn-submit" style="background: #eab308;">Guardar General</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- VISTA 3: TIENDA / POS -->
+    <div class="container hidden" id="vista-tienda">
+        <div class="card">
+            <h2 style="margin-bottom: 15px; font-size: 1.3rem;">Venta de Productos</h2>
+            <div class="form-group">
+                <label>Producto:</label>
+                <select id="pos-producto">
+                    <option value="50000|Pajilla Angus">Pajilla Angus ($50.000)</option>
+                    <option value="65000|Pajilla Brahman">Pajilla Brahman ($65.000)</option>
+                    <option value="120000|Kit IATF">Kit IATF ($120.000)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Cantidad:</label>
+                <input type="number" id="pos-cantidad" value="1" min="1">
+            </div>
+            <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px;">
+                <span style="font-size: 0.9rem; color: #0284c7;">Total a Pagar</span>
+                <h3 id="pos-total-text" style="color: var(--dark); font-size: 1.8rem;">$ 50.000</h3>
+            </div>
+            <button id="btn-pagar-wompi" class="btn-submit" style="background: #10b981;">💳 Pagar con Wompi</button>
+        </div>
+    </div>
+
+    <!-- VISTA 4: HISTORIAL -->
     <div class="container hidden" id="vista-historial">
         <h2 style="margin-bottom: 15px; font-size: 1.3rem;">Mis Últimos Registros</h2>
         <div id="lista-historial">
-            <!-- Dinámico con JS -->
+            <p style="text-align:center; color:#64748b;">Cargando...</p>
         </div>
     </div>
 
     <nav class="bottom-nav">
-        <div class="nav-item active" id="tab-registro">📝 Nuevo Registro</div>
-        <div class="nav-item" id="tab-historial">📋 Mi Historial</div>
+        <div class="nav-item active" id="tab-registro">🧬 Genética</div>
+        <div class="nav-item" id="tab-otros">🩺 Otros</div>
+        <div class="nav-item" id="tab-tienda">🛒 Tienda</div>
+        <div class="nav-item" id="tab-historial">📋 Historial</div>
     </nav>
 
     <script src="js/dashboard.js"></script>

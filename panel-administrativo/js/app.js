@@ -119,6 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
             vistaUsuarios.style.display = 'block';
             navUsuarios.classList.add('active');
             tituloSeccion.textContent = 'Gestión de Personal y Roles';
+            cargarUsuariosAdmin(); // <-- ¡Esta línea es la que dibuja la tabla!
         });
     }
 
@@ -647,3 +648,73 @@ const cargarRegistrosGeneticos = async () => {
         console.error('Error al cargar historial genético:', error);
     }
 };
+
+// Cargar la lista de usuarios en el Panel Admin
+const cargarUsuariosAdmin = async () => {
+    try {
+        const res = await fetch('http://localhost:3000/api/auth/usuarios', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            const tbody = document.querySelector('#tabla-usuarios tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            data.data.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #e2e8f0';
+                
+                tr.innerHTML = `
+                    <td style="padding: 10px;"><strong>${u.nombre}</strong></td>
+                    <td style="padding: 10px;">${u.email}</td>
+                    <td style="padding: 10px;"><span style="background: #e0f2fe; color: #0284c7; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem;">${u.rol}</span></td>
+                    <td style="padding: 10px;"><span style="color: ${u.estado ? '#166534' : '#991b1b'}; font-weight: bold;">${u.estado ? 'Activo' : 'Inactivo'}</span></td>
+                    <td style="padding: 10px;">
+                        <button onclick="cambiarEstadoUsuario('${u._id}', ${!u.estado})" style="background: ${u.estado ? '#ef4444' : '#22c55e'}; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-right: 5px;">
+                            ${u.estado ? 'Desactivar' : 'Activar'}
+                        </button>
+                        <button onclick="restablecerPassword('${u._id}')" style="background: #f59e0b; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+                            Cambiar Clave
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (e) {
+        console.error('Error al cargar usuarios:', e);
+    }
+};
+
+const cambiarEstadoUsuario = async (id, nuevoEstado) => {
+    try {
+        await fetch(`http://localhost:3000/api/auth/usuarios/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ estado: nuevoEstado })
+        });
+        cargarUsuariosAdmin();
+    } catch (e) { console.error(e); }
+};
+
+const restablecerPassword = async (id) => {
+    const nuevaClave = prompt("Ingresa la nueva contraseña para este usuario:");
+    if (!nuevaClave) return;
+
+    try {
+        const res = await fetch(`http://localhost:3000/api/auth/usuarios/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ password: nuevaClave })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('¡Contraseña actualizada con éxito!');
+        }
+    } catch (e) { console.error(e); }
+};
+
+// Llama a esta función cuando el usuario haga clic en la pestaña de Gestión de Personal
+// (Asegúrate de agregar cargarUsuariosAdmin(); dentro del evento de clic de navUsuarios en tu app.js)

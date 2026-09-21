@@ -31,7 +31,8 @@ const registrarUsuario = async (req, res) => {
             nombre,
             email,
             password: passwordEncriptado,
-            rol: rolAsignado
+            rol: rolAsignado,
+            estado: true // Aseguramos que nace activo por defecto
         });
 
         await nuevoUsuario.save();
@@ -53,7 +54,8 @@ const loginUsuario = async (req, res) => {
             return res.status(404).json({ success: false, mensaje: "Usuario no encontrado" });
         }
 
-        if (!usuario.estado) {
+        // CORRECCIÓN: Solo bloquear si el estado es estrictamente FALSE
+        if (usuario.estado === false) {
             return res.status(401).json({ success: false, mensaje: "Usuario inactivo. Contacte al administrador." });
         }
 
@@ -64,11 +66,10 @@ const loginUsuario = async (req, res) => {
         }
 
         // Generar Token (JWT)
-        // Usamos una clave secreta (debería ir en el .env, pero la pondremos directa por ahora)
         const token = jwt.sign(
             { id: usuario._id, rol: usuario.rol }, 
             process.env.JWT_SECRET || 'FirmaSecretaSembriogan2026', 
-            { expiresIn: '8h' } // El token expira en 8 horas de jornada laboral
+            { expiresIn: '8h' }
         );
 
         res.status(200).json({
@@ -88,4 +89,39 @@ const loginUsuario = async (req, res) => {
     }
 };
 
-module.exports = { registrarUsuario, loginUsuario };
+// 3. OBTENER TODOS LOS USUARIOS (Para el Panel Admin)
+const obtenerUsuarios = async (req, res) => {
+    try {
+        const usuarios = await Usuario.find().select('-password').sort({ createdAt: -1 });
+        res.status(200).json({ success: true, data: usuarios });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// 4. ACTUALIZAR / DESACTIVAR / CAMBIAR CLAVE DE USUARIO
+const actualizarUsuarioAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nombre, rol, estado, password } = req.body;
+        
+        let datosActualizar = {};
+        if (nombre !== undefined) datosActualizar.nombre = nombre;
+        if (rol !== undefined) datosActualizar.rol = rol;
+        if (estado !== undefined) datosActualizar.estado = estado;
+
+        // Si el admin escribió una nueva contraseña, la encriptamos
+        if (password && password.trim() !== "") {
+            const salt = await bcrypt.genSalt(10);
+            datosActualizar.password = await bcrypt.hash(password, salt);
+        }
+
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(id, datosActualizar, { new: true }).select('-password');
+        
+        res.status(200).json({ success: true, mensaje: "Usuario actualizado correctamente", data: usuarioActualizado });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+module.exports = { registrarUsuario, loginUsuario, obtenerUsuarios, actualizarUsuarioAdmin };
