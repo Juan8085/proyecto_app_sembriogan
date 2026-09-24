@@ -16,6 +16,7 @@ const iaRoutes = require('./routes/ia.routes');
 const contactoRoutes = require('./routes/contacto.routes');
 const authRoutes = require('./routes/auth.routes');
 const registroGeneticoRoutes = require('./routes/registro_genetico.routes');
+const ordenesRoutes = require('./routes/orden.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -48,6 +49,7 @@ app.use('/api/ia', iaRoutes);
 app.use('/api/contacto', contactoRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/registro-genetico', registroGeneticoRoutes);
+app.use('/api/ordenes', ordenesRoutes);
 
 app.get('/api', (req, res) => {
     res.json({ mensaje: 'API REST de Sembriogan inicializada', estado: 'Online' });
