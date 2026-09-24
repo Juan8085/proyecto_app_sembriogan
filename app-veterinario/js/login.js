@@ -1,54 +1,59 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Si ya está logueado, pasarlo directo al panel de trabajo
-    if (localStorage.getItem('tokenVetSembriogan')) {
-        window.location.href = 'dashboard.html';
-    }
-
-    const formLogin = document.getElementById('form-login-vet');
-    const errorMsg = document.getElementById('error-msg');
+    const formLogin = document.getElementById('form-login');
+    const inputEmail = document.getElementById('email');
+    const inputPassword = document.getElementById('password');
+    const errorContainer = document.getElementById('error-mensaje');
 
     if (formLogin) {
         formLogin.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            // Botón en estado de carga
-            const btn = formLogin.querySelector('.btn');
-            const textoOriginal = btn.textContent;
-            btn.textContent = 'Verificando...';
-            btn.disabled = true;
+            const email = inputEmail.value.trim();
+            const password = inputPassword.value.trim();
+
+            if (!email || !password) {
+                mostrarError("Por favor ingresa tu correo y contraseña.");
+                return;
+            }
 
             try {
-                const res = await fetch('http://localhost:3000/api/auth/login', {
+                // Petición al backend MERN
+                const response = await fetch('http://localhost:3000/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-                
-                const data = await res.json();
 
-                if (data.success) {
-                    // Verificamos que sea Veterinario o Admin (por si tú quieres entrar a probar)
-                    if (data.usuario.rol === 'Veterinario' || data.usuario.rol === 'Admin') {
-                        // Usamos un nombre diferente en localStorage para no cruzar sesiones con el admin si usas la misma PC
-                        localStorage.setItem('tokenVetSembriogan', data.token);
-                        localStorage.setItem('datosVetSembriogan', JSON.stringify(data.usuario));
-                        window.location.href = 'dashboard.html';
-                    } else {
-                        throw new Error('Acceso denegado. No tienes rol de Veterinario operativo.');
-                    }
-                } else {
-                    throw new Error(data.mensaje);
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.mensaje || 'Credenciales incorrectas');
                 }
-            } catch (err) {
-                errorMsg.textContent = err.message || 'Error de conexión. Revisa tu internet.';
-                errorMsg.style.display = 'block';
-            } finally {
-                btn.textContent = textoOriginal;
-                btn.disabled = false;
+
+                // Validar que el usuario sea Veterinario o Administrador
+                if (data.usuario.rol !== 'Veterinario' && data.usuario.rol !== 'Admin') {
+                    throw new Error('Acceso denegado: Esta aplicación es exclusiva para personal veterinario.');
+                }
+
+                // Guardar sesión con las llaves exactas que requiere el dashboard
+                localStorage.setItem('tokenVet', data.token);
+                localStorage.setItem('usuarioVet', JSON.stringify(data.usuario));
+
+                // Redirigir al panel operativo de campo
+                window.location.href = 'dashboard.html';
+
+            } catch (error) {
+                mostrarError(error.message);
             }
         });
+    }
+
+    function mostrarError(mensaje) {
+        if (errorContainer) {
+            errorContainer.textContent = mensaje;
+            errorContainer.classList.remove('hidden');
+        } else {
+            alert(mensaje);
+        }
     }
 });

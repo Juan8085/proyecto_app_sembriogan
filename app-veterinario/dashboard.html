@@ -2,158 +2,95 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dashboard - Veterinario</title>
-    <link rel="manifest" href="manifest.json">
-    <script type="text/javascript" src="https://checkout.wompi.co/widget.js"></script>
-    <style>
-        :root {
-            --primary: #0284c7;
-            --secondary: #22c55e;
-            --dark: #0f172a;
-            --light: #f1f5f9;
-            --white: #ffffff;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background-color: var(--light); color: var(--dark); padding-bottom: 70px; }
-        
-        header { background: var(--primary); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        header h1 { font-size: 1.2rem; }
-        .btn-logout { background: transparent; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
-        
-        .container { padding: 20px; }
-        .card { background: var(--white); border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.9rem; color: #475569; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; background: #f8fafc; }
-        .btn-submit { width: 100%; background: var(--secondary); color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(34,197,94,0.2); }
-        .btn-submit:active { transform: scale(0.98); }
-
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; border-top: 1px solid #e2e8f0; z-index: 1000; }
-        .nav-item { flex: 1; text-align: center; padding: 15px 0; color: #64748b; font-weight: bold; font-size: 0.8rem; cursor: pointer; }
-        .nav-item.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
-
-        .hidden { display: none !important; }
-        
-        .historial-card { border-left: 4px solid var(--primary); background: white; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 10px; }
-        .historial-card h4 { color: var(--primary); margin-bottom: 5px; }
-        .historial-card p { font-size: 0.85rem; color: #475569; margin-bottom: 3px; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sembriogan Vet - Panel Operativo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-slate-100 min-h-screen flex flex-col">
 
-    <header>
-        <div>
-            <h1>Sembriogan</h1>
-            <small id="nombre-vet">Dr. Veterinario</small>
+    <!-- HEADER INSTITUCIONAL -->
+    <header class="bg-white shadow-sm py-4 px-6 flex justify-between items-center sticky top-0 z-50 border-b border-slate-200">
+        <div class="flex items-center space-x-3">
+            <img src="img/logo.png" alt="Logo Sembriogan" class="h-10 object-contain">
+            <div>
+                <h1 id="nombre-vet" class="text-sm font-bold text-slate-800">Veterinario</h1>
+                <p class="text-xs text-sky-600 font-semibold">Modo Campo (Offline Ready)</p>
+            </div>
         </div>
-        <button id="btn-logout" class="btn-logout">Salir</button>
+        <button id="btn-salir" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-xl text-xs font-bold transition">
+            Salir
+        </button>
     </header>
 
-    <!-- VISTA 1: GENÉTICA -->
-    <div class="container" id="vista-registro">
-        <div class="card">
-            <h2 style="margin-bottom: 15px; font-size: 1.3rem;">Registrar Genética</h2>
-            <form id="form-genetica">
-                <div class="form-group">
-                    <label>Productor / Dueño:</label>
-                    <input type="text" id="reg-productor" required placeholder="Ej. Juan Pérez">
-                </div>
-                <div class="form-group">
-                    <label>Nombre de la Finca:</label>
-                    <input type="text" id="reg-finca" required placeholder="Ej. La Esperanza">
-                </div>
-                <div class="form-group">
-                    <label>Vaca (Chapeta / Nombre):</label>
-                    <input type="text" id="reg-animal" required placeholder="Ej. Vaca 450">
-                </div>
-                <div class="form-group">
-                    <label>Técnica:</label>
-                    <select id="reg-tecnica" required>
-                        <option value="IA">IA (Inseminación Artificial)</option>
-                        <option value="IATF">IATF (Tiempo Fijo)</option>
-                        <option value="TE">TE (Transferencia Embriones)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Genética (Toro / Embrión):</label>
-                    <input type="text" id="reg-genetica" required placeholder="Ej. Toro Brahman El Jefe">
-                </div>
-                <button type="submit" class="btn-submit">Guardar Procedimiento</button>
-            </form>
+    <!-- CONTENIDO PRINCIPAL MÓVIL -->
+    <main class="flex-1 p-6 max-w-md mx-auto w-full space-y-6">
+        
+        <!-- Estado de Red / Sincronización -->
+        <div id="estado-red" class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-2xl flex items-center justify-between text-xs font-bold">
+            <span class="flex items-center gap-2">🟢 Conectado al Servidor</span>
+            <span id="pendientes-sync" class="bg-emerald-200 px-2.5 py-1 rounded-full">0 pendientes</span>
         </div>
-    </div>
 
-    <!-- VISTA 2: OTROS PROCEDIMIENTOS -->
-    <div class="container hidden" id="vista-otros">
-        <div class="card">
-            <h2 style="margin-bottom: 15px; font-size: 1.3rem;">Otros Procedimientos</h2>
-            <form id="form-otros">
-                <div class="form-group">
-                    <label>Productor:</label>
-                    <input type="text" id="otro-productor" required placeholder="Ej. Juan Pérez">
+        <!-- Módulos de Operación de Campo -->
+        <div class="grid grid-cols-2 gap-4">
+            <!-- Módulo IATF / TE -->
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition cursor-pointer" onclick="alert('Abriendo módulo de Registro IATF y TE en campo...')">
+                <div>
+                    <div class="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center text-2xl mb-3">💉</div>
+                    <h3 class="font-bold text-slate-800 text-sm">Registro IATF / TE</h3>
+                    <p class="text-slate-500 text-xs mt-1">Control reproductivo y preñez.</p>
                 </div>
-                <div class="form-group">
-                    <label>Finca:</label>
-                    <input type="text" id="otro-finca" required placeholder="Ej. La Esperanza">
-                </div>
-                <div class="form-group">
-                    <label>Animal / Lote:</label>
-                    <input type="text" id="otro-animal" required placeholder="Ej. Vaca 450">
-                </div>
-                <div class="form-group">
-                    <label>Tipo:</label>
-                    <input type="text" id="otro-tipo" required placeholder="Ej. Vacunación, Parto...">
-                </div>
-                <div class="form-group">
-                    <label>Observaciones:</label>
-                    <textarea id="otro-obs" required rows="3"></textarea>
-                </div>
-                <button type="submit" class="btn-submit" style="background: #eab308;">Guardar General</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- VISTA 3: TIENDA / POS -->
-    <div class="container hidden" id="vista-tienda">
-        <div class="card">
-            <h2 style="margin-bottom: 15px; font-size: 1.3rem;">Venta de Productos</h2>
-            <div class="form-group">
-                <label>Producto:</label>
-                <select id="pos-producto">
-                    <option value="50000|Pajilla Angus">Pajilla Angus ($50.000)</option>
-                    <option value="65000|Pajilla Brahman">Pajilla Brahman ($65.000)</option>
-                    <option value="120000|Kit IATF">Kit IATF ($120.000)</option>
-                </select>
+                <span class="text-sky-600 font-bold text-xs mt-4 block">Registrar →</span>
             </div>
-            <div class="form-group">
-                <label>Cantidad:</label>
-                <input type="number" id="pos-cantidad" value="1" min="1">
+
+            <!-- Módulo Catálogo / Tienda -->
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition cursor-pointer" onclick="alert('Abriendo Catálogo e Insumos...')">
+                <div>
+                    <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-2xl mb-3">📦</div>
+                    <h3 class="font-bold text-slate-800 text-sm">Insumos y Catálogo</h3>
+                    <p class="text-slate-500 text-xs mt-1">Compra de material genético e insumos.</p>
+                </div>
+                <span class="text-amber-600 font-bold text-xs mt-4 block">Explorar →</span>
             </div>
-            <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 15px;">
-                <span style="font-size: 0.9rem; color: #0284c7;">Total a Pagar</span>
-                <h3 id="pos-total-text" style="color: var(--dark); font-size: 1.8rem;">$ 50.000</h3>
+        </div>
+
+        <!-- Sección de IA y Asesoría -->
+        <div class="bg-gradient-to-br from-sky-600 to-blue-700 text-white p-6 rounded-3xl shadow-lg space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Asistente IA</span>
+                <span class="text-xl">🤖</span>
             </div>
-            <button id="btn-pagar-wompi" class="btn-submit" style="background: #10b981;">💳 Pagar con Wompi</button>
+            <h3 class="text-lg font-bold">Consulta Técnica Inteligente</h3>
+            <p class="text-sky-100 text-xs leading-relaxed">Resuelve dudas sobre protocolos de sincronización y manejo de hatos en tiempo real.</p>
+            <button onclick="alert('Módulo de IA en campo listo.')" class="w-full bg-white text-sky-700 font-bold py-2.5 rounded-xl text-xs hover:bg-sky-50 transition shadow-sm">
+                Consultar al Asistente
+            </button>
         </div>
-    </div>
 
-    <!-- VISTA 4: HISTORIAL -->
-    <div class="container hidden" id="vista-historial">
-        <h2 style="margin-bottom: 15px; font-size: 1.3rem;">Mis Últimos Registros</h2>
-        <div id="lista-historial">
-            <p style="text-align:center; color:#64748b;">Cargando...</p>
-        </div>
-    </div>
+    </main>
 
-    <nav class="bottom-nav">
-        <div class="nav-item active" id="tab-registro">🧬 Genética</div>
-        <div class="nav-item" id="tab-otros">🩺 Otros</div>
-        <div class="nav-item" id="tab-tienda">🛒 Tienda</div>
-        <div class="nav-item" id="tab-historial">📋 Historial</div>
-    </nav>
+    <!-- Script de Control del Dashboard -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('tokenVet');
+            const usuarioStr = localStorage.getItem('usuarioVet');
 
-    <script src="js/dashboard.js"></script>
+            if (!token || !usuarioStr) {
+                // Si no hay sesión, devolver al login
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const usuario = JSON.parse(usuarioStr);
+            document.getElementById('nombre-vet').textContent = usuario.nombre || 'Veterinario';
+
+            // Botón Cerrar Sesión
+            document.getElementById('btn-salir').addEventListener('click', () => {
+                localStorage.removeItem('tokenVet');
+                localStorage.removeItem('usuarioVet');
+                window.location.href = 'index.html';
+            });
+        });
+    </script>
 </body>
 </html>
