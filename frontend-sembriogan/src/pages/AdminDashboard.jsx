@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminUsuarios from '../components/AdminUsuarios';
+import AdminTrazabilidad from '../components/AdminTrazabilidad';
+import AdminCatalogo from '../components/AdminCatalogo';
+import AdminResumen from '../components/AdminResumen';
+import AdminTestimonios from '../components/AdminTestimonios';
 
 export default function AdminDashboard() {
   const [adminData, setAdminData] = useState(null);
@@ -31,30 +35,15 @@ export default function AdminDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case 'inicio':
-        return (
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-2xl font-bold text-primary mb-4">¡Bienvenido de nuevo, {adminData.nombre}!</h2>
-            <p className="text-gray-600">
-              Desde aquí podrás gestionar toda la operación de Sembriogan. Utilice el menú de la izquierda para navegar entre los módulos.
-            </p>
-          </div>
-        );
+        return <AdminResumen />;
       case 'veterinarios':
         return <AdminUsuarios />;
       case 'historial':
-        return (
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-2xl font-bold text-primary mb-4">Historial Genético</h2>
-            <p className="text-gray-600">Aquí conectaremos la tabla de trazabilidad de los procedimientos.</p>
-          </div>
-        );
+        return <AdminTrazabilidad />;
       case 'catalogo':
-        return (
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-2xl font-bold text-primary mb-4">Catálogo y Servicios</h2>
-            <p className="text-gray-600">Aquí gestionaremos los productos para el POS móvil de Wompi.</p>
-          </div>
-        );
+        return <AdminCatalogo />;
+      case 'testimonios':
+        return <AdminTestimonios />;
       default:
         return null;
     }
@@ -76,7 +65,7 @@ export default function AdminDashboard() {
         </div>
         
         {/* NAVEGACIÓN */}
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           <button 
             onClick={() => setActiveTab('inicio')}
             className={`w-full text-left p-3 rounded-lg font-semibold transition ${activeTab === 'inicio' ? 'bg-primary text-white' : 'hover:bg-gray-800 text-gray-300'}`}
@@ -100,6 +89,12 @@ export default function AdminDashboard() {
             className={`w-full text-left p-3 rounded-lg font-semibold transition ${activeTab === 'catalogo' ? 'bg-primary text-white' : 'hover:bg-gray-800 text-gray-300'}`}
           >
             📦 Catálogo y Servicios
+          </button>
+          <button 
+            onClick={() => setActiveTab('testimonios')}
+            className={`w-full text-left p-3 rounded-lg font-semibold transition ${activeTab === 'testimonios' ? 'bg-primary text-white' : 'hover:bg-gray-800 text-gray-300'}`}
+          >
+            💬 Testimonios
           </button>
         </nav>
 
@@ -126,6 +121,7 @@ export default function AdminDashboard() {
             {activeTab === 'veterinarios' && 'Módulo de Personal'}
             {activeTab === 'historial' && 'Módulo de Trazabilidad'}
             {activeTab === 'catalogo' && 'Gestión de Tienda'}
+            {activeTab === 'testimonios' && 'Gestión de Testimonios'}
           </h1>
         </header>
 

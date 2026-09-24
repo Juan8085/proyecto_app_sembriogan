@@ -1,15 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
-import AdminDashboard from './pages/AdminDashboard'; // Importamos el nuevo panel
+import AdminDashboard from './pages/AdminDashboard';
+import PublicHome from './pages/PublicHome'; // <-- Importamos la web pública
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="/login" element={<Login />} />
+        {/* Ruta raíz ahora muestra la Página Web Pública */}
+        <Route path="/" element={<PublicHome />} />
         
-        {/* Nueva ruta protegida para el Administrador */}
+        {/* Rutas de Operación */}
+        <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>

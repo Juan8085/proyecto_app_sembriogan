@@ -3,17 +3,15 @@ const router = express.Router();
 const { 
     registrarUsuario, 
     loginUsuario, 
+    googleLogin, 
     obtenerUsuarios, 
     actualizarUsuarioAdmin 
 } = require('../controllers/auth.controller');
-const { verificarToken, esAdmin } = require('../middlewares/auth.middleware');
 
-// Rutas públicas
-router.post('/login', loginUsuario);
 router.post('/registro', registrarUsuario);
-
-// Rutas protegidas exclusivas para Administradores
-router.get('/usuarios', verificarToken, esAdmin, obtenerUsuarios);
-router.put('/usuarios/:id', verificarToken, esAdmin, actualizarUsuarioAdmin);
+router.post('/login', loginUsuario);
+router.post('/google', googleLogin); // <--- NUEVA RUTA PARA GOOGLE
+router.get('/usuarios', obtenerUsuarios);
+router.put('/usuarios/:id', actualizarUsuarioAdmin);
 
 module.exports = router;

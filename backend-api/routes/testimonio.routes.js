@@ -1,17 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { 
-    obtenerTestimoniosAdmin, 
-    obtenerTestimoniosPublicos, 
-    crearTestimonio, 
-    aprobarTestimonio, 
-    eliminarTestimonio 
+const {
+    obtenerTestimoniosPublicos,
+    obtenerTodosTestimoniosAdmin,
+    crearTestimonio,
+    cambiarEstadoTestimonio,
+    eliminarTestimonio
 } = require('../controllers/testimonio.controller');
 
-router.get('/', obtenerTestimoniosAdmin);
-router.get('/public', obtenerTestimoniosPublicos);
+router.get('/', obtenerTestimoniosPublicos);
+router.get('/admin/todos', obtenerTodosTestimoniosAdmin);
 router.post('/', crearTestimonio);
-router.put('/:id/aprobar', aprobarTestimonio);
+router.put('/:id', cambiarEstadoTestimonio);
 router.delete('/:id', eliminarTestimonio);
 
 module.exports = router;

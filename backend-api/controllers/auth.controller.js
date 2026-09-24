@@ -1,29 +1,28 @@
 const Usuario = require('../models/usuario.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 
-// 1. REGISTRAR UN NUEVO USUARIO
+// Inicializar cliente de Google (Requiere GOOGLE_CLIENT_ID en tu archivo .env)
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// 1. REGISTRAR UN NUEVO USUARIO (Tradicional)
 const registrarUsuario = async (req, res) => {
     try {
         const { nombre, email, password, rol } = req.body;
 
-        // Verificar si ya existe el correo
         const existeUsuario = await Usuario.findOne({ email });
         if (existeUsuario) {
             return res.status(400).json({ success: false, mensaje: "El correo ya está registrado" });
         }
 
-        // REGLA INTELIGENTE: Contar cuántos usuarios hay en total en la BD
         const totalUsuarios = await Usuario.countDocuments();
-
         let rolAsignado = rol || 'Cliente';
 
-        // Si la base de datos está COMPLETAMENTE VACÍA, el primer usuario SERÁ ADMIN por fuerza
         if (totalUsuarios === 0) {
             rolAsignado = 'Admin';
         }
 
-        // Encriptar contraseña
         const salt = await bcrypt.genSalt(10);
         const passwordEncriptado = await bcrypt.hash(password, salt);
 
@@ -32,7 +31,7 @@ const registrarUsuario = async (req, res) => {
             email,
             password: passwordEncriptado,
             rol: rolAsignado,
-            estado: true // Aseguramos que nace activo por defecto
+            estado: true
         });
 
         await nuevoUsuario.save();
@@ -43,29 +42,25 @@ const registrarUsuario = async (req, res) => {
     }
 };
 
-// 2. INICIAR SESIÓN (LOGIN)
+// 2. INICIAR SESIÓN (Tradicional)
 const loginUsuario = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Buscar el usuario por email
         const usuario = await Usuario.findOne({ email });
         if (!usuario) {
             return res.status(404).json({ success: false, mensaje: "Usuario no encontrado" });
         }
 
-        // CORRECCIÓN: Solo bloquear si el estado es estrictamente FALSE
         if (usuario.estado === false) {
             return res.status(401).json({ success: false, mensaje: "Usuario inactivo. Contacte al administrador." });
         }
 
-        // Verificar contraseña
         const passwordValido = await bcrypt.compare(password, usuario.password);
         if (!passwordValido) {
             return res.status(401).json({ success: false, mensaje: "Contraseña incorrecta" });
         }
 
-        // Generar Token (JWT)
         const token = jwt.sign(
             { id: usuario._id, rol: usuario.rol }, 
             process.env.JWT_SECRET || 'FirmaSecretaSembriogan2026', 
@@ -89,7 +84,68 @@ const loginUsuario = async (req, res) => {
     }
 };
 
-// 3. OBTENER TODOS LOS USUARIOS (Para el Panel Admin)
+// 3. NUEVO: AUTENTICACIÓN / REGISTRO CON GOOGLE
+const googleLogin = async (req, res) => {
+    try {
+        const { token } = req.body; // Token de Google enviado desde el frontend
+
+        // Verificar el token con la API de Google
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        
+        const payload = ticket.getPayload();
+        const { name, email } = payload;
+
+        // Comprobar si el usuario ya se encuentra registrado
+        let usuario = await Usuario.findOne({ email });
+
+        if (!usuario) {
+            // Si no existe, lo registramos automáticamente como 'Cliente'
+            // Creamos una contraseña aleatoria y encriptada para cumplir con el esquema
+            const salt = await bcrypt.genSalt(10);
+            const passwordAleatorio = await bcrypt.hash(Math.random().toString() + Date.now(), salt);
+
+            usuario = new Usuario({
+                nombre: name,
+                email,
+                password: passwordAleatorio,
+                rol: 'Cliente',
+                estado: true
+            });
+            await usuario.save();
+        }
+
+        if (usuario.estado === false) {
+            return res.status(401).json({ success: false, mensaje: "Usuario inactivo. Contacte al administrador." });
+        }
+
+        // Generar el Token JWT propio de la plataforma
+        const jwtToken = jwt.sign(
+            { id: usuario._id, rol: usuario.rol }, 
+            process.env.JWT_SECRET || 'FirmaSecretaSembriogan2026', 
+            { expiresIn: '8h' }
+        );
+
+        res.status(200).json({
+            success: true,
+            mensaje: "Autenticación con Google exitosa",
+            token: jwtToken,
+            usuario: {
+                id: usuario._id,
+                nombre: usuario.nombre,
+                email: usuario.email,
+                rol: usuario.rol
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, mensaje: "Error al autenticar con Google", error: error.message });
+    }
+};
+
+// 4. OBTENER TODOS LOS USUARIOS (Para el Panel Admin)
 const obtenerUsuarios = async (req, res) => {
     try {
         const usuarios = await Usuario.find().select('-password').sort({ createdAt: -1 });
@@ -99,7 +155,7 @@ const obtenerUsuarios = async (req, res) => {
     }
 };
 
-// 4. ACTUALIZAR / DESACTIVAR / CAMBIAR CLAVE DE USUARIO
+// 5. ACTUALIZAR / DESACTIVAR / CAMBIAR CLAVE DE USUARIO
 const actualizarUsuarioAdmin = async (req, res) => {
     try {
         const { id } = req.params;
@@ -110,7 +166,6 @@ const actualizarUsuarioAdmin = async (req, res) => {
         if (rol !== undefined) datosActualizar.rol = rol;
         if (estado !== undefined) datosActualizar.estado = estado;
 
-        // Si el admin escribió una nueva contraseña, la encriptamos
         if (password && password.trim() !== "") {
             const salt = await bcrypt.genSalt(10);
             datosActualizar.password = await bcrypt.hash(password, salt);
@@ -124,4 +179,10 @@ const actualizarUsuarioAdmin = async (req, res) => {
     }
 };
 
-module.exports = { registrarUsuario, loginUsuario, obtenerUsuarios, actualizarUsuarioAdmin };
+module.exports = { 
+    registrarUsuario, 
+    loginUsuario, 
+    googleLogin, 
+    obtenerUsuarios, 
+    actualizarUsuarioAdmin 
+};

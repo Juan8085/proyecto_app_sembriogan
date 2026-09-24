@@ -1,59 +1,91 @@
 const Testimonio = require('../models/testimonio.model');
 
-// Obtener todos para el panel administrativo
-const obtenerTestimoniosAdmin = async (req, res) => {
-    try {
-        const testimonios = await Testimonio.find();
-        res.status(200).json({ success: true, data: testimonios });
-    } catch (error) {
-        res.status(500).json({ success: false, mensaje: "Error al obtener testimonios", error: error.message });
-    }
-};
-
-// Obtener solo los aprobados para la página pública
+// Obtener solo los testimonios aprobados para la página pública
 const obtenerTestimoniosPublicos = async (req, res) => {
     try {
-        const testimonios = await Testimonio.find({ aprobado: true });
+        const testimonios = await Testimonio.find({ aprobado: true }).sort({ _id: -1 });
         res.status(200).json({ success: true, data: testimonios });
     } catch (error) {
-        res.status(500).json({ success: false, mensaje: "Error al obtener testimonios", error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 };
 
-// Crear testimonio desde la landing page (pendiente de aprobación)
+// Obtener todos los testimonios (Para el panel de administración)
+const obtenerTodosTestimoniosAdmin = async (req, res) => {
+    try {
+        const testimonios = await Testimonio.find().sort({ _id: -1 });
+        res.status(200).json({ success: true, data: testimonios });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// Crear un testimonio (Enviado por el cliente)
 const crearTestimonio = async (req, res) => {
     try {
-        const { productor, finca, comentario } = req.body;
-        if (!productor || !finca || !comentario) {
-            return res.status(400).json({ success: false, mensaje: "Faltan datos obligatorios" });
+        const { nombre, rol, mensaje } = req.body;
+        if (!nombre || !mensaje) {
+            return res.status(400).json({ success: false, mensaje: "Nombre y mensaje son obligatorios" });
         }
-        const nuevo = new Testimonio({ productor, finca, comentario, aprobado: false });
-        await nuevo.save();
-        res.status(201).json({ success: true, mensaje: "¡Gracias por tu testimonio! Estará visible tras la validación de Sembriogan." });
+
+        const nuevoTestimonio = new Testimonio({
+            nombre,
+            rol: rol || 'Productor Asociado',
+            mensaje,
+            aprobado: false // Nace pendiente de revisión del administrador
+        });
+
+        await nuevoTestimonio.save();
+        res.status(201).json({ 
+            success: true, 
+            mensaje: "¡Testimonio enviado con éxito! Quedará visible en la web tras la aprobación del administrador." 
+        });
     } catch (error) {
-        res.status(500).json({ success: false, mensaje: "Error al enviar testimonio", error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 };
 
-// Aprobar testimonio desde el panel administrativo
-const aprobarTestimonio = async (req, res) => {
+// Aprobar o rechazar un testimonio (Admin)
+const cambiarEstadoTestimonio = async (req, res) => {
     try {
         const { id } = req.params;
-        // Cambiamos { new: true } por { returnDocument: 'after' } para evitar la advertencia de Mongoose
-        const actualizado = await Testimonio.findByIdAndUpdate(id, { aprobado: true }, { returnDocument: 'after' });
-        res.status(200).json({ success: true, mensaje: "Testimonio aprobado y publicado", data: actualizado });
+        const { aprobado } = req.body;
+
+        const testimonioActualizado = await Testimonio.findByIdAndUpdate(
+            id, 
+            { aprobado }, 
+            { new: true }
+        );
+
+        if (!testimonioActualizado) {
+            return res.status(404).json({ success: false, mensaje: "Testimonio no encontrado" });
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            mensaje: "Estado del testimonio actualizado", 
+            data: testimonioActualizado 
+        });
     } catch (error) {
-        res.status(500).json({ success: false, mensaje: "Error al aprobar", error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 };
 
+// Eliminar testimonio
 const eliminarTestimonio = async (req, res) => {
     try {
-        await Testimonio.findByIdAndDelete(req.params.id);
-        res.status(200).json({ success: true, mensaje: "Testimonio eliminado" });
+        const { id } = req.params;
+        await Testimonio.findByIdAndDelete(id);
+        res.status(200).json({ success: true, mensaje: "Testimonio eliminado correctamente" });
     } catch (error) {
-        res.status(500).json({ success: false, mensaje: "Error al eliminar", error: error.message });
+        res.status(500).json({ success: false, error: error.message });
     }
 };
 
-module.exports = { obtenerTestimoniosAdmin, obtenerTestimoniosPublicos, crearTestimonio, aprobarTestimonio, eliminarTestimonio };
+module.exports = {
+    obtenerTestimoniosPublicos,
+    obtenerTodosTestimoniosAdmin,
+    crearTestimonio,
+    cambiarEstadoTestimonio,
+    eliminarTestimonio
+};
