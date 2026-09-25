@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sembriogan Vet - Catálogo e Insumos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col relative">
+
+    <header class="bg-white shadow-sm py-4 px-6 flex justify-between items-center sticky top-0 z-40 border-b border-slate-200">
+        <div class="flex items-center space-x-3">
+            <img src="img/logo.png" alt="Logo Sembriogan" class="h-8 object-contain">
+            <h1 class="text-sm font-bold text-slate-800">Catálogo de Campo</h1>
+        </div>
+        <a href="dashboard.html" class="text-sky-600 font-bold text-xs bg-sky-50 px-3 py-1.5 rounded-xl transition hover:bg-sky-100">← Volver</a>
+    </header>
+
+    <main class="flex-1 p-4 sm:p-6 max-w-md mx-auto w-full pb-24">
+        
+        <div id="alerta-estado" class="hidden p-3 rounded-xl text-xs font-bold text-center mb-4"></div>
+
+        <!-- Filtros Dinámicos -->
+        <div id="contenedor-filtros" class="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+            <button onclick="filtrar('Todos')" class="bg-slate-800 text-white px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap">Todos</button>
+            <!-- Los demás botones se generan automáticamente desde la BD -->
+        </div>
+
+        <!-- Cuadrícula de Productos -->
+        <div id="grid-productos" class="grid grid-cols-2 gap-3">
+            <div class="col-span-2 text-center text-sm text-slate-500 py-10">Cargando catálogo...</div>
+        </div>
+
+    </main>
+
+    <!-- Botón Flotante del Carrito -->
+    <button onclick="toggleCarrito()" class="fixed bottom-6 right-6 bg-amber-500 hover:bg-amber-600 text-white rounded-full p-4 shadow-lg shadow-amber-500/30 flex items-center justify-center z-40 transition">
+        <span class="text-xl">🛒</span>
+        <span id="contador-carrito" class="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full border-2 border-white">0</span>
+    </button>
+
+    <!-- Modal del Carrito -->
+    <div id="modal-carrito" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex flex-col justify-end transition-opacity">
+        <div class="bg-white w-full max-w-md mx-auto rounded-t-3xl p-6 h-[80vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-4">
+                <h2 class="text-lg font-bold text-slate-800">Tu Pedido</h2>
+                <button onclick="toggleCarrito()" class="text-slate-400 hover:text-slate-700 font-bold text-xl">✕</button>
+            </div>
+            
+            <div id="lista-carrito" class="flex-1 overflow-y-auto space-y-3">
+                <p class="text-center text-sm text-slate-500 mt-10">El carrito está vacío</p>
+            </div>
+
+            <div class="border-t border-slate-100 pt-4 mt-4 space-y-4">
+                <div class="flex justify-between items-center font-bold text-lg text-slate-800">
+                    <span>Total:</span>
+                    <span id="total-carrito">$0</span>
+                </div>
+                <button onclick="procesarPagoSimulado()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition text-center text-sm">
+                    Finalizar Pedido (Simulado) ✅
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let productosCatalogo = [];
+        let carrito = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('tokenVet');
+            if (!token) window.location.href = 'index.html';
+            cargarCatalogo();
+        });
+
+        async function cargarCatalogo() {
+            try {
+                if (navigator.onLine) {
+                    const res = await fetch('http://localhost:3000/api/catalogo');
+                    if (!res.ok) throw new Error("Ruta no encontrada"); 
+                    
+                    const data = await res.json();
+                    if (data.success && data.data.length > 0) {
+                        productosCatalogo = data.data;
+                        localStorage.setItem('catalogoOffline', JSON.stringify(productosCatalogo));
+                    } else {
+                        throw new Error("Catálogo vacío");
+                    }
+                } else {
+                    throw new Error("Offline");
+                }
+            } catch (error) {
+                productosCatalogo = JSON.parse(localStorage.getItem('catalogoOffline') || '[]');
+            }
+
+            generarFiltrosDinámicos();
+            renderizarProductos(productosCatalogo);
+        }
+
+        function generarFiltrosDinámicos() {
+            const contenedor = document.getElementById('contenedor-filtros');
+            const tipos = [...new Set(productosCatalogo.map(p => p.tipo).filter(Boolean))]; // Extraer tipos únicos
+            
+            let html = `<button onclick="filtrar('Todos')" class="bg-slate-800 text-white px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap">Todos</button>`;
+            tipos.forEach(tipo => {
+                html += `<button onclick="filtrar('${tipo}')" class="bg-white text-slate-600 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap">${tipo}</button>`;
+            });
+            contenedor.innerHTML = html;
+        }
+
+        function renderizarProductos(productos) {
+            const grid = document.getElementById('grid-productos');
+            if (!productos || productos.length === 0) {
+                grid.innerHTML = `<div class="col-span-2 text-center text-sm text-slate-500 py-10">No hay productos disponibles.</div>`;
+                return;
+            }
+
+            grid.innerHTML = productos.map(prod => {
+                const descripcion = prod.descripcion || 'Sin descripción';
+                const costo = prod.costo || 0;
+                const tipo = prod.tipo || 'Catálogo';
+                
+                // Resolver ruta de imagen
+                let urlImagen = 'img/logo.png';
+                if (prod.imagen) {
+                    urlImagen = prod.imagen.startsWith('http') ? prod.imagen : `http://localhost:3000${prod.imagen.startsWith('/') ? '' : '/'}${prod.imagen}`;
+                }
+
+                return `
+                <div class="bg-white border border-slate-200 rounded-2xl p-3 flex flex-col justify-between shadow-sm relative overflow-hidden">
+                    <span class="absolute top-0 right-0 bg-sky-100 text-sky-700 text-[10px] font-bold px-2 py-1 rounded-bl-lg">${tipo}</span>
+                    <div class="h-24 bg-slate-50 rounded-xl mb-3 flex items-center justify-center overflow-hidden border border-slate-100 mt-2">
+                        <img src="${urlImagen}" alt="${descripcion}" class="object-cover h-full w-full opacity-90" onerror="this.src='img/logo.png'">
+                    </div>
+                    <div class="mb-2 flex-1">
+                        <h3 class="font-bold text-slate-800 text-xs leading-tight line-clamp-2">${descripcion}</h3>
+                        <p class="text-sky-600 font-black mt-1 text-sm">$${costo.toLocaleString('es-CO')}</p>
+                    </div>
+                    <button onclick="agregarAlCarrito('${prod._id}', '${descripcion.replace(/'/g, "\\'")}', ${costo})" class="w-full bg-slate-800 text-white text-[11px] font-bold py-2 rounded-xl mt-auto hover:bg-slate-700">Agregar</button>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function filtrar(categoria) {
+            if (categoria === 'Todos') renderizarProductos(productosCatalogo);
+            else renderizarProductos(productosCatalogo.filter(p => p.tipo === categoria));
+        }
+
+        function agregarAlCarrito(id, descripcion, costo) {
+            const item = carrito.find(i => i.id === id);
+            if (item) item.cantidad++;
+            else carrito.push({ id, descripcion, costo, cantidad: 1 });
+            actualizarUI();
+            mostrarAlerta(`Añadido: ${descripcion}`, "bg-sky-50 text-sky-700 border-sky-200");
+        }
+
+        function actualizarUI() {
+            document.getElementById('contador-carrito').textContent = carrito.reduce((acc, el) => acc + el.cantidad, 0);
+            
+            const lista = document.getElementById('lista-carrito');
+            if (carrito.length === 0) {
+                lista.innerHTML = `<p class="text-center text-sm text-slate-500 mt-10">El carrito está vacío</p>`;
+                document.getElementById('total-carrito').textContent = '$0';
+                return;
+            }
+
+            let total = 0;
+            lista.innerHTML = carrito.map((item, index) => {
+                total += item.costo * item.cantidad;
+                return `
+                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <div>
+                        <p class="font-bold text-sm text-slate-800 w-48 truncate">${item.descripcion}</p>
+                        <p class="text-xs text-slate-500">$${item.costo.toLocaleString('es-CO')} x ${item.cantidad}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-sm text-sky-700">$${(item.costo * item.cantidad).toLocaleString('es-CO')}</span>
+                        <button onclick="eliminarDelCarrito(${index})" class="text-red-500 hover:text-red-700 font-bold">🗑️</button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            document.getElementById('total-carrito').textContent = `$${total.toLocaleString('es-CO')}`;
+        }
+
+        function eliminarDelCarrito(index) {
+            carrito.splice(index, 1);
+            actualizarUI();
+        }
+
+        function toggleCarrito() {
+            const modal = document.getElementById('modal-carrito');
+            modal.classList.toggle('hidden');
+        }
+
+        async function procesarPagoSimulado() {
+            if (carrito.length === 0) return alert("El carrito está vacío.");
+            
+            const usuarioStr = localStorage.getItem('usuarioVet');
+            const total = carrito.reduce((acc, el) => acc + (el.costo * el.cantidad), 0);
+            
+            const nuevaOrden = {
+                comprador: usuarioStr ? JSON.parse(usuarioStr).nombre : 'Veterinario',
+                items: carrito,
+                total: total,
+                fecha: new Date().toISOString(),
+                estadoPago: 'Aprobado Local'
+            };
+
+            guardarOrdenOffline(nuevaOrden);
+        }
+
+        function guardarOrdenOffline(orden) {
+            let cola = JSON.parse(localStorage.getItem('colaOrdenes') || '[]');
+            cola.push(orden);
+            localStorage.setItem('colaOrdenes', JSON.stringify(cola));
+            alert("Pedido guardado en cola. Se enviará automáticamente al recuperar la señal (Módulo en desarrollo).");
+            carrito = [];
+            actualizarUI();
+            toggleCarrito();
+        }
+
+        function mostrarAlerta(mensaje, clases) {
+            const alerta = document.getElementById('alerta-estado');
+            alerta.textContent = mensaje;
+            alerta.className = `p-3 rounded-xl text-xs font-bold text-center mb-4 border ${clases}`;
+            alerta.classList.remove('hidden');
+            setTimeout(() => alerta.classList.add('hidden'), 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sembriogan Vet - Registro de Campo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col">
+
+    <!-- HEADER -->
+    <header class="bg-white shadow-sm py-4 px-6 flex justify-between items-center sticky top-0 z-50 border-b border-slate-200">
+        <div class="flex items-center space-x-3">
+            <img src="img/logo.png" alt="Logo Sembriogan" class="h-8 object-contain">
+            <h1 class="text-sm font-bold text-slate-800">Nuevo Registro</h1>
+        </div>
+        <a href="dashboard.html" class="text-sky-600 font-bold text-xs bg-sky-50 px-3 py-1.5 rounded-xl transition hover:bg-sky-100">← Volver</a>
+    </header>
+
+    <!-- FORMULARIO DE CAMPO -->
+    <main class="flex-1 p-4 sm:p-6 max-w-md mx-auto w-full">
+        
+        <div class="bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-slate-200 space-y-4">
+            
+            <div id="alerta-estado" class="hidden p-3 rounded-xl text-xs font-bold text-center"></div>
+
+            <form id="form-registro" class="space-y-4">
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Productor / Hato</label>
+                        <input type="text" id="productor" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-sky-500 outline-none" placeholder="Ej: Finca La Esmeralda">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Chapeta / Arete</label>
+                        <input type="text" id="arete" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-sky-500 outline-none" placeholder="Ej: BOV-9821">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Fecha Inicio (Día 0)</label>
+                        <input type="date" id="fechaInicio" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tipo de Procedimiento</label>
+                    <select id="tipoProcedimiento" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+                        <option value="IATF">IATF (Inseminación Artificial)</option>
+                        <option value="TE">TE (Transferencia de Embriones)</option>
+                        <option value="Diagnostico">Diagnóstico de Preñez</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Genética Utilizada</label>
+                    <input type="text" id="genetica" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-sky-500 outline-none" placeholder="Ej: Toro Brahman (Diamante) / Pajilla Angus">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Estado del Ciclo</label>
+                    <select id="estadoPrenez" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-sky-500 outline-none">
+                        <option value="Pendiente Evaluación">Pendiente Evaluación (En Proceso)</option>
+                        <option value="Preñada">Preñada (Ciclo Exitoso)</option>
+                        <option value="Vacía">Vacía / Abierta (Ciclo Fallido)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Observaciones de Campo</label>
+                    <textarea id="observaciones" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-sky-500 outline-none" placeholder="Condición corporal, anomalías, etc."></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition text-center text-sm">
+                    Guardar Registro 📋
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <!-- SCRIPT DE SINCRONIZACIÓN OFFLINE Y ENVÍO -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('tokenVet');
+        if (!token) {
+            window.location.href = 'index.html';
+            return;
+        }
+
+        document.getElementById('fechaInicio').valueAsDate = new Date();
+        const form = document.getElementById('form-registro');
+        const alerta = document.getElementById('alerta-estado');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const nuevoRegistro = {
+                productor: document.getElementById('productor').value,
+                arete: document.getElementById('arete').value,
+                tipoProcedimiento: document.getElementById('tipoProcedimiento').value,
+                geneticaUtilizada: document.getElementById('genetica').value,
+                estadoPrenez: document.getElementById('estadoPrenez').value,
+                observaciones: document.getElementById('observaciones').value,
+                fechasProtocolo: {
+                    dia0_sincronizacion: document.getElementById('fechaInicio').value
+                }
+            };
+
+            if (navigator.onLine) {
+                try {
+                    const res = await fetch('http://localhost:3000/api/registro-genetico', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(nuevoRegistro)
+                    });
+                    
+                    const data = await res.json();
+
+                    if (res.ok && data.success) {
+                        mostrarAlerta("✅ ¡Procedimiento sincronizado al Panel Admin!", "bg-emerald-50 text-emerald-700 border border-emerald-200");
+                        form.reset();
+                        document.getElementById('fechaInicio').valueAsDate = new Date();
+                    } else {
+                        // AQUÍ ESTABA EL PROBLEMA: Si el servidor rechaza los datos (ej. falta un campo), mostramos el error real.
+                        mostrarAlerta("❌ Error del Servidor: " + (data.mensaje || "Faltan datos requeridos en el Backend"), "bg-red-50 text-red-700 border border-red-200");
+                        console.error("Error devuelto por el servidor:", data);
+                    }
+                } catch (err) {
+                    // Solo cae aquí si el fetch falla por red (el servidor localhost:3000 está apagado)
+                    console.warn("No se pudo conectar al servidor. Guardando offline...");
+                    guardarOffline(nuevoRegistro);
+                }
+            } else {
+                guardarOffline(nuevoRegistro);
+            }
+        });
+
+        function guardarOffline(registro) {
+            let cola = JSON.parse(localStorage.getItem('colaRegistros') || '[]');
+            cola.push(registro);
+            localStorage.setItem('colaRegistros', JSON.stringify(cola));
+            
+            mostrarAlerta("📱 Sin señal: Registro guardado localmente. Se sincronizará al recuperar internet.", "bg-amber-50 text-amber-700 border border-amber-200");
+            form.reset();
+            document.getElementById('fechaInicio').valueAsDate = new Date();
+        }
+
+        function mostrarAlerta(mensaje, clases) {
+            alerta.textContent = mensaje;
+            alerta.className = `p-3 rounded-xl text-xs font-bold text-center mb-4 ${clases}`;
+            alerta.classList.remove('hidden');
+            setTimeout(() => alerta.classList.add('hidden'), 5000);
+        }
+    });
+    </script>
+    <!-- Registro del Service Worker para PWA (Soporte Offline) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker activo:', reg.scope))
+                    .catch(err => console.error('Error Service Worker:', err));
+            });
+        }
+    </script>
+</body>
+</html>
