@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sembriogan Vet - Catálogo e Insumos</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://checkout.wompi.co/widget.js"></script>
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col relative">
 
@@ -56,8 +57,8 @@
                     <span>Total:</span>
                     <span id="total-carrito">$0</span>
                 </div>
-                <button onclick="procesarPagoSimulado()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition text-center text-sm">
-                    Finalizar Pedido (Simulado) ✅
+                <button onclick="procesarPagoWompi()" class="w-full bg-[#001B94] hover:bg-blue-900 text-white font-bold py-3.5 rounded-xl shadow-lg transition text-center text-sm flex items-center justify-center gap-2">
+                    Pagar con Wompi 💳
                 </button>
             </div>
         </div>
@@ -194,21 +195,75 @@
             modal.classList.toggle('hidden');
         }
 
-        async function procesarPagoSimulado() {
+        // INTEGRACIÓN OFICIAL CON WOMPI
+        function procesarPagoWompi() {
             if (carrito.length === 0) return alert("El carrito está vacío.");
-            
+            if (!navigator.onLine) return alert("⚠️ Necesitas conexión a internet para procesar pagos reales con Wompi.");
+
+            // Wompi exige el valor en centavos
+            const totalEnCentavos = carrito.reduce((acc, el) => acc + (el.costo * el.cantidad), 0) * 100;
+            const referenciaUnica = 'VET-' + Date.now(); 
+
+            // Configuración del Widget de Wompi corregida
+            var checkout = new WidgetCheckout({
+                currency: 'COP',
+                amountInCents: totalEnCentavos,
+                reference: referenciaUnica,
+                publicKey: 'pub_test_ljKW2orNya3GoWqfTCl1wu6vOy50mnnh'
+                // LÍNEA ELIMINADA: Quitamos redirectUrl para que use el modal nativo
+            });
+
+            // Abrir la pasarela
+            checkout.open(function (result) {
+                var transaction = result.transaction;
+                
+                if (transaction.status === 'APPROVED') {
+                    enviarOrdenRealAlBackend(transaction.reference, 'Aprobado');
+                } else {
+                    alert("El pago no fue aprobado. Estado de transacción: " + transaction.status);
+                }
+            });
+        }
+
+        // ENVÍO DE ORDEN AL SERVIDOR Y REDUCCIÓN DE STOCK
+        async function enviarOrdenRealAlBackend(referencia, estado) {
             const usuarioStr = localStorage.getItem('usuarioVet');
+            const token = localStorage.getItem('tokenVet');
             const total = carrito.reduce((acc, el) => acc + (el.costo * el.cantidad), 0);
             
             const nuevaOrden = {
                 comprador: usuarioStr ? JSON.parse(usuarioStr).nombre : 'Veterinario',
                 items: carrito,
                 total: total,
-                fecha: new Date().toISOString(),
-                estadoPago: 'Aprobado Local'
+                referenciaWompi: referencia,
+                estadoPago: estado
             };
 
-            guardarOrdenOffline(nuevaOrden);
+            try {
+                const res = await fetch('http://localhost:3000/api/ordenes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(nuevaOrden)
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    alert("✅ ¡Pago exitoso! El inventario de Sembriogan ha sido actualizado automáticamente.");
+                    carrito = [];
+                    actualizarUI();
+                    toggleCarrito();
+                    cargarCatalogo(); // Recargamos el catálogo para ver el stock reducido en pantalla
+                } else {
+                    throw new Error(data.error || data.mensaje);
+                }
+            } catch (error) {
+                alert("Pago procesado en Wompi, pero hubo un error al sincronizar el inventario: " + error.message);
+                // Aquí podrías guardar la orden en offline para sincronizar luego
+            }
         }
 
         function guardarOrdenOffline(orden) {

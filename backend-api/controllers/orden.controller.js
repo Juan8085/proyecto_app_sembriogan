@@ -1,48 +1,40 @@
 const Orden = require('../models/orden.model');
 const Catalogo = require('../models/catalogo.model');
 
-// 1. Crear nueva orden y descontar inventario si son productos físicos
+// Crear una orden y descontar inventario
 const crearOrden = async (req, res) => {
     try {
-        const { cliente, items, total, referenciaWompi } = req.body;
+        const { comprador, items, total, referenciaWompi, estadoPago } = req.body;
 
-        if (!cliente || !items || items.length === 0 || total === undefined) {
-            return res.status(400).json({ success: false, mensaje: "Faltan datos de la orden" });
-        }
-
-        // Validar y descontar stock de los productos físicos comprados
-        for (let item of items) {
-            if (item.catalogoItem) {
-                const productoDB = await Catalogo.findById(item.catalogoItem);
-                if (productoDB && !productoDB.esServicio) {
-                    if (productoDB.stock < item.cantidad) {
-                        return res.status(400).json({ 
-                            success: false, 
-                            mensaje: `Stock insuficiente para el producto: ${productoDB.tipo}. Disponibles: ${productoDB.stock}` 
-                        });
-                    }
-                    productoDB.stock -= item.cantidad;
-                    await productoDB.save();
-                }
-            }
-        }
-
+        // 1. Crear el registro financiero
         const nuevaOrden = new Orden({
-            cliente,
+            comprador,
             items,
             total,
             referenciaWompi,
-            estado: 'Aprobado'
+            estadoPago: estadoPago || 'Pendiente',
+            fecha: new Date()
         });
+        await nuevaOrden.save();
 
-        const ordenGuardada = await nuevaOrden.save();
+        // 2. Descontar el inventario (Stock) si el pago fue aprobado
+        if (estadoPago === 'Aprobado') {
+            for (let item of items) {
+                // $inc con valor negativo resta exactamente la cantidad comprada
+                await Catalogo.findByIdAndUpdate(item.id, {
+                    $inc: { stock: -item.cantidad }
+                });
+            }
+        }
 
-        res.status(201).json({
-            success: true,
-            mensaje: "Orden registrada y stock actualizado con éxito",
-            data: ordenGuardada
-        });
+        // 3. (Opcional) Notificar al Panel Administrativo en tiempo real por WebSockets
+        if (req.io) {
+            req.io.emit('nueva-venta-realizada');
+        }
+
+        res.status(201).json({ success: true, mensaje: "Orden procesada y stock descontado", data: nuevaOrden });
     } catch (error) {
+        console.error("Error al procesar la orden:", error);
         res.status(500).json({ success: false, error: error.message });
     }
 };
