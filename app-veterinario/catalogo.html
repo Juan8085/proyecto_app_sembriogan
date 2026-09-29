@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sembriogan Vet - Catálogo e Insumos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://checkout.wompi.co/widget.js"></script>
@@ -121,7 +121,6 @@
                 const costo = prod.costo || 0;
                 const tipo = prod.tipo || 'Catálogo';
                 
-                // Resolver ruta de imagen
                 let urlImagen = 'img/logo.png';
                 if (prod.imagen) {
                     urlImagen = prod.imagen.startsWith('http') ? prod.imagen : `http://localhost:3000${prod.imagen.startsWith('/') ? '' : '/'}${prod.imagen}`;
@@ -137,7 +136,8 @@
                         <h3 class="font-bold text-slate-800 text-xs leading-tight line-clamp-2">${descripcion}</h3>
                         <p class="text-sky-600 font-black mt-1 text-sm">$${costo.toLocaleString('es-CO')}</p>
                     </div>
-                    <button onclick="agregarAlCarrito('${prod._id}', '${descripcion.replace(/'/g, "\\'")}', ${costo})" class="w-full bg-slate-800 text-white text-[11px] font-bold py-2 rounded-xl mt-auto hover:bg-slate-700">Agregar</button>
+                    <!-- AQUÍ ESTÁ EL CAMBIO: Se añadió el parámetro de 'tipo' al final -->
+                    <button onclick="agregarAlCarrito('${prod._id}', '${descripcion.replace(/'/g, "\\'")}', ${costo}, '${tipo}')" class="w-full bg-slate-800 text-white text-[11px] font-bold py-2 rounded-xl mt-auto hover:bg-slate-700">Agregar</button>
                 </div>
                 `;
             }).join('');
@@ -148,10 +148,10 @@
             else renderizarProductos(productosCatalogo.filter(p => p.tipo === categoria));
         }
 
-        function agregarAlCarrito(id, descripcion, costo) {
+        function agregarAlCarrito(id, descripcion, costo, tipo) {
             const item = carrito.find(i => i.id === id);
             if (item) item.cantidad++;
-            else carrito.push({ id, descripcion, costo, cantidad: 1 });
+            else carrito.push({ id, descripcion, costo, cantidad: 1, tipo: tipo }); // Se guarda el tipo aquí
             actualizarUI();
             mostrarAlerta(`Añadido: ${descripcion}`, "bg-sky-50 text-sky-700 border-sky-200");
         }
@@ -195,34 +195,54 @@
             modal.classList.toggle('hidden');
         }
 
-        // INTEGRACIÓN OFICIAL CON WOMPI
-        function procesarPagoWompi() {
+        // NUEVA FUNCIÓN: Generador criptográfico para la Firma de Integridad de Wompi
+        async function generarFirmaWompi(referencia, montoEnCentavos, secretoIntegridad) {
+            const cadena = referencia + montoEnCentavos + 'COP' + secretoIntegridad;
+            const encoder = new TextEncoder();
+            const data = encoder.encode(cadena);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // INTEGRACIÓN OFICIAL CON WOMPI ACTUALIZADA
+        async function procesarPagoWompi() {
             if (carrito.length === 0) return alert("El carrito está vacío.");
             if (!navigator.onLine) return alert("⚠️ Necesitas conexión a internet para procesar pagos reales con Wompi.");
 
-            // Wompi exige el valor en centavos
             const totalEnCentavos = carrito.reduce((acc, el) => acc + (el.costo * el.cantidad), 0) * 100;
             const referenciaUnica = 'VET-' + Date.now(); 
 
-            // Configuración del Widget de Wompi corregida
-            var checkout = new WidgetCheckout({
-                currency: 'COP',
-                amountInCents: totalEnCentavos,
-                reference: referenciaUnica,
-                publicKey: 'pub_test_ljKW2orNya3GoWqfTCl1wu6vOy50mnnh'
-                // LÍNEA ELIMINADA: Quitamos redirectUrl para que use el modal nativo
-            });
+            // 🚨 1. PEGA AQUÍ TU SECRETO DE INTEGRIDAD (De la sección Desarrolladores de Wompi)
+            const secretoDeIntegridad = 'test_integrity_aHql6rp4EWgoSLM7bJ9INi9GkHfHVyRO'; 
+            
+            // 🚨 2. PEGA AQUÍ TU LLAVE PÚBLICA (La que empieza por pub_test_...)
+            const llavePublica = 'pub_test_ljKW2orNya3GoWqfTCl1wu6vOy50mnnh';
 
-            // Abrir la pasarela
-            checkout.open(function (result) {
-                var transaction = result.transaction;
-                
-                if (transaction.status === 'APPROVED') {
-                    enviarOrdenRealAlBackend(transaction.reference, 'Aprobado');
-                } else {
-                    alert("El pago no fue aprobado. Estado de transacción: " + transaction.status);
-                }
-            });
+            try {
+                // Generamos la firma SHA-256 en tiempo real
+                const hashIntegridad = await generarFirmaWompi(referenciaUnica, totalEnCentavos, secretoDeIntegridad);
+
+                var checkout = new WidgetCheckout({
+                    currency: 'COP',
+                    amountInCents: totalEnCentavos,
+                    reference: referenciaUnica,
+                    publicKey: llavePublica,
+                    signature: { integrity: hashIntegridad } // Enviamos la firma exigida
+                });
+
+                checkout.open(function (result) {
+                    var transaction = result.transaction;
+                    if (transaction.status === 'APPROVED') {
+                        enviarOrdenRealAlBackend(transaction.reference, 'Aprobado');
+                    } else {
+                        alert("El pago no fue aprobado. Estado de transacción: " + transaction.status);
+                    }
+                });
+            } catch (error) {
+                console.error("Error al generar firma criptográfica:", error);
+                alert("Hubo un problema procesando la seguridad del pago.");
+            }
         }
 
         // ENVÍO DE ORDEN AL SERVIDOR Y REDUCCIÓN DE STOCK
@@ -231,9 +251,19 @@
             const token = localStorage.getItem('tokenVet');
             const total = carrito.reduce((acc, el) => acc + (el.costo * el.cantidad), 0);
             
+            // Extraemos datos del veterinario o ponemos unos por defecto si faltan
+            const usuario = usuarioStr ? JSON.parse(usuarioStr) : {};
+            const nombreVet = usuario.nombre || 'Veterinario Sembriogan';
+            const emailVet = usuario.email || 'vet@sembriogan.com';
+            
             const nuevaOrden = {
-                comprador: usuarioStr ? JSON.parse(usuarioStr).nombre : 'Veterinario',
-                items: carrito,
+                // Estructura exacta que exige tu modelo Mongoose
+                cliente: {
+                    nombre: nombreVet,
+                    email: emailVet
+                },
+                comprador: nombreVet,
+                items: carrito, // El carrito ahora ya lleva el 'tipo' adentro
                 total: total,
                 referenciaWompi: referencia,
                 estadoPago: estado
@@ -256,13 +286,12 @@
                     carrito = [];
                     actualizarUI();
                     toggleCarrito();
-                    cargarCatalogo(); // Recargamos el catálogo para ver el stock reducido en pantalla
+                    cargarCatalogo(); // Recargamos catálogo para ver stock reducido
                 } else {
                     throw new Error(data.error || data.mensaje);
                 }
             } catch (error) {
                 alert("Pago procesado en Wompi, pero hubo un error al sincronizar el inventario: " + error.message);
-                // Aquí podrías guardar la orden en offline para sincronizar luego
             }
         }
 

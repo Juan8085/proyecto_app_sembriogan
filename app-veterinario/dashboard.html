@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Sembriogan Vet - Panel Operativo</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -21,7 +21,7 @@
         </button>
     </header>
 
-    <main class="flex-1 p-6 max-w-md mx-auto w-full space-y-6">
+    <main class="flex-1 p-5 max-w-md mx-auto w-full space-y-5">
         
         <!-- Estado de Red / Sincronización -->
         <div id="estado-red" class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-2xl flex items-center justify-between text-xs font-bold transition-colors">
@@ -30,36 +30,46 @@
         </div>
 
         <!-- Módulos de Operación de Campo -->
-        <div class="grid grid-cols-2 gap-4">
-            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition cursor-pointer" onclick="window.location.href='registro.html'">
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition cursor-pointer" onclick="window.location.href='registro.html'">
                 <div>
-                    <div class="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center text-2xl mb-3">💉</div>
-                    <h3 class="font-bold text-slate-800 text-sm">Registro IATF / TE</h3>
-                    <p class="text-slate-500 text-xs mt-1">Control reproductivo y preñez.</p>
+                    <div class="w-10 h-10 bg-sky-50 rounded-2xl flex items-center justify-center text-xl mb-2">💉</div>
+                    <h3 class="font-bold text-slate-800 text-sm">Registro IATF</h3>
                 </div>
-                <span class="text-sky-600 font-bold text-xs mt-4 block">Registrar Nuevo →</span>
+                <span class="text-sky-600 font-bold text-xs mt-3 block">Nuevo →</span>
             </div>
 
-            <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition cursor-pointer" onclick="window.location.href='catalogo.html'">
+            <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition cursor-pointer" onclick="window.location.href='catalogo.html'">
                 <div>
-                    <div class="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-2xl mb-3">📦</div>
-                    <h3 class="font-bold text-slate-800 text-sm">Insumos y Catálogo</h3>
-                    <p class="text-slate-500 text-xs mt-1">Compra de material genético e insumos.</p>
+                    <div class="w-10 h-10 bg-amber-50 rounded-2xl flex items-center justify-center text-xl mb-2">📦</div>
+                    <h3 class="font-bold text-slate-800 text-sm">Catálogo</h3>
                 </div>
-                <span class="text-amber-600 font-bold text-xs mt-4 block">Explorar →</span>
+                <span class="text-amber-600 font-bold text-xs mt-3 block">Explorar →</span>
             </div>
         </div>
 
+        <!-- MÓDULO NUEVO: ASISTENTE DE IA -->
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-5 rounded-3xl shadow-sm flex items-center justify-between hover:shadow-md transition cursor-pointer" onclick="window.location.href='chat.html'">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl shadow-inner">🤖</div>
+                <div>
+                    <h3 class="font-bold text-white text-sm">Asistente IA Ganadero</h3>
+                    <p class="text-indigo-100 text-xs mt-0.5">Consultas y protocolos técnicos</p>
+                </div>
+            </div>
+            <span class="text-white font-bold text-xl">→</span>
+        </div>
+
         <!-- MIS PROCEDIMIENTOS ACTIVOS -->
-        <div class="space-y-3">
+        <div class="space-y-3 pb-8">
             <div class="flex justify-between items-center">
-                <h3 class="font-bold text-slate-800">Mis Procedimientos en Proceso</h3>
-                <button onclick="cargarMisProcedimientos()" class="text-xs text-sky-600 font-bold bg-sky-50 px-2 py-1 rounded-lg hover:bg-sky-100">↻ Actualizar</button>
+                <h3 class="font-bold text-slate-800 text-sm">Mis Procedimientos en Proceso</h3>
+                <button onclick="cargarMisProcedimientos()" class="text-xs text-sky-600 font-bold bg-sky-50 px-3 py-1.5 rounded-lg hover:bg-sky-100">↻ Actualizar</button>
             </div>
             
             <div id="lista-procedimientos" class="space-y-3">
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 text-center text-xs text-slate-500">
-                    Cargando procedimientos... (Requiere internet)
+                    Cargando procedimientos...
                 </div>
             </div>
         </div>
@@ -87,7 +97,7 @@
 
             window.addEventListener('online', () => {
                 actualizarEstadoRed();
-                sincronizarPendientes(); // Intenta sincronizar automáticamente al recuperar señal
+                sincronizarPendientes(); 
             });
             window.addEventListener('offline', actualizarEstadoRed);
             
@@ -115,10 +125,8 @@
             }
         }
 
-        // MOTOR DE SINCRONIZACIÓN DE LA COLA OFFLINE
         async function sincronizarPendientes() {
             if (!navigator.onLine) return;
-
             let cola = JSON.parse(localStorage.getItem('colaRegistros') || '[]');
             if (cola.length === 0) return;
 
@@ -126,46 +134,34 @@
             let noSincronizados = [];
             let exitosos = 0;
 
-            // Recorremos y enviamos cada registro atascado
             for (let registro of cola) {
                 try {
                     const res = await fetch('http://localhost:3000/api/registro-genetico', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify(registro)
                     });
                     
                     const data = await res.json();
-                    if (data.success) {
-                        exitosos++;
-                    } else {
-                        noSincronizados.push(registro);
-                    }
+                    if (data.success) exitosos++;
+                    else noSincronizados.push(registro);
                 } catch (error) {
                     noSincronizados.push(registro);
                 }
             }
 
-            // Actualizamos el almacenamiento local dejando solo los que fallaron
             localStorage.setItem('colaRegistros', JSON.stringify(noSincronizados));
             actualizarEstadoRed();
             cargarMisProcedimientos();
-
-            if (exitosos > 0) {
-                alert(`¡Se sincronizaron ${exitosos} registros pendientes con éxito!`);
-            }
+            if (exitosos > 0) alert(`¡Se sincronizaron ${exitosos} registros pendientes con éxito!`);
         }
 
-        // CARGAR PROCEDIMIENTOS DEL VETERINARIO
         async function cargarMisProcedimientos() {
             const listaDiv = document.getElementById('lista-procedimientos');
             const token = localStorage.getItem('tokenVet');
             
             if (!navigator.onLine) {
-                listaDiv.innerHTML = `<div class="bg-amber-50 p-4 rounded-2xl shadow-sm border border-amber-200 text-center text-xs font-bold text-amber-700">Sin conexión. Visualización no disponible en modo offline.</div>`;
+                listaDiv.innerHTML = `<div class="bg-amber-50 p-4 rounded-2xl shadow-sm border border-amber-200 text-center text-xs font-bold text-amber-700">Sin conexión. Visualización no disponible.</div>`;
                 return;
             }
 
@@ -176,13 +172,10 @@
                 const data = await res.json();
 
                 if (data.success) {
-                    // FILTRO CORREGIDO: Acepta tanto "Pendiente" (registros antiguos) como "Pendiente Evaluación" (nuevos)
-                    const misRegistros = data.data.filter(reg => 
-                        reg.estadoPrenez === 'Pendiente Evaluación' || reg.estadoPrenez === 'Pendiente'
-                    );
+                    const misRegistros = data.data.filter(reg => reg.estadoPrenez === 'Pendiente Evaluación' || reg.estadoPrenez === 'Pendiente');
 
                     if (misRegistros.length === 0) {
-                        listaDiv.innerHTML = `<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 text-center text-xs font-bold text-slate-500">No tienes procedimientos pendientes de revisión.</div>`;
+                        listaDiv.innerHTML = `<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 text-center text-xs font-bold text-slate-500">No tienes procedimientos pendientes.</div>`;
                         return;
                     }
 
@@ -208,42 +201,24 @@
             }
         }
 
-        // ACTUALIZAR ESTADO DE PREÑEZ (DÍA 45)
         async function actualizarEstadoProcedimiento(id, nuevoEstado) {
             if (!confirm(`¿Confirmas que el resultado para este animal es: ${nuevoEstado}?`)) return;
-
             const token = localStorage.getItem('tokenVet');
             try {
-                // Asegúrate de que esta ruta coincida con la declarada en las rutas (routes) de tu backend
                 const res = await fetch(`http://localhost:3000/api/registro-genetico/${id}/prenez`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ estadoPrenez: nuevoEstado, observaciones: `Diagnóstico actualizado en campo: ${nuevoEstado}` })
                 });
 
                 const data = await res.json();
                 if (data.success) {
                     alert(`✅ Estado actualizado a ${nuevoEstado}`);
-                    cargarMisProcedimientos(); // Recarga la lista para que el animal desaparezca de "Pendientes"
-                } else {
-                    alert('Error: ' + data.mensaje);
-                }
+                    cargarMisProcedimientos(); 
+                } else alert('Error: ' + data.mensaje);
             } catch (error) {
-                alert('No se pudo actualizar el estado. Verifica tu conexión a internet.');
+                alert('No se pudo actualizar el estado. Verifica tu conexión.');
             }
-        }
-    </script>
-    
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Service Worker activo en Dashboard'))
-                    .catch(err => console.error('Error Service Worker:', err));
-            });
         }
     </script>
 </body>
