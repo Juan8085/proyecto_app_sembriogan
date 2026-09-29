@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
-import PublicHome from './pages/PublicHome'; // <-- Importamos la web pública
+import PublicHome from './pages/PublicHome';
+import ChatWidget from './components/ChatWidget';
 
 function App() {
   return (
@@ -14,6 +15,13 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
+
+      {/* 
+        Widget Flotante de WhatsApp e IA 
+        Al colocarlo debajo de Routes (pero dentro de BrowserRouter), 
+        los botones flotarán por encima de cualquier pantalla.
+      */}
+      <ChatWidget />
     </BrowserRouter>
   );
 }

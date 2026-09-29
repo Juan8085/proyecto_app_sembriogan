@@ -102,7 +102,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ mensaje: mensajeTexto })
+                    body: JSON.stringify({ mensaje: mensajeTexto, rol: 'veterinario' })
                 });
 
                 const data = await res.json();
