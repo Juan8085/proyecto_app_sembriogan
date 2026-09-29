@@ -1,3 +1,6 @@
+// Controlador de IA Avanzado para Veterinarios de Sembriogan
+// Utiliza Google Gemini API con contexto experto en biotecnología bovina
+
 const consultarIA = async (req, res) => {
     try {
         const { mensaje } = req.body;
@@ -5,36 +8,61 @@ const consultarIA = async (req, res) => {
             return res.status(400).json({ success: false, mensaje: "Mensaje requerido" });
         }
 
-        const txt = mensaje.toLowerCase();
-        let respuesta = "Comprendo tu consulta sobre el manejo del hato en nuestra región. Como asistente técnico de Sembriogan, te sugiero programar una evaluación directa con nuestro equipo médico veterinario para darte un diagnóstico preciso en finca.";
+        const apiKey = process.env.GEMINI_API_KEY;
 
-        // PRIORIDAD 1: Patologías, infecciones, sangrados y emergencias clínicas (¡NUNCA COMERCIAL!)
-        if (txt.includes("sangrado") || txt.includes("sangre") || txt.includes("descarga") || txt.includes("pus") || txt.includes("infeccion") || txt.includes("secrecion") || txt.includes("metritis")) {
-            respuesta = "🚨 **Alerta Clínica (Sangrado o Flujo Anormal):** Un sangrado vaginal fuera de lo normal o presencia de descargas purulentas meses después del parto indica un problema patológico grave (como metritis crónica, piometra, quistes ováricos foliculares o lesiones en el tracto reproductivo). **No se debe aplicar ningún protocolo hormonal ni inseminar** en estas condiciones. Es una urgencia clínica que requiere revisión ginecológica con ecógrafo por parte de un médico veterinario. ¿Deseas que agendemos una visita prioritaria a tu finca?";
-        } 
-        // PRIORIDAD 2: Anestro prolongado (> 3-4 meses postparto) e inapetencia
-        else if (txt.includes("meses") || txt.includes("pario") || txt.includes("comiendo") || txt.includes("apetito") || txt.includes("anestro") || txt.includes("flaca")) {
-            respuesta = "🐄 **Evaluación de Anestro Prolongado (Post-parto prolongado):** Si una vaca supera los 90 a 120 días post-parto sin mostrar celo, estamos ante un *anestro prolongado*. Esto puede deberse a desbalance nutricional, baja condición corporal, subinvolución uterina o cuerpos lúteos persistentes. Se requiere un diagnóstico palpatorio o ecográfico para determinar el tratamiento adecuado. ¿Te gustaría que nuestro equipo técnico visite el hato?";
-        } 
-        // PRIORIDAD 3: Biotecnología de embriones
-        else if (txt.includes("embrion") || txt.includes("aspiracion") || txt.includes("opu") || txt.includes("donadora")) {
-            respuesta = "🧬 **Biotecnología de Embriones y OPU:** La Aspiración Folicular (OPU) y Producción In Vitro (IVP) nos permite multiplicar la descendencia de vacas élite sin interrumpir su ciclo productivo. Obtenemos embriones de alta genética adaptados al trópico. ¿Deseas evaluar a tus mejores vacas como donadoras?";
-        } 
-        // PRIORIDAD 4: Manejo de partos y obstetricia
-        else if (txt.includes("parto") || txt.includes("distocia") || txt.includes("obstetricia") || txt.includes("calostro")) {
-            respuesta = "⚠️ **Manejo Obstétrico y Asistencia al Parto:** Ante una distocia (dificultad en el parto), es vital actuar con higiene estricta y evaluar la posición del ternero tras 2 horas de pujas sin progreso. **Recomendación clave:** Suministra calostro de calidad en las primeras 6 horas de vida. Si hay riesgo de retención placentaria o inversión uterina, contacta de inmediato a nuestro servicio clínico de emergencia.";
-        } 
-        // PRIORIDAD 5: Preguntas puramente informativas sobre IATF (Solo si pregunta por el servicio en general)
-        else if (txt.includes("que es iatf") || txt.includes("servicio de iatf") || txt.includes("cotizar iatf")) {
-            respuesta = "🐂 **Sobre IATF (Inseminación Artificial a Tiempo Fijo):** Es nuestra especialidad en Sembriogan. Permite concentrar las labores reproductivas sin depender de la detección visual de celo mediante protocolos hormonales con dispositivos intravaginales. *Nota:* Para aplicar IATF con éxito, la vaca debe estar completamente sana y con su útero involucionado.";
-        } 
-        // PRIORIDAD 6: Contacto general
-        else if (txt.includes("contacto") || txt.includes("visita") || txt.includes("agendar") || txt.includes("telefono")) {
-            respuesta = "📞 ¡Claro que sí! Puedes registrar una solicitud de servicio directamente en nuestro catálogo web o contactarnos vía WhatsApp. Nuestro equipo técnico en Garzón, Huila, coordinará la visita a tu finca.";
+        // Si hay una clave de API configurada, consultamos a Gemini con el perfil experto de Sembriogan
+        if (apiKey) {
+            const promptSistema = `
+            Eres el Dr. Sembriogan, un Asistente Veterinario e Investigador Sénior especializado en Biotecnología Reproductiva Bovina, IATF (Inseminación Artificial a Tiempo Fijo), Transferencia de Embriones (TE), Aspiración Folicular (OPU) y Clínicas de Grandes Animales en el trópico (Colombia).
+            
+            Tus interlocutores son médicos veterinarios y técnicos de campo que necesitan respuestas precisas, científicas, directas y basadas en protocolos reales:
+            - Protocolos IATF estándar: Día 0 (Dispositivo intravaginal P4 + Benzoato de Estradiol), Día 8 (Retiro de dispositivo + PGF2a + eCG/Cipionato), Día 10 (IATF a las 48-52h).
+            - Protocolos TE: Sincronización de receptoras, evaluación de Cuerpo Lúteo (CL > 15mm en día 7-8), transferencia y diagnóstico al día 45 y 90.
+            - Urgencias clínicas: Metritis, retención placentaria, distocias, anestro nutricional o patológico.
+            
+            Mantén un tono profesional, técnico, de colega a colega, estructurado con viñetas o negritas cuando sea necesario para lectura rápida en el potrero.
+            `;
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            parts: [
+                                { text: promptSistema + "\n\nConsulta del Veterinario en campo: " + mensaje }
+                            ]
+                        }
+                    ]
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.candidates && data.candidates[0].content.parts[0].text) {
+                const respuestaIA = data.candidates[0].content.parts[0].text;
+                return res.status(200).json({ success: true, respuesta: respuestaIA });
+            }
+        }
+
+        // --- SISTEMA DE RESPALDO EXPERTO (Si no se ha configurado la API Key todavía) ---
+        const txt = mensaje.toLowerCase();
+        let respuesta = "Colega, analizando su consulta sobre el manejo del hato: Le sugiero verificar la condición corporal y el historial clínico del animal en la plataforma Sembriogan para un dictamen clínico exacto.";
+
+        if (txt.includes("iatf") || txt.includes("protocolo") || txt.includes("dia 0") || txt.includes("sincronizacion")) {
+            respuesta = "🐂 **Protocolo IATF Estándar Sembriogan:**\n- **Día 0:** Colocación de dispositivo intravaginal de Progesterona + Aplicación intramuscular de 2mg de Benzoato de Estradiol.\n- **Día 8:** Retiro de dispositivo + Aplicación de Prostaglandina (PGF2a) + Análogo de GnRH o Ciprosterona + eCG (según condición corporal).\n- **Día 10:** Inseminación Artificial a Tiempo Fijo (IATF) entre 48 y 52 horas posteriores al retiro.\n- **Día 45:** Diagnóstico de preñez por ecografía.";
+        } else if (txt.includes("embrion") || txt.includes("te") || txt.includes("receptoras") || txt.includes("cuerpo luteo")) {
+            respuesta = "🧬 **Protocolo Transferencia de Embriones (TE):**\n- **Evaluación de Receptoras (Día 7-8 post-estro):** Verificar la presencia de un Cuerpo Lúteo (CL) de excelente calidad (diámetro mayor a 15mm, vascularizado y firme).\n- **Transferencia:** Realizar con técnica de alta asepsia en el cuerno uterino ipsilateral al ovario portador del CL.\n- **Diagnóstico:** Evaluación temprana al día 30-45 y confirmación definitiva al día 90.";
+        } else if (txt.includes("metritis") || txt.includes("secrecion") || txt.includes("pus") || txt.includes("infeccion") || txt.includes("sangrado")) {
+            respuesta = "🚨 **Manejo Clínico de Metritis / Infecciones Uterinas:**\n- **Diagnóstico:** Presencia de moco floculento con estrías purulentas o mal olor post-parto.\n- **Tratamiento sugerido:** Lavado uterino con solución salina estéril y antibiótico intrauterino de amplio espectro según criterio profesional. Evitar protocolos hormonales de reproducción hasta lograr involución uterina limpia.";
+        } else if (txt.includes("distocia") || txt.includes("parto") || txt.includes("calostro")) {
+            respuesta = "⚠️ **Manejo de Distocias y Neonatos:**\n- Tras 2 horas de pujas intensas sin avance del ternero, realizar tacto obstétrico con lubricación y estricta higiene.\n- Asegurar la ingesta de al menos 2 a 3 litros de calostro limpio en las primeras 6 horas de vida del ternero para garantizar transferencia pasiva de inmunidad.";
         }
 
         res.status(200).json({ success: true, respuesta });
+
     } catch (error) {
+        console.error("Error en el controlador de IA:", error);
         res.status(500).json({ success: false, error: error.message });
     }
 };
