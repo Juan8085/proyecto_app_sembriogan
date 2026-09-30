@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sembriogan-vet-v6'; // Subimos a v6 para forzar el reinicio total
+const CACHE_NAME = 'sembriogan-vet-v7';
 
 // RUTAS RELATIVAS
 const urlsToCache = [
@@ -75,5 +75,36 @@ self.addEventListener('fetch', event => {
                     }
                 });
             })
+    );
+});
+
+// --- SISTEMA DE NOTIFICACIONES PUSH ---
+
+// 1. Escuchar cuando llega una notificación desde el servidor
+self.addEventListener('push', event => {
+    // Extraemos los datos que mandó el Node.js
+    const data = event.data ? event.data.json() : { title: 'Alerta Sembriogan', body: 'Tienes una nueva notificación' };
+    
+    const opciones = {
+        body: data.body,
+        icon: './img/logo.png', // Tu logo
+        badge: './img/logo.png', // Iconito pequeño para la barra de estado
+        vibrate: [200, 100, 200, 100, 200, 100, 200], // Patrón de vibración
+        data: { url: data.url || './dashboard.html' } // A dónde ir al hacer clic
+    };
+
+    // Mostrar la notificación en la pantalla
+    event.waitUntil(
+        self.registration.showNotification(data.title, opciones)
+    );
+});
+
+// 2. Escuchar cuando el veterinario TOCA la notificación
+self.addEventListener('notificationclick', event => {
+    event.notification.close(); // Cerramos la notificación
+    
+    // Abrimos la PWA en la vista correspondiente
+    event.waitUntil(
+        clients.openWindow(event.notification.data.url)
     );
 });

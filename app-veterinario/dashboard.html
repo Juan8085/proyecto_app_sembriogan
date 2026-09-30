@@ -16,6 +16,12 @@
                 <p class="text-xs text-sky-600 font-semibold">Modo Campo (Offline Ready)</p>
             </div>
         </div>
+        <button id="btn-notificaciones" onclick="activarNotificaciones()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-bold transition mr-2">
+            🔔 Alertas
+        </button>
+        <button onclick="dispararPrueba()" class="bg-amber-50 hover:bg-amber-100 text-amber-600 px-3 py-1.5 rounded-xl text-xs font-bold transition mr-2">
+            🛎️ Test Push
+        </button>
         <button id="btn-salir" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-xl text-xs font-bold transition">
             Salir
         </button>
@@ -220,6 +226,79 @@
                 alert('No se pudo actualizar el estado. Verifica tu conexión.');
             }
         }
+
+        // --- SISTEMA DE NOTIFICACIONES PUSH ---
+        
+        // Función utilitaria obligatoria para convertir la llave pública de VAPID
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        async function activarNotificaciones() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                alert('Las notificaciones push no son soportadas en este navegador.');
+                return;
+            }
+
+            try {
+                // 1. Pedir permiso al usuario (Muestra la ventanita de "Permitir")
+                const permiso = await Notification.requestPermission();
+                if (permiso !== 'granted') {
+                    alert('Permiso denegado. No recibirás alertas de preñez.');
+                    return;
+                }
+
+                const btn = document.getElementById('btn-notificaciones');
+                btn.textContent = '⏳ Activando...';
+
+                // 2. Obtener el Service Worker y la Llave Pública del Backend
+                const registroSW = await navigator.serviceWorker.ready;
+                const resClave = await fetch('http://localhost:3000/api/notificaciones/clave-publica');
+                const dataClave = await resClave.json();
+                const clavePublica = urlBase64ToUint8Array(dataClave.publicKey);
+
+                // 3. Generar la suscripción del celular
+                const suscripcion = await registroSW.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: clavePublica
+                });
+
+                // 4. Enviar la suscripción a nuestro servidor para guardarla
+                const token = localStorage.getItem('tokenVet');
+                const resSub = await fetch('http://localhost:3000/api/notificaciones/suscribir', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(suscripcion)
+                });
+
+                const dataSub = await resSub.json();
+                if (dataSub.success) {
+                    alert('✅ ¡Alertas activadas! Recibirás notificaciones de los chequeos reproductivos (IATF a 45 días).');
+                    btn.style.display = 'none'; // Ocultamos el botón porque ya está suscrito
+                }
+
+            } catch (error) {
+                console.error('Error en notificaciones:', error);
+                alert('Hubo un error al conectar con el servidor de alertas.');
+                document.getElementById('btn-notificaciones').textContent = '🔔 Alertas';
+            }
+        }
+
+        async function dispararPrueba() {
+            const token = localStorage.getItem('tokenVet');
+            await fetch('http://localhost:3000/api/notificaciones/prueba', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
+
     </script>
 </body>
 </html>

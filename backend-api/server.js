@@ -18,6 +18,8 @@ const authRoutes = require('./routes/auth.routes');
 const registroGeneticoRoutes = require('./routes/registro_genetico.routes');
 const ordenesRoutes = require('./routes/orden.routes');
 const nosotrosRoutes = require('./routes/nosotros.routes');
+const notificacionRoutes = require('./routes/notificacion.routes');
+const { iniciarCron } = require('./services/cron.service');
 
 const app = express();
 const server = http.createServer(app);
@@ -35,6 +37,7 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/app-veterinario', express.static(path.join(__dirname, '../app-veterinario')));
 app.use('/api/nosotros', nosotrosRoutes);
+app.use('/api/notificaciones', notificacionRoutes);
 
 // Sockets
 app.use((req, res, next) => {
@@ -60,6 +63,9 @@ app.get('/api', (req, res) => {
 io.on('connection', (socket) => {
     console.log('⚡ Cliente conectado por WebSocket:', socket.id);
 });
+
+// Iniciar tareas programadas (Reloj de Notificaciones)
+iniciarCron();
 
 server.listen(PORT, () => {
     console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
