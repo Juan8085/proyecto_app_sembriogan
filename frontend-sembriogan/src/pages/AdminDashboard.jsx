@@ -5,14 +5,14 @@ import AdminTrazabilidad from '../components/AdminTrazabilidad';
 import AdminCatalogo from '../components/AdminCatalogo';
 import AdminResumen from '../components/AdminResumen';
 import AdminTestimonios from '../components/AdminTestimonios';
+import GestorCarrusel from '../components/GestorCarrusel';
 
 export default function AdminDashboard() {
   const [adminData, setAdminData] = useState(null);
   const [activeTab, setActiveTab] = useState('inicio'); 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Estado para el menú responsivo
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Verificar si hay sesión activa al cargar
   useEffect(() => {
     const token = localStorage.getItem('tokenSembriogan');
     const user = JSON.parse(localStorage.getItem('usuarioSembriogan'));
@@ -30,7 +30,6 @@ export default function AdminDashboard() {
     navigate('/login');
   };
 
-  // Cambiar pestaña y cerrar menú en móviles automáticamente
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setIsSidebarOpen(false); 
@@ -38,7 +37,7 @@ export default function AdminDashboard() {
 
   if (!adminData) return <div className="p-10 text-center">Cargando panel...</div>;
 
-  // Función para renderizar el contenido dinámico según la pestaña
+  // FUNCIÓN ACTUALIZADA: Se agregó el caso 'carrusel'
   const renderContent = () => {
     switch (activeTab) {
       case 'inicio':
@@ -51,6 +50,8 @@ export default function AdminDashboard() {
         return <AdminCatalogo />;
       case 'testimonios':
         return <AdminTestimonios />;
+      case 'carrusel':
+        return <GestorCarrusel />;
       default:
         return null;
     }
@@ -59,7 +60,6 @@ export default function AdminDashboard() {
   return (
     <div className="flex h-screen bg-light overflow-hidden">
       
-      {/* OVERLAY OSCURO PARA MÓVILES */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity"
@@ -67,12 +67,9 @@ export default function AdminDashboard() {
         ></div>
       )}
 
-      {/* SIDEBAR (Menú Lateral Responsivo) */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-dark text-white flex flex-col shadow-xl transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         
-        {/* CABECERA CON EL LOGO */}
         <div className="p-6 text-center border-b border-gray-700 flex flex-col items-center bg-white relative">
-          {/* Botón cerrar (Solo visible en móvil) */}
           <button 
             className="lg:hidden absolute top-3 right-4 text-gray-400 hover:text-gray-800 text-xl font-bold"
             onClick={() => setIsSidebarOpen(false)}
@@ -88,7 +85,6 @@ export default function AdminDashboard() {
           <p className="text-gray-600 text-xs font-bold uppercase tracking-wider">Panel de Administración</p>
         </div>
         
-        {/* NAVEGACIÓN */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           <button 
             onClick={() => handleTabChange('inicio')}
@@ -120,9 +116,16 @@ export default function AdminDashboard() {
           >
             💬 Testimonios
           </button>
+          
+          {/* NUEVO BOTÓN PARA EL CARRUSEL */}
+          <button 
+            onClick={() => handleTabChange('carrusel')}
+            className={`w-full text-left p-3 rounded-lg font-semibold transition ${activeTab === 'carrusel' ? 'bg-primary text-white' : 'hover:bg-gray-800 text-gray-300'}`}
+          >
+            🖼️ Landing Page
+          </button>
         </nav>
 
-        {/* PIE DEL SIDEBAR (Cerrar sesión) */}
         <div className="p-4 border-t border-gray-700 bg-gray-900">
           <div className="mb-3">
             <p className="text-xs text-gray-400">Sesión iniciada como:</p>
@@ -137,12 +140,8 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* ÁREA DE CONTENIDO PRINCIPAL */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden w-full">
-        
-        {/* HEADER RESPONSIVO */}
         <header className="bg-white shadow-sm p-4 flex items-center border-b border-gray-200 shrink-0">
-          {/* BOTÓN HAMBURGUESA (Solo en móviles) */}
           <button 
             onClick={() => setIsSidebarOpen(true)}
             className="lg:hidden mr-4 text-gray-600 hover:text-primary focus:outline-none"
@@ -158,10 +157,10 @@ export default function AdminDashboard() {
             {activeTab === 'historial' && 'Módulo de Trazabilidad'}
             {activeTab === 'catalogo' && 'Gestión de Tienda'}
             {activeTab === 'testimonios' && 'Gestión de Testimonios'}
+            {activeTab === 'carrusel' && 'Gestión de Imágenes Web'} {/* Título dinámico actualizado */}
           </h1>
         </header>
 
-        {/* CONTENEDOR DE LAS VISTAS */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 w-full">
           {renderContent()}
         </div>

@@ -1,26 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-const slides = [
-  {
-    url: "https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?q=80&w=1600&auto=format&fit=crop",
-    titulo: "Biotecnología Reproductiva Avanzada",
-    subtit: "Maximizando la genética y rentabilidad de tu hato en el Huila y Colombia."
-  },
-  {
-    url: "https://images.unsplash.com/photo-1500595046743-cd271d694d30?q=80&w=1600&auto=format&fit=crop",
-    titulo: "Inseminación y Trazabilidad de Élite",
-    subtit: "Control técnico profesional respaldado por expertos veterinarios."
-  },
-  {
-    url: "https://images.unsplash.com/photo-1516467508483-a7212febe31a?q=80&w=1600&auto=format&fit=crop",
-    titulo: "Insumos y Servicios Ganaderos Confiables",
-    subtit: "Todo lo que tu ganadería necesita al alcance de un clic."
-  }
-];
-
 export default function PublicHome() {
-  const [currentSlide, setCurrentSlide] = useState(0);
+  // Estados para el carrusel dinámico
+  const [imagenesHero, setImagenesHero] = useState([]);
+  const [indiceActual, setIndiceActual] = useState(0);
+  const [infoNosotros, setInfoNosotros] = useState(null);
+
+  // Estados generales
   const [catalogo, setCatalogo] = useState([]);
   const [testimonios, setTestimonios] = useState([]);
   const [carrito, setCarrito] = useState([]);
@@ -32,33 +19,55 @@ export default function PublicHome() {
   const [authMode, setAuthMode] = useState('login');
   const [authData, setAuthData] = useState({ email: '', password: '', nombre: '' });
   
-  // Estado para enviar testimonio
   const [nuevoTestimonio, setNuevoTestimonio] = useState({ nombre: '', rol: '', mensaje: '' });
   const [mensajeTestimonioExito, setMensajeTestimonioExito] = useState('');
 
+  // 1. Cargar datos desde el backend al iniciar la página
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Cargar catálogo y testimonios aprobados desde el backend
-  useEffect(() => {
+    // Cargar Catálogo
     fetch('http://localhost:3000/api/catalogo')
       .then(res => res.json())
       .then(data => { if (data.success) setCatalogo(data.data); })
       .catch(err => console.error("Error cargando catálogo:", err));
 
+    // Cargar sección Nosotros
+    fetch('http://localhost:3000/api/nosotros')
+      .then(res => res.json())
+      .then(data => { if (data.success && data.data) setInfoNosotros(data.data); })
+      .catch(err => console.error("Error cargando Nosotros:", err));
+
+    // Cargar Testimonios
     fetch('http://localhost:3000/api/testimonios')
       .then(res => res.json())
       .then(data => { if (data.success) setTestimonios(data.data); })
       .catch(err => console.error("Error cargando testimonios:", err));
 
+    // Cargar Imágenes del Carrusel
+    fetch('http://localhost:3000/api/carrusel')
+      .then(res => res.json())
+      .then(data => { 
+        if (data.success && data.data.length > 0) {
+            setImagenesHero(data.data);
+        }
+      })
+      .catch(err => console.error("Error cargando el carrusel dinámico:", err));
+
+    // Cargar sesión del cliente
     const clienteGuardado = localStorage.getItem('clienteSembriogan');
     if (clienteGuardado) setUserCliente(JSON.parse(clienteGuardado));
   }, []);
 
+  // 2. Temporizador automático del carrusel
+  useEffect(() => {
+    if (imagenesHero.length > 1) {
+        const timer = setInterval(() => {
+            setIndiceActual((prev) => (prev + 1) % imagenesHero.length);
+        }, 5000);
+        return () => clearInterval(timer);
+    }
+  }, [imagenesHero]);
+
+  // Funciones del Carrito
   const agregarAlCarrito = (producto) => {
     const existe = carrito.find(item => item._id === producto._id);
     if (existe) {
@@ -81,7 +90,7 @@ export default function PublicHome() {
 
   const totalCarrito = carrito.reduce((sum, item) => sum + (item.costo * item.cantidad), 0);
 
-  // Procesar Pago Real en Modo de Pruebas con Wompi
+  // Funciones de Pago (Wompi)
   const pagarConWompi = () => {
     if (carrito.length === 0) return;
     if (!userCliente) {
@@ -90,7 +99,6 @@ export default function PublicHome() {
       return;
     }
 
-    // Validar que el script de Wompi se haya cargado en index.html
     if (!window.WidgetCheckout) {
       alert('El widget de pagos de Wompi no está disponible. Asegúrate de tener conexión a internet y el script en index.html.');
       return;
@@ -98,30 +106,21 @@ export default function PublicHome() {
 
     const referenciaUnica = 'WEB-SEM-' + Date.now();
     
-    // Instanciar el widget oficial de Wompi Sandbox
     const checkout = new window.WidgetCheckout({
       currency: 'COP',
-      amountInCents: Math.round(totalCarrito * 100), // Wompi exige el valor en centavos
+      amountInCents: Math.round(totalCarrito * 100),
       reference: referenciaUnica,
       publicKey: 'pub_test_b9Wif8x93ek97Eo0wrRazU19DefFIiQX',
-      taxes: {
-        vat: {
-          amountInCents: 0
-        }
-      }
+      taxes: { vat: { amountInCents: 0 } }
     });
 
-    // Abrir la pasarela y escuchar la respuesta de la transacción
     checkout.open(async (result) => {
       const transaction = result.transaction;
       
       if (transaction && transaction.status === 'APPROVED') {
         try {
           const ordenPayload = {
-            cliente: {
-              nombre: userCliente.nombre,
-              email: userCliente.email
-            },
+            cliente: { nombre: userCliente.nombre, email: userCliente.email },
             items: carrito.map(item => ({
               catalogoItem: item._id,
               tipo: item.tipo,
@@ -140,7 +139,7 @@ export default function PublicHome() {
           const data = await res.json();
 
           if (data.success) {
-            alert(`✅ ¡Pago Exitoso por Wompi (Sandbox)!\nID Transacción: ${transaction.id}\n\n• Orden registrada en base de datos.\n• Inventario actualizado.\n• Panel general sincronizado.`);
+            alert(`✅ ¡Pago Exitoso por Wompi (Sandbox)!\nID Transacción: ${transaction.id}\n\nOrden registrada en base de datos.\nInventario actualizado.\nPanel general sincronizado.`);
             setCarrito([]);
             setIsCartOpen(false);
           } else {
@@ -156,6 +155,7 @@ export default function PublicHome() {
     });
   };
 
+  // Funciones de Autenticación
   const handleAuthSubmit = (e) => {
     e.preventDefault();
     const clienteSimulado = {
@@ -169,16 +169,14 @@ export default function PublicHome() {
   };
 
   const handleGoogleLogin = () => {
-    const clienteGoogle = {
-      nombre: "Ganadero Google User",
-      email: "ganadero.digital@gmail.com"
-    };
+    const clienteGoogle = { nombre: "Ganadero Google User", email: "ganadero.digital@gmail.com" };
     setUserCliente(clienteGoogle);
     localStorage.setItem('clienteSembriogan', JSON.stringify(clienteGoogle));
     setIsAuthOpen(false);
     alert('¡Conectado exitosamente con tu cuenta de Google!');
   };
 
+  // Enviar Testimonio
   const enviarTestimonio = async (e) => {
     e.preventDefault();
     try {
@@ -250,38 +248,67 @@ export default function PublicHome() {
         </div>
       </header>
 
-      {/* SECCIÓN 1: CARRUSEL */}
-      <section id="inicio" className="relative h-[550px] w-full overflow-hidden bg-dark">
-        {slides.map((slide, index) => (
-          <div 
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}
-          >
-            <div className="absolute inset-0 bg-black/50 z-10" />
-            <img src={slide.url} alt="Slide Sembriogan" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-6 max-w-4xl mx-auto text-white">
-              <h1 className="text-4xl md:text-5xl font-extrabold mb-4 drop-shadow-md">{slide.titulo}</h1>
-              <p className="text-lg md:text-xl text-gray-200 mb-8 drop-shadow">{slide.subtit}</p>
-              <a href="#servicios" className="bg-secondary text-white font-bold py-3 px-8 rounded-xl hover:bg-green-600 transition shadow-lg text-lg">
-                Explorar Catálogo
-              </a>
+      {/* SECCIÓN 1: CARRUSEL DINÁMICO */}
+      <section id="inicio" className="relative h-[550px] w-full overflow-hidden bg-slate-900">
+        {imagenesHero.length > 0 ? (
+            imagenesHero.map((img, index) => (
+                <div 
+                    key={img._id}
+                    className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === indiceActual ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                >
+                    <img 
+                        src={`http://localhost:3000${img.imagenUrl}`} 
+                        alt={img.titulo || "Sembriogan Genética"} 
+                        className="w-full h-full object-cover opacity-60"
+                    />
+                    <div className="absolute inset-0 bg-black/40 z-10"></div>
+                    <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-6 max-w-4xl mx-auto text-white transition-all duration-1000 ${index === indiceActual ? 'translate-y-0 scale-100' : 'translate-y-10 scale-95'}`}>
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 drop-shadow-lg">
+                            {img.titulo || "Biotecnología Reproductiva Avanzada"}
+                        </h1>
+                        <p className="text-lg md:text-xl text-gray-200 mb-8 drop-shadow-md">
+                            {img.descripcion || "Maximizando la genética y rentabilidad de tu hato en el Huila y Colombia."}
+                        </p>
+                        <a href="#servicios" className="bg-secondary text-white font-bold py-3 px-8 rounded-xl hover:bg-green-600 transition shadow-lg text-lg">
+                            Explorar Catálogo
+                        </a>
+                    </div>
+                </div>
+            ))
+        ) : (
+            /* Fallback si no hay imágenes en la BD */
+            <div className="absolute inset-0 z-10">
+                <div className="absolute inset-0 bg-black/50 z-10" />
+                <img src="https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?q=80&w=1600&auto=format&fit=crop" alt="Sembriogan" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-6 max-w-4xl mx-auto text-white">
+                    <h1 className="text-4xl md:text-5xl font-extrabold mb-4 drop-shadow-md">Biotecnología Reproductiva Avanzada</h1>
+                    <p className="text-lg md:text-xl text-gray-200 mb-8 drop-shadow-md">Conectando la mejor genética bovina con su ganadería.</p>
+                    <a href="#servicios" className="bg-secondary text-white font-bold py-3 px-8 rounded-xl hover:bg-green-600 transition shadow-lg text-lg">
+                        Explorar Catálogo
+                    </a>
+                </div>
             </div>
-          </div>
-        ))}
+        )}
       </section>
 
-      {/* SECCIÓN 2: NOSOTROS */}
+      {/* SECCIÓN 2: NOSOTROS DINÁMICO */}
       <section id="nosotros" className="py-20 px-6 max-w-6xl mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div>
             <span className="text-primary font-extrabold text-sm uppercase tracking-wider bg-blue-50 px-3 py-1 rounded-full">Sobre Sembriogan</span>
-            <h2 className="text-3xl font-extrabold text-gray-800 mt-3 mb-6">Liderando la Innovación Genética Bovina en el Sur Colombiano</h2>
-            <p className="text-gray-600 mb-4 leading-relaxed">
-              En Sembriogan nos especializamos en transformar la ganadería tradicional en una empresa pecuaria moderna, eficiente y altamente rentable mediante la implementación rigurosa de biotecnología reproductiva.
+            <h2 className="text-3xl font-extrabold text-gray-800 mt-3 mb-6">
+                {infoNosotros?.titulo || 'Liderando la Innovación Genética Bovina en el Sur Colombiano'}
+            </h2>
+            <p className="text-gray-600 mb-4 leading-relaxed whitespace-pre-line">
+                {infoNosotros?.descripcion || 'En Sembriogan nos especializamos en transformar la ganadería tradicional en una empresa pecuaria moderna...'}
             </p>
           </div>
           <div className="relative">
-            <img src="https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?q=80&w=800&auto=format&fit=crop" alt="Ganadería" className="rounded-2xl shadow-xl object-cover h-[350px] w-full" />
+            <img 
+                src={infoNosotros?.imagenUrl ? `http://localhost:3000${infoNosotros.imagenUrl}` : "https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?q=80&w=800&auto=format&fit=crop"} 
+                alt="Ganadería Sembriogan" 
+                className="rounded-2xl shadow-xl object-cover h-[350px] w-full" 
+            />
           </div>
         </div>
       </section>

@@ -17,6 +17,7 @@ const contactoRoutes = require('./routes/contacto.routes');
 const authRoutes = require('./routes/auth.routes');
 const registroGeneticoRoutes = require('./routes/registro_genetico.routes');
 const ordenesRoutes = require('./routes/orden.routes');
+const nosotrosRoutes = require('./routes/nosotros.routes');
 
 const app = express();
 const server = http.createServer(app);
@@ -33,6 +34,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/app-veterinario', express.static(path.join(__dirname, '../app-veterinario')));
+app.use('/api/nosotros', nosotrosRoutes);
 
 // Sockets
 app.use((req, res, next) => {
