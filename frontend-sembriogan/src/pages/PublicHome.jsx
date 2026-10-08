@@ -147,6 +147,7 @@ export default function PublicHome() {
           <a href="#nosotros" className="hover:text-primary transition">Nosotros</a>
           <a href="#historias" className="hover:text-primary transition">Historias</a>
           <a href="#servicios" className="hover:text-primary transition">Tienda</a>
+          <Link to="/admin" className="hover:text-blue-600 transition font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-lg">⚙️ Admin</Link>
         </nav>
 
         <div className="flex items-center space-x-3">
@@ -174,6 +175,9 @@ export default function PublicHome() {
                   <button onClick={() => { setIsPerfilOpen(true); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition">
                     <Settings size={16} /> Configurar Perfil
                   </button>
+                  <Link to="/admin" className="flex items-center gap-3 px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 text-left transition font-semibold">
+                    ⚙️ Panel Administrador
+                  </Link>
                   <div className="border-t border-slate-50 my-1"></div>
                   <button onClick={() => { setUserCliente(null); localStorage.removeItem('clienteSembriogan'); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 text-left transition">
                     <LogOut size={16} /> Cerrar Sesión
