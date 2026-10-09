@@ -26,7 +26,8 @@ const ChatWidget = () => {
         if (!mensaje.trim()) return;
 
         const textoEnviado = mensaje;
-        setHistorial(prev => [...prev, { texto: textoEnviado, isUser: true }]);
+        const nuevoHistorial = [...historial, { texto: textoEnviado, isUser: true }];
+        setHistorial(nuevoHistorial);
         setMensaje('');
         setIsLoading(true);
 
@@ -34,7 +35,7 @@ const ChatWidget = () => {
             const res = await fetch('http://localhost:3000/api/ia/consultar', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mensaje: textoEnviado, rol: 'ganadero' })
+                body: JSON.stringify({ historial: nuevoHistorial, rol: 'ganadero' })
             });
 
             const data = await res.json();
@@ -56,9 +57,27 @@ const ChatWidget = () => {
     };
 
     const formatearTexto = (texto) => {
+        // Formateo muy básico para negritas y enlaces (Markdown)
+        const renderizarLinea = (linea) => {
+            // Regex para [texto](url)
+            const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+            // Regex para **negritas**
+            const boldRegex = /\*\*([^*]+)\*\*/g;
+
+            let partes = [];
+            let lastIndex = 0;
+            let match;
+
+            // Procesar solo links por ahora para mantenerlo simple y seguro en React
+            let lineHtml = linea.replace(boldRegex, '<b>$1</b>');
+            lineHtml = lineHtml.replace(linkRegex, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 underline font-bold">$1</a>');
+
+            return <span dangerouslySetInnerHTML={{ __html: lineHtml }} />;
+        };
+
         return texto.split('\n').map((linea, i) => (
             <span key={i}>
-                {linea}
+                {renderizarLinea(linea)}
                 <br />
             </span>
         ));
@@ -68,7 +87,7 @@ const ChatWidget = () => {
         <>
             {/* BOTÓN FLOTANTE WHATSAPP (Usa SVG oficial de WP) */}
             <a 
-                href="https://wa.me/573210000000?text=Hola,%20Sembriogan.%20Quiero%20información%20sobre%20sus%20servicios%20ganaderos." 
+                href="https://wa.me/573106663472?text=Hola,%20Sembriogan.%20Quiero%20información%20sobre%20sus%20servicios%20ganaderos." 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="fixed bottom-6 right-6 bg-[#25D366] hover:bg-[#1EBE5C] text-white p-4 rounded-full shadow-2xl z-[70] flex items-center justify-center transition transform hover:scale-110"

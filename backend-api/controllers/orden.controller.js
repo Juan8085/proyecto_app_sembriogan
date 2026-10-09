@@ -33,10 +33,15 @@ const crearOrden = async (req, res) => {
     }
 };
 
-// 2. Obtener todas las órdenes (Para el panel de administración)
+// 2. Obtener todas las órdenes (Para el panel de administración o filtradas por usuario)
 const obtenerOrdenes = async (req, res) => {
     try {
-        const ordenes = await Orden.find().sort({ createdAt: -1 });
+        const { email } = req.query;
+        let query = {};
+        if (email) {
+            query = { 'cliente.email': email };
+        }
+        const ordenes = await Orden.find(query).sort({ createdAt: -1 });
         res.status(200).json({ success: true, data: ordenes });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });

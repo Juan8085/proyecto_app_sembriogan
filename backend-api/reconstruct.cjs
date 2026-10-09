@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+const fs = require('fs');
+
+const originalHTML = `<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -136,7 +138,7 @@
             const textoConexion = document.getElementById('texto-conexion');
             const cola = JSON.parse(localStorage.getItem('colaRegistros') || '[]');
             
-            btnSync.textContent = `${cola.length} pendientes`;
+            btnSync.textContent = \`\${cola.length} pendientes\`;
 
             if (navigator.onLine) {
                 estadoRed.className = "bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-2xl flex items-center justify-between text-xs font-bold transition-colors";
@@ -163,7 +165,7 @@
                 try {
                     const res = await fetch('http://localhost:3000/api/registro-genetico', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        headers: { 'Content-Type': 'application/json', 'Authorization': \`Bearer \${token}\` },
                         body: JSON.stringify(registro)
                     });
                     
@@ -178,7 +180,7 @@
             localStorage.setItem('colaRegistros', JSON.stringify(noSincronizados));
             actualizarEstadoRed();
             cargarMisProcedimientos();
-            if (exitosos > 0) alert(`¡Se sincronizaron ${exitosos} registros pendientes con éxito!`);
+            if (exitosos > 0) alert(\`¡Se sincronizaron \${exitosos} registros pendientes con éxito!\`);
         }
 
         async function cargarMisProcedimientos() {
@@ -186,13 +188,13 @@
             const token = localStorage.getItem('tokenVet');
             
             if (!navigator.onLine) {
-                listaDiv.innerHTML = `<div class="bg-amber-50 p-4 rounded-2xl shadow-sm border border-amber-200 text-center text-xs font-bold text-amber-700">Sin conexión. Visualización no disponible.</div>`;
+                listaDiv.innerHTML = \`<div class="bg-amber-50 p-4 rounded-2xl shadow-sm border border-amber-200 text-center text-xs font-bold text-amber-700">Sin conexión. Visualización no disponible.</div>\`;
                 return;
             }
 
             try {
                 const res = await fetch('http://localhost:3000/api/registro-genetico', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': \`Bearer \${token}\` }
                 });
                 const data = await res.json();
 
@@ -201,14 +203,14 @@
                     procedimientosGlobales = misRegistros;
 
                     if (misRegistros.length === 0) {
-                        listaDiv.innerHTML = `<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 text-center text-xs font-bold text-slate-500">No tienes procedimientos pendientes.</div>`;
+                        listaDiv.innerHTML = \`<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 text-center text-xs font-bold text-slate-500">No tienes procedimientos pendientes.</div>\`;
                         return;
                     }
 
                     renderizarProcedimientos(misRegistros, listaDiv, false);
                 }
             } catch (error) {
-                listaDiv.innerHTML = `<div class="bg-red-50 p-4 rounded-2xl shadow-sm border border-red-200 text-center text-xs font-bold text-red-700">Error al cargar procedimientos.</div>`;
+                listaDiv.innerHTML = \`<div class="bg-red-50 p-4 rounded-2xl shadow-sm border border-red-200 text-center text-xs font-bold text-red-700">Error al cargar procedimientos.</div>\`;
             }
         }
 
@@ -251,65 +253,65 @@
                 let borderClass = 'border-slate-200';
                 
                 if (diffDays < 0) {
-                    alertaHTML = `<div class="bg-red-100 text-red-700 font-bold text-xs p-2 rounded-lg mb-3 flex items-center gap-2">🚨 ¡RETRASADO ${Math.abs(diffDays)} DÍAS! ${pasoActual.nombre}</div>`;
+                    alertaHTML = \`<div class="bg-red-100 text-red-700 font-bold text-xs p-2 rounded-lg mb-3 flex items-center gap-2">🚨 ¡RETRASADO \${Math.abs(diffDays)} DÍAS! \${pasoActual.nombre}</div>\`;
                     borderClass = 'border-red-400 border-2 shadow-md';
                 } else if (diffDays === 0) {
-                    alertaHTML = `<div class="bg-amber-100 text-amber-700 font-bold text-xs p-2 rounded-lg mb-3 flex items-center gap-2">⚠️ ¡HOY! Requiere: ${pasoActual.nombre}</div>`;
+                    alertaHTML = \`<div class="bg-amber-100 text-amber-700 font-bold text-xs p-2 rounded-lg mb-3 flex items-center gap-2">⚠️ ¡HOY! Requiere: \${pasoActual.nombre}</div>\`;
                     borderClass = 'border-amber-400 border-2 shadow-md';
                 } else {
-                    alertaHTML = `<div class="bg-slate-50 text-slate-500 font-semibold text-xs p-2 rounded-lg mb-3">⏳ ${pasoActual.nombre} en ${diffDays} días</div>`;
+                    alertaHTML = \`<div class="bg-slate-50 text-slate-500 font-semibold text-xs p-2 rounded-lg mb-3">⏳ \${pasoActual.nombre} en \${diffDays} días</div>\`;
                 }
 
                 let btnHTML = '';
                 if (pasoActual.key === 'dia45_confirmacion') {
-                    btnHTML = `
+                    btnHTML = \`
                         <div class="border-t border-slate-100 pt-3 flex justify-between gap-2 mt-2">
-                            <button onclick="actualizarEstadoProcedimiento('${reg._id}', 'Preñada')" class="flex-1 bg-green-50 text-green-700 hover:bg-green-100 font-bold py-2.5 rounded-xl text-xs transition border border-green-200 shadow-sm">✅ Preñada</button>
-                            <button onclick="actualizarEstadoProcedimiento('${reg._id}', 'Vacía')" class="flex-1 bg-red-50 text-red-600 hover:bg-red-100 font-bold py-2.5 rounded-xl text-xs transition border border-red-200 shadow-sm">❌ Vacía</button>
+                            <button onclick="actualizarEstadoProcedimiento('\${reg._id}', 'Preñada')" class="flex-1 bg-green-50 text-green-700 hover:bg-green-100 font-bold py-2.5 rounded-xl text-xs transition border border-green-200 shadow-sm">✅ Preñada</button>
+                            <button onclick="actualizarEstadoProcedimiento('\${reg._id}', 'Vacía')" class="flex-1 bg-red-50 text-red-600 hover:bg-red-100 font-bold py-2.5 rounded-xl text-xs transition border border-red-200 shadow-sm">❌ Vacía</button>
                         </div>
-                    `;
+                    \`;
                 } else {
                     if (diffDays <= 0) {
-                        btnHTML = `
+                        btnHTML = \`
                         <div class="border-t border-slate-100 pt-3 mt-2">
-                            <button onclick="confirmarPaso('${reg._id}', '${pasoActual.key}', '${pasoActual.nombre}')" class="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold py-2.5 rounded-xl text-xs transition border border-blue-200 shadow-sm flex justify-center items-center gap-2">
+                            <button onclick="confirmarPaso('\${reg._id}', '\${pasoActual.key}', '\${pasoActual.nombre}')" class="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold py-2.5 rounded-xl text-xs transition border border-blue-200 shadow-sm flex justify-center items-center gap-2">
                                 👉 Confirmar que se realizó
                             </button>
                         </div>
-                        `;
+                        \`;
                     }
                 }
 
-                return `
-                <div class="bg-white p-4 rounded-2xl shadow-sm ${borderClass}">
-                    ${alertaHTML}
+                return \`
+                <div class="bg-white p-4 rounded-2xl shadow-sm \${borderClass}">
+                    \${alertaHTML}
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <p class="font-bold text-slate-800 text-sm">${reg.productor || reg.finca || 'Productor no especificado'}</p>
-                            <p class="text-sky-600 font-bold text-xs">Chapeta: ${reg.arete || reg.animalId}</p>
+                            <p class="font-bold text-slate-800 text-sm">\${reg.productor || reg.finca || 'Productor no especificado'}</p>
+                            <p class="text-sky-600 font-bold text-xs">Chapeta: \${reg.arete || reg.animalId}</p>
                         </div>
-                        <span class="bg-sky-100 text-sky-700 text-xs font-bold px-2 py-1 rounded-lg">${reg.tipoProcedimiento}</span>
+                        <span class="bg-sky-100 text-sky-700 text-xs font-bold px-2 py-1 rounded-lg">\${reg.tipoProcedimiento}</span>
                     </div>
-                    <p class="text-xs text-slate-500 mb-2">Genética: ${reg.geneticaUtilizada || 'No especificada'}</p>
-                    ${btnHTML}
+                    <p class="text-xs text-slate-500 mb-2">Genética: \${reg.geneticaUtilizada || 'No especificada'}</p>
+                    \${btnHTML}
                 </div>
-                `;
+                \`;
             }).join('');
 
             if (html.trim() === '') {
-                contenedor.innerHTML = `<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 text-center text-xs font-bold text-slate-500">${soloAlertas ? '¡Todo al día! No hay tareas urgentes para hoy.' : 'No tienes procedimientos pendientes.'}</div>`;
+                contenedor.innerHTML = \`<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 text-center text-xs font-bold text-slate-500">\${soloAlertas ? '¡Todo al día! No hay tareas urgentes para hoy.' : 'No tienes procedimientos pendientes.'}</div>\`;
             } else {
                 contenedor.innerHTML = html;
             }
         }
 
         async function confirmarPaso(id, pasoKey, nombrePaso) {
-            if (!confirm(`¿Confirmas que se completó exitosamente: ${nombrePaso}?`)) return;
+            if (!confirm(\`¿Confirmas que se completó exitosamente: \${nombrePaso}?\`)) return;
             const token = localStorage.getItem('tokenVet');
             try {
-                const res = await fetch(`http://localhost:3000/api/registro-genetico/${id}/paso`, {
+                const res = await fetch(\`http://localhost:3000/api/registro-genetico/\${id}/paso\`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': \`Bearer \${token}\` },
                     body: JSON.stringify({ paso: pasoKey })
                 });
 
@@ -327,18 +329,18 @@
         }
 
         async function actualizarEstadoProcedimiento(id, nuevoEstado) {
-            if (!confirm(`¿Confirmas el resultado final: ${nuevoEstado}?`)) return;
+            if (!confirm(\`¿Confirmas el resultado final: \${nuevoEstado}?\`)) return;
             const token = localStorage.getItem('tokenVet');
             try {
-                const res = await fetch(`http://localhost:3000/api/registro-genetico/${id}/prenez`, {
+                const res = await fetch(\`http://localhost:3000/api/registro-genetico/\${id}/prenez\`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ estadoPrenez: nuevoEstado, observaciones: `Diagnóstico actualizado en campo: ${nuevoEstado}` })
+                    headers: { 'Content-Type': 'application/json', 'Authorization': \`Bearer \${token}\` },
+                    body: JSON.stringify({ estadoPrenez: nuevoEstado, observaciones: \`Diagnóstico actualizado en campo: \${nuevoEstado}\` })
                 });
 
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ Estado finalizado como ${nuevoEstado}`);
+                    alert(\`✅ Estado finalizado como \${nuevoEstado}\`);
                     cargarMisProcedimientos(); 
                     if (!document.getElementById('modal-alertas').classList.contains('hidden')) {
                         abrirAlertas();
@@ -371,4 +373,6 @@
         }
     </script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync('../app-veterinario/dashboard.html', originalHTML);

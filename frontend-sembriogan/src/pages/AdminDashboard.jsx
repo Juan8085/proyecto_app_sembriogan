@@ -6,6 +6,7 @@ import AdminCatalogo from '../components/AdminCatalogo';
 import AdminResumen from '../components/AdminResumen';
 import AdminTestimonios from '../components/AdminTestimonios';
 import GestorCarrusel from '../components/GestorCarrusel';
+import AdminConfiguracion from '../components/AdminConfiguracion';
 
 export default function AdminDashboard() {
   const [adminData, setAdminData] = useState(null);
@@ -50,6 +51,8 @@ export default function AdminDashboard() {
         return <AdminCatalogo />;
       case 'testimonios':
         return <AdminTestimonios />;
+      case 'configuracion':
+        return <AdminConfiguracion />;
       case 'carrusel':
         return <GestorCarrusel />;
       default:
@@ -124,6 +127,12 @@ export default function AdminDashboard() {
           >
             🖼️ Landing Page
           </button>
+        <button 
+            onClick={() => handleTabChange('configuracion')}
+            className={`w-full text-left p-3 rounded-lg font-semibold transition ${activeTab === 'configuracion' ? 'bg-primary text-white' : 'hover:bg-gray-800 text-gray-300'}`}
+          >
+            ⚙️ Configuración
+          </button>
         </nav>
 
         <div className="p-4 border-t border-gray-700 bg-gray-900">
@@ -157,7 +166,9 @@ export default function AdminDashboard() {
             {activeTab === 'historial' && 'Módulo de Trazabilidad'}
             {activeTab === 'catalogo' && 'Gestión de Tienda'}
             {activeTab === 'testimonios' && 'Gestión de Testimonios'}
-            {activeTab === 'carrusel' && 'Gestión de Imágenes Web'} {/* Título dinámico actualizado */}
+            {activeTab === 'carrusel' && 'Gestión de Imágenes Web'}
+            {activeTab === 'configuracion' && 'Ajustes de Sistema y Perfil'}
+            {activeTab === 'configuracion' && 'Ajustes de Sistema y Perfil'} {/* Título dinámico actualizado */}
           </h1>
         </header>
 

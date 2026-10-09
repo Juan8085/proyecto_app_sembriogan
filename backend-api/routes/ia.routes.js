@@ -8,6 +8,6 @@ const { consultarIA } = require('../controllers/ia.controller');
 const { verificarToken } = require('../middlewares/auth.middleware'); 
 
 // 2. RUTA CORREGIDA: Como en server.js ya tiene el prefijo '/api/ia', aquí solo va '/consultar'
-router.post('/consultar', verificarToken, consultarIA);
+router.post('/consultar', consultarIA);
 
 module.exports = router;

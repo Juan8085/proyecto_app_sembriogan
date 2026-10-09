@@ -56,7 +56,6 @@ export default function AdminTrazabilidad() {
 
   // NUEVA LÓGICA DE ALERTAS
   const obtenerAlertaProtocolo = (registro) => {
-    // 1. Si el ciclo ya se cerró (Preñada o Vacía), no hay más alertas futuras.
     if (registro.estadoPrenez === 'Preñada') {
       return { texto: 'Ciclo Cerrado (Preñez Confirmada)', color: 'bg-green-50 text-green-700 border border-green-200' };
     }
@@ -76,29 +75,41 @@ export default function AdminTrazabilidad() {
       return nueva;
     };
 
-    const pasos = [
-      { nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) }
-    ];
+    const pasos = [];
+    const comp = registro.pasosCompletados || {};
+
+    if (!comp.dia8_retiro) {
+        pasos.push({ nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) });
+    }
 
     if (registro.tipoProcedimiento === 'IATF') {
-      pasos.push({ nombre: 'Inseminación (Día 10)', fecha: sumarDias(dia0, 10) });
+        if (!comp.dia10_inseminacion) pasos.push({ nombre: 'Inseminación (Día 10)', fecha: sumarDias(dia0, 10) });
     } else if (registro.tipoProcedimiento === 'TE') {
-      pasos.push({ nombre: 'Transferencia (Día 17)', fecha: sumarDias(dia0, 17) });
+        if (!comp.dia17_transferencia) pasos.push({ nombre: 'Transferencia (Día 17)', fecha: sumarDias(dia0, 17) });
     }
     
     pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
     
     if (registro.tipoProcedimiento === 'TE') {
-      pasos.push({ nombre: 'Entrega (Día 90)', fecha: sumarDias(dia0, 90) });
+        pasos.push({ nombre: 'Entrega (Día 90)', fecha: sumarDias(dia0, 90) });
     }
 
-    const proximoPaso = pasos.find(p => p.fecha >= hoy.setHours(0,0,0,0));
+    // El próximo paso será el primero que no esté completado en la secuencia lógica
+    const proximoPaso = pasos[0]; 
 
     if (!proximoPaso) return { texto: 'Protocolo Finalizado. Pendiente Estado.', color: 'bg-yellow-50 text-yellow-700 border border-yellow-200' };
 
     const diasFaltantes = Math.ceil((proximoPaso.fecha - new Date()) / (1000 * 60 * 60 * 24));
-    const fechaPasoStr = formatearFecha(proximoPaso.fecha);
     
+    // Función para formatear fecha a dd/mm/yyyy localmente
+    const formatear = (f) => {
+        const d = new Date(f);
+        return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
+    };
+    
+    const fechaPasoStr = formatear(proximoPaso.fecha);
+    
+    if (diasFaltantes < 0) return { texto: `¡RETRASADO! ${proximoPaso.nombre} (${Math.abs(diasFaltantes)} días)`, color: 'bg-red-200 text-red-800 font-bold animate-pulse' };
     if (diasFaltantes === 0) return { texto: `¡HOY! ${proximoPaso.nombre}`, color: 'bg-red-100 text-red-700 font-bold animate-pulse' };
     if (diasFaltantes <= 3) return { texto: `En ${diasFaltantes} días: ${proximoPaso.nombre} (${fechaPasoStr})`, color: 'bg-amber-100 text-amber-800 font-bold' };
     return { texto: `Próximo: ${proximoPaso.nombre} (${fechaPasoStr})`, color: 'bg-blue-50 text-blue-700' };
@@ -146,8 +157,8 @@ export default function AdminTrazabilidad() {
                 return (
                   <tr key={reg._id} className="bg-white border-b hover:bg-gray-50 transition">
                     <td className="px-4 py-3">
-                      <span className="block font-bold text-gray-800">{reg.finca || reg.productor}</span>
-                      <span className="text-xs text-gray-500">{reg.finca ? reg.productor : ''}</span>
+                      <span className="block font-bold text-gray-800">{reg.productor} {reg.finca ? `(${reg.finca})` : ''}</span>
+                      <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full inline-block mt-1">{reg.productorEmail || 'Sin correo vinculado'}</span>
                     </td>
                     <td className="px-4 py-3 font-bold text-primary">
                       {reg.animalId || reg.arete}
@@ -187,7 +198,8 @@ export default function AdminTrazabilidad() {
             <div key={reg._id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-3 relative">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-bold text-gray-800 text-base">{reg.finca || reg.productor}</h3>
+                  <h3 className="font-bold text-gray-800 text-base">{reg.productor} {reg.finca ? `(${reg.finca})` : ''}</h3>
+                  <p className="text-[10px] text-blue-600 mb-1">{reg.productorEmail || 'Sin correo vinculado'}</p>
                   <p className="text-primary font-bold text-sm">Chapeta: {reg.animalId || reg.arete}</p>
                 </div>
                 <span className={`px-2 py-1 rounded-md text-xs font-bold ${reg.tipoProcedimiento === 'IATF' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}`}>

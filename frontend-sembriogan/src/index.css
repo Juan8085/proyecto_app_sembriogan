@@ -5,6 +5,7 @@
   --color-secondary: #22c55e;
   --color-dark: #0f172a;
   --color-light: #f1f5f9;
+  --font-sans: 'Outfit', ui-sans-serif, system-ui, sans-serif;
 }
 
 body {

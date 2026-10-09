@@ -5,10 +5,12 @@ const {
     obtenerCatalogo, 
     crearCatalogoItem, 
     eliminarCatalogoItem,
-    actualizarCatalogoItem 
+    actualizarCatalogoItem,
+    crearCatalogoMasivo
 } = require('../controllers/catalogo.controller');
 
 router.get('/', obtenerCatalogo);
+router.post('/masivo', crearCatalogoMasivo);
 router.post('/', upload.single('imagen'), crearCatalogoItem);
 router.put('/:id', upload.single('imagen'), actualizarCatalogoItem); // <--- NUEVA RUTA PUT PARA EDITAR
 router.delete('/:id', eliminarCatalogoItem);

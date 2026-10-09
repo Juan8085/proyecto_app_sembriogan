@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sembriogan-vet-v7';
+const CACHE_NAME = 'sembriogan-vet-v9';
 
 // RUTAS RELATIVAS
 const urlsToCache = [

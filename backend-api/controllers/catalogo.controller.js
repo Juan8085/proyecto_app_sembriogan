@@ -97,10 +97,38 @@ const actualizarCatalogoItem = async (req, res) => {
         res.status(500).json({ success: false, mensaje: "Error al actualizar el item", error: error.message });
     }
 };
+const crearCatalogoMasivo = async (req, res) => {
+    try {
+        const items = req.body;
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ success: false, mensaje: "Debe enviar un arreglo de items" });
+        }
+
+        const itemsAInsertar = items.map(item => ({
+            tipo: item.tipo,
+            descripcion: item.descripcion || '',
+            costo: Number(item.costo) || 0,
+            esServicio: item.esServicio === true || item.esServicio === 'true' || item.esServicio === 'SI',
+            stock: Number(item.stock) || 0,
+            imagen: item.imagen || ''
+        }));
+
+        const itemsGuardados = await Catalogo.insertMany(itemsAInsertar);
+
+        res.status(201).json({
+            success: true,
+            mensaje: `${itemsGuardados.length} items agregados al catálogo de forma masiva`,
+            data: itemsGuardados
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, mensaje: "Error al importar el catálogo", error: error.message });
+    }
+};
 
 module.exports = { 
     obtenerCatalogo, 
     crearCatalogoItem, 
     eliminarCatalogoItem, 
-    actualizarCatalogoItem 
+    actualizarCatalogoItem,
+    crearCatalogoMasivo
 };

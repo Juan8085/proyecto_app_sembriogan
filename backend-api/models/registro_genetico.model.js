@@ -2,6 +2,7 @@ const { Schema, model } = require('mongoose');
 
 const RegistroGeneticoSchema = new Schema({
     productor: { type: String, required: true },
+    productorEmail: { type: String, required: false }, // Opcional, pero necesario para enlazar con el cliente
     arete: { type: String, required: true },
     tipoProcedimiento: { type: String, enum: ['IATF', 'TE', 'Diagnostico'], required: true },
     geneticaUtilizada: { type: String, required: true }, // Toro o Pajilla
@@ -17,6 +18,12 @@ const RegistroGeneticoSchema = new Schema({
         dia17_transferencia: { type: Date }, // Solo aplica para TE
         dia45_confirmacion: { type: Date },
         dia90_entrega: { type: Date } // Solo aplica para TE
+    },
+    // Seguimiento de pasos realizados por el veterinario
+    pasosCompletados: {
+        dia8_retiro: { type: Boolean, default: false },
+        dia10_inseminacion: { type: Boolean, default: false },
+        dia17_transferencia: { type: Boolean, default: false }
     }
 }, { timestamps: true });
 
