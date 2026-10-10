@@ -354,8 +354,11 @@ export default function PublicHome() {
                 <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
                   <span className="text-2xl font-black text-slate-800">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(item.costo)}</span>
                 </div>
-                <button onClick={() => agregarAlCarrito(item)} className="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl hover:bg-slate-700 transition flex justify-center items-center gap-2">
-                  <ShoppingCart size={18}/> Agregar
+                <button 
+                  onClick={() => agregarAlCarrito(item)} 
+                  disabled={!item.esServicio && item.stock <= 0}
+                  className={`w-full text-white font-bold py-3.5 rounded-xl transition flex justify-center items-center gap-2 ${(!item.esServicio && item.stock <= 0) ? 'bg-slate-300 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-700'}`}>
+                  <ShoppingCart size={18}/> {(!item.esServicio && item.stock <= 0) ? 'Agotado' : 'Agregar'}
                 </button>
               </div>
             </div>

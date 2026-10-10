@@ -28,7 +28,29 @@ const actualizarConfiguracion = async (req, res) => {
     }
 };
 
+const crypto = require('crypto');
+
+const generarFirmaWompi = async (req, res) => {
+    try {
+        const { reference, amountInCents, currency } = req.body;
+        if (!reference || !amountInCents) return res.status(400).json({ success: false, mensaje: "Faltan datos" });
+
+        const config = await Configuracion.findOne();
+        const secret = config?.wompiIntegridadSecret;
+
+        if (!secret) return res.status(500).json({ success: false, mensaje: "Secret de integridad no configurado" });
+
+        const cadena = `${reference}${amountInCents}${currency || 'COP'}${secret}`;
+        const signature = crypto.createHash('sha256').update(cadena).digest('hex');
+
+        res.json({ success: true, signature });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 module.exports = {
     obtenerConfiguracion,
-    actualizarConfiguracion
+    actualizarConfiguracion,
+    generarFirmaWompi
 };

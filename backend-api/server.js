@@ -56,6 +56,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/registro-genetico', registroGeneticoRoutes);
 app.use('/api/ordenes', ordenesRoutes);
 app.use('/api/configuracion', require('./routes/configuracion.routes'));
+app.use('/api/pagos', require('./routes/pagos.routes'));
 
 app.get('/api', (req, res) => {
     res.json({ mensaje: 'API REST de Sembriogan inicializada', estado: 'Online' });

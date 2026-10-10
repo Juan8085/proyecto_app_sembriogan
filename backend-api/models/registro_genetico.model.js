@@ -4,7 +4,7 @@ const RegistroGeneticoSchema = new Schema({
     productor: { type: String, required: true },
     productorEmail: { type: String, required: false }, // Opcional, pero necesario para enlazar con el cliente
     arete: { type: String, required: true },
-    tipoProcedimiento: { type: String, enum: ['IATF', 'TE', 'Diagnostico'], required: true },
+    tipoProcedimiento: { type: String, enum: ['IATF', 'TE', 'Diagnostico', 'IA'], required: true },
     geneticaUtilizada: { type: String, required: true }, // Toro o Pajilla
     estadoPrenez: { type: String, enum: ['Preñada', 'Vacía', 'Pendiente Evaluación'], default: 'Pendiente Evaluación' },
     observaciones: { type: String },
