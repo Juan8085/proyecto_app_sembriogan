@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, FlatList, Alert, Modal, RefreshControl, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, FlatList, Alert, Modal, RefreshControl, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView, Linking } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../config/api';
-import { LogOut, Bell, CloudOff, RefreshCw, CheckCircle, Edit3, X, Save } from 'lucide-react-native';
+import { LogOut, Bell, CloudOff, RefreshCw, CheckCircle, Edit3, X, Save, MessageCircle, Share2 } from 'lucide-react-native';
 
 export default function DashboardScreen({ navigation }) {
   const [procedimientos, setProcedimientos] = useState([]);
@@ -273,6 +273,53 @@ export default function DashboardScreen({ navigation }) {
     }
   };
 
+  // Función para compartir Reporte Clínico Oficial por WhatsApp con el Ganadero
+  const compartirReporteWhatsApp = (proc) => {
+    if (!proc) return;
+
+    const arete = proc.arete || proc.animalId || 'Sin Chapeta';
+    const finca = proc.finca || 'No especificada';
+    const productor = proc.productor || 'Ganadero';
+    const procedimiento = proc.tipoProcedimiento || 'Reproducción';
+    const raza = proc.raza || 'Bovino';
+    const genetica = proc.geneticaUtilizada || proc.pajillaId || 'Convencional';
+    const prenez = proc.estadoPrenez || 'Pendiente Evaluación';
+    const vet = proc.veterinarioAsignado || 'Equipo Veterinario Sembriogan';
+    const dia0 = proc.fechasProtocolo?.dia0_sincronizacion || proc.createdAt;
+    const dia0Str = dia0 ? new Date(dia0).toLocaleDateString('es-CO') : 'N/A';
+    const observaciones = proc.observaciones ? `\n📝 *Novedades / Observaciones:* ${proc.observaciones}` : '';
+
+    const mensaje = 
+`📋 *REPORTE CLÍNICO REPRODUCTIVO - SEMBRIOGAN*
+----------------------------------------
+🐮 *Animal / Chapeta:* ${arete}
+🏡 *Finca:* ${finca}
+👤 *Productor:* ${productor}
+🧬 *Procedimiento:* ${procedimiento} (${raza})
+💉 *Genética / Pajilla:* ${genetica}
+📅 *Fecha Inicio (Día 0):* ${dia0Str}
+🩺 *Diagnóstico Actual:* ${prenez}${observaciones}
+👨‍⚕️ *Veterinario Asignado:* ${vet}
+----------------------------------------
+_Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
+
+    const encoded = encodeURIComponent(mensaje);
+    const url = `whatsapp://send?text=${encoded}`;
+    const webUrl = `https://wa.me/?text=${encoded}`;
+
+    Linking.canOpenURL(url).then(supported => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        Linking.openURL(webUrl).catch(() => {
+          Alert.alert('Aviso', 'No se pudo abrir la aplicación de WhatsApp.');
+        });
+      }
+    }).catch(() => {
+      Linking.openURL(webUrl);
+    });
+  };
+
   const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.card} onPress={() => handleAbrirGestion(item)}>
       <View style={styles.cardHeader}>
@@ -287,23 +334,36 @@ export default function DashboardScreen({ navigation }) {
       <Text style={styles.detail}>Día 0: {new Date(item.fechasProtocolo?.dia0_sincronizacion || item.createdAt).toLocaleDateString()}</Text>
       {item.observaciones ? <Text style={styles.obsPreview} numberOfLines={2}>📝 {item.observaciones}</Text> : null}
       
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-        <View style={[
-          styles.statusBadge, 
-          item.estadoPrenez === 'Preñada' ? styles.statusSuccess : (item.estadoPrenez === 'Vacía' ? styles.statusDanger : styles.statusWarning)
-        ]}>
-          <Text style={[
-            styles.statusText,
-            item.estadoPrenez === 'Preñada' ? styles.statusSuccessText : (item.estadoPrenez === 'Vacía' ? styles.statusDangerText : styles.statusWarningText)
-          ]}>{item.estadoPrenez}</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+          <View style={[
+            styles.statusBadge, 
+            item.estadoPrenez === 'Preñada' ? styles.statusSuccess : (item.estadoPrenez === 'Vacía' ? styles.statusDanger : styles.statusWarning)
+          ]}>
+            <Text style={[
+              styles.statusText,
+              item.estadoPrenez === 'Preñada' ? styles.statusSuccessText : (item.estadoPrenez === 'Vacía' ? styles.statusDangerText : styles.statusWarningText)
+            ]}>{item.estadoPrenez}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            <TouchableOpacity 
+              style={styles.btnWhatsappCard}
+              onPress={(e) => {
+                compartirReporteWhatsApp(item);
+              }}
+            >
+              <MessageCircle color="#16a34a" size={15} />
+              <Text style={styles.btnWhatsappCardText}>WhatsApp</Text>
+            </TouchableOpacity>
+
+            <View style={styles.touchAction}>
+              <Edit3 color="#0ea5e9" size={15} />
+              <Text style={styles.touchActionText}>Ficha</Text>
+            </View>
+          </View>
         </View>
-        <View style={styles.touchAction}>
-          <Edit3 color="#0ea5e9" size={16} />
-          <Text style={styles.touchActionText}>Gestionar Ficha</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
 
   return (
     <View style={styles.container}>
@@ -460,6 +520,19 @@ export default function DashboardScreen({ navigation }) {
                     <Text style={styles.saveActionText}>Guardar Diagnóstico y Novedad</Text>
                   </>
                 )}
+              </TouchableOpacity>
+
+              {/* Botón Compartir Reporte por WhatsApp */}
+              <TouchableOpacity 
+                style={styles.whatsappActionBtn} 
+                onPress={() => compartirReporteWhatsApp({
+                  ...selectedProc,
+                  estadoPrenez: nuevoEstadoPrenez,
+                  observaciones: novedadesTexto
+                })}
+              >
+                <MessageCircle color="#fff" size={20} style={{ marginRight: 8 }} />
+                <Text style={styles.whatsappActionText}>📲 Compartir Reporte Clínico WhatsApp</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -713,7 +786,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 12,
     shadowColor: '#0ea5e9',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -724,6 +797,41 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  whatsappActionBtn: {
+    flexDirection: 'row',
+    backgroundColor: '#16a34a',
+    height: 52,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 30,
+    shadowColor: '#16a34a',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  whatsappActionText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  btnWhatsappCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  btnWhatsappCardText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#16a34a',
   },
   alertCard: {
     backgroundColor: '#f8fafc',

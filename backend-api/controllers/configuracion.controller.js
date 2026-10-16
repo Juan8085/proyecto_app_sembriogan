@@ -36,7 +36,7 @@ const generarFirmaWompi = async (req, res) => {
         if (!reference || !amountInCents) return res.status(400).json({ success: false, mensaje: "Faltan datos" });
 
         const config = await Configuracion.findOne();
-        const secret = config?.wompiIntegridadSecret;
+        const secret = config?.wompiIntegridadSecret || process.env.WOMPI_INTEGRIDAD_SECRET || 'test_integrity_aHql6rp4EWgoSLM7bJ9INi9GkHfHVyRO';
 
         if (!secret) return res.status(500).json({ success: false, mensaje: "Secret de integridad no configurado" });
 

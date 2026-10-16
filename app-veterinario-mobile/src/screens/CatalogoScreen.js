@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicator, Linking, Modal } from 'react-native';
 import { API_URL } from '../config/api';
-import { ShoppingBag } from 'lucide-react-native';
+import { ShoppingBag, CheckCircle, ExternalLink, X, CreditCard } from 'lucide-react-native';
 
-export default function CatalogoScreen() {
+export default function CatalogoScreen({ navigation }) {
   const [productos, setProductos] = useState([]);
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pagoPendiente, setPagoPendiente] = useState(null);
+  const [verificandoPago, setVerificandoPago] = useState(false);
 
   useEffect(() => {
     cargarDatos();
-  }, []);
+    const unsubscribe = navigation?.addListener?.('focus', () => {
+      cargarDatos();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -25,7 +31,7 @@ export default function CatalogoScreen() {
       if (dataCat.success) setProductos(dataCat.data);
       if (dataConf.success) setConfig(dataConf.data);
     } catch (error) {
-      Alert.alert('Error', 'No se pudo cargar el catálogo.');
+      console.error('Error cargando catálogo:', error);
     } finally {
       setLoading(false);
     }
@@ -50,27 +56,74 @@ export default function CatalogoScreen() {
         body: JSON.stringify({ reference, amountInCents, currency: 'COP' })
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.signature) {
         signature = data.signature;
       }
     } catch (err) {
       console.error('Error fetching signature', err);
     }
 
-    // Wompi Web Checkout Link
+    // Wompi Web Checkout Link sin redirect-url local para evitar bloqueo CloudFront 403
     const finalKey = (config.wompiPublicKey && config.wompiPublicKey !== 'undefined') ? config.wompiPublicKey : 'pub_test_ljKW2orNya3GoWqfTCl1wu6vOy50mnnh';
-    let wompiUrl = `https://checkout.wompi.co/p/?public-key=${finalKey}&currency=COP&amount-in-cents=${amountInCents}&reference=${reference}&redirect-url=https://sembriogan.com/gracias`;
+    let wompiUrl = `https://checkout.wompi.co/p/?public-key=${finalKey}&currency=COP&amount-in-cents=${amountInCents}&reference=${reference}`;
     
     // Add signature if successfully generated
     if (signature) {
       wompiUrl += `&signature:integrity=${signature}`;
     }
 
+    // Guardar referencia para confirmación del veterinario
+    setPagoPendiente({
+      producto,
+      reference,
+      amountInCents,
+      wompiUrl
+    });
+
     // Abriendo el navegador nativo del dispositivo para seguridad del pago
     Linking.openURL(wompiUrl).catch(err => {
       console.error('Failed to open URL:', err);
       Alert.alert('Error', 'No se pudo abrir el navegador para el pago.');
     });
+  };
+
+  const confirmarPagoManual = async () => {
+    if (!pagoPendiente) return;
+    setVerificandoPago(true);
+
+    try {
+      const res = await fetch(`${API_URL}/api/pagos/verificar-transaccion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reference: pagoPendiente.reference,
+          prodId: pagoPendiente.producto._id,
+          cantidad: 1,
+          total: pagoPendiente.producto.costo,
+          cliente: {
+            nombre: 'Veterinario Móvil',
+            email: 'veterinario@sembriogan.com'
+          }
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert(
+          '✅ ¡Pago Registrado Exitosamente!',
+          `La transacción fue guardada en el panel administrativo y el inventario de "${pagoPendiente.producto.tipo || pagoPendiente.producto.nombre}" ha sido actualizado.`
+        );
+        setPagoPendiente(null);
+        cargarDatos();
+      } else {
+        Alert.alert('Aviso', data.mensaje || 'No se pudo confirmar la transacción.');
+      }
+    } catch (err) {
+      console.error('Error verificando pago:', err);
+      Alert.alert('Error de conexión', 'No fue posible validar la transacción con el servidor.');
+    } finally {
+      setVerificandoPago(false);
+    }
   };
 
   const renderItem = ({ item }) => (
@@ -121,6 +174,74 @@ export default function CatalogoScreen() {
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         />
+      )}
+
+      {/* MODAL DE CONFIRMACIÓN DE PAGO WOMPI */}
+      {pagoPendiente && (
+        <Modal transparent animationType="fade" visible={!!pagoPendiente}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <CreditCard color="#0ea5e9" size={24} />
+                  <Text style={styles.modalTitle}>Pago en Proceso</Text>
+                </View>
+                <TouchableOpacity onPress={() => setPagoPendiente(null)} style={{ padding: 4 }}>
+                  <X color="#94a3b8" size={22} />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.modalSubtitle}>
+                Hemos abierto la pasarela segura de Wompi en tu navegador. Completa la transacción allí y regresa a confirmar.
+              </Text>
+
+              <View style={styles.productSummary}>
+                <Text style={styles.summaryLabel}>Producto / Ítem:</Text>
+                <Text style={styles.summaryValue}>{pagoPendiente.producto.tipo || pagoPendiente.producto.nombre}</Text>
+
+                <Text style={[styles.summaryLabel, { marginTop: 8 }]}>Valor a Pagar:</Text>
+                <Text style={[styles.summaryValue, { color: '#10b981', fontSize: 18 }]}>
+                  ${new Intl.NumberFormat('es-CO').format(pagoPendiente.producto.costo)} COP
+                </Text>
+
+                <Text style={[styles.summaryLabel, { marginTop: 8 }]}>Referencia:</Text>
+                <Text style={[styles.summaryValue, { fontFamily: 'monospace', fontSize: 11, color: '#64748b' }]}>
+                  {pagoPendiente.reference}
+                </Text>
+              </View>
+
+              <TouchableOpacity 
+                style={styles.confirmButton} 
+                onPress={confirmarPagoManual}
+                disabled={verificandoPago}
+              >
+                {verificandoPago ? (
+                  <ActivityIndicator color="#ffffff" size="small" />
+                ) : (
+                  <>
+                    <CheckCircle color="#ffffff" size={20} />
+                    <Text style={styles.confirmButtonText}>Ya completé el pago en Wompi</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.reopenButton} 
+                onPress={() => Linking.openURL(pagoPendiente.wompiUrl)}
+              >
+                <ExternalLink color="#0ea5e9" size={18} />
+                <Text style={styles.reopenButtonText}>Reabrir Pasarela Wompi</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.cancelButton} 
+                onPress={() => setPagoPendiente(null)}
+              >
+                <Text style={styles.cancelButtonText}>Cerrar sin confirmar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       )}
     </View>
   );
@@ -218,5 +339,106 @@ const styles = StyleSheet.create({
   },
   productBadgeText: {
     color: '#15803d',
+  },
+  // Estilos del Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 19,
+    fontWeight: '900',
+    color: '#0f172a',
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: '#64748b',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  productSummary: {
+    backgroundColor: '#f8fafc',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 18,
+  },
+  summaryLabel: {
+    fontSize: 11,
+    color: '#94a3b8',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  summaryValue: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginTop: 2,
+  },
+  confirmButton: {
+    backgroundColor: '#10b981',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginBottom: 10,
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  confirmButtonText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  reopenButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: '#e0f2fe',
+    marginBottom: 10,
+  },
+  reopenButtonText: {
+    color: '#0284c7',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  cancelButton: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  cancelButtonText: {
+    color: '#94a3b8',
+    fontSize: 13,
+    fontWeight: '600',
   }
 });

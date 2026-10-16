@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 // Importamos los íconos profesionales de Lucide
-import { ShoppingCart, User, ChevronDown, Package, Settings, LogOut, Star, CheckCircle, Menu, X } from 'lucide-react';
+import { ShoppingCart, User, ChevronDown, Package, Settings, LogOut, Star, CheckCircle, Menu, X, FileText, Printer, Award, CheckCircle2 } from 'lucide-react';
 
 export default function PublicHome() {
   const [imagenesHero, setImagenesHero] = useState([]);
@@ -17,6 +17,7 @@ export default function PublicHome() {
   const [isTestimonioOpen, setIsTestimonioOpen] = useState(false);
   const [isClienteDashboardOpen, setIsClienteDashboardOpen] = useState(false);
   const [isPerfilOpen, setIsPerfilOpen] = useState(false);
+  const [certificadoClienteModal, setCertificadoClienteModal] = useState(null);
   
   // Menú Desplegable (Dropdown)
   const [isDropdownMenuOpen, setIsDropdownMenuOpen] = useState(false);
@@ -32,6 +33,60 @@ export default function PublicHome() {
   const [configGlobal, setConfigGlobal] = useState(null);
   const [misOrdenesCliente, setMisOrdenesCliente] = useState([]);
   const [misProcedimientosCliente, setMisProcedimientosCliente] = useState([]);
+
+  // Estados interactivos de la barra de navegación flotante
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState('inicio');
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  // Detección de scroll, barra de progreso y ScrollSpy según sección activa
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPos = window.scrollY;
+      setIsScrolled(scrollPos > 35);
+
+      // Progreso de lectura a lo largo del documento (0 a 100%)
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight > 0) {
+        setScrollProgress(Math.min(100, Math.max(0, (scrollPos / docHeight) * 100)));
+      }
+
+      // ScrollSpy: identificar qué sección se encuentra en vista
+      const sections = ['inicio', 'nosotros', 'historias', 'servicios'];
+      const scrollPosition = scrollPos + 220; // Offset para activación oportuna
+
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const el = document.getElementById(sections[i]);
+        if (el) {
+          if (scrollPosition >= el.offsetTop) {
+            setActiveSection(sections[i]);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Navegación suave compensando la barra flotante
+  const scrollToSection = (e, sectionId) => {
+    e.preventDefault();
+    setIsMobileNavOpen(false);
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const headerOffset = 90;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   // Cerrar el dropdown si se hace clic fuera de él
   useEffect(() => {
@@ -53,6 +108,37 @@ export default function PublicHome() {
 
     const clienteGuardado = localStorage.getItem('clienteSembriogan');
     if (clienteGuardado) setUserCliente(JSON.parse(clienteGuardado));
+
+    // Verificar si el usuario fue redirigido por Wompi tras un pago
+    const searchParams = new URLSearchParams(window.location.search);
+    const wompiTxId = searchParams.get('id');
+    if (wompiTxId) {
+      const pendingCartRaw = localStorage.getItem('pendingWompiCart');
+      const pendingCart = pendingCartRaw ? JSON.parse(pendingCartRaw) : null;
+
+      fetch('http://localhost:3000/api/pagos/verificar-transaccion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transactionId: wompiTxId,
+          items: pendingCart?.items,
+          cliente: pendingCart?.cliente,
+          total: pendingCart?.total,
+          reference: pendingCart?.reference
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert('✅ ¡Pago verificado con Wompi!\nTu orden ha sido confirmada y el inventario actualizado.');
+          localStorage.removeItem('pendingWompiCart');
+          setCarrito([]);
+          window.history.replaceState({}, document.title, window.location.pathname);
+          fetch('http://localhost:3000/api/catalogo').then(res => res.json()).then(d => { if (d.success) setCatalogo(d.data); });
+        }
+      })
+      .catch(console.error);
+    }
   }, []);
 
   useEffect(() => {
@@ -98,34 +184,111 @@ export default function PublicHome() {
   };
   const totalCarrito = carrito.reduce((sum, item) => sum + (item.costo * item.cantidad), 0);
 
-  const pagarConWompi = () => {
+  const pagarConWompi = async () => {
     if (carrito.length === 0) return;
     if (!userCliente) { alert('Por favor, inicia sesión para procesar tu pedido.'); setIsAuthOpen(true); return; }
     if (!window.WidgetCheckout) { alert('El widget de pagos de Wompi no está disponible.'); return; }
 
     const referenciaUnica = 'WEB-SEM-' + Date.now();
-    const checkout = new window.WidgetCheckout({
-      currency: 'COP', amountInCents: Math.round(totalCarrito * 100), reference: referenciaUnica,
-      publicKey: configGlobal?.wompiPublicKey || 'pub_test_1jKw2orNya3GdwqfTCl1wU6V0yS0mnnh'
-    });
+    const amountInCents = Math.round(totalCarrito * 100);
+
+    // Obtener firma de integridad del backend con fallback local SHA-256
+    let signature = '';
+    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3000' : `http://${window.location.hostname}:3000`;
+    
+    try {
+      const resSig = await fetch(`${apiBase}/api/configuracion/generar-firma`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reference: referenciaUnica, amountInCents, currency: 'COP' })
+      });
+      const dataSig = await resSig.json();
+      if (dataSig.success && dataSig.signature) {
+        signature = dataSig.signature;
+      }
+    } catch (e) {
+      console.warn('Backend generar-firma no respondió, intentando fallback local...', e);
+    }
+
+    // Fallback criptográfico local con Web Crypto API (SHA-256)
+    if (!signature) {
+      const secret = configGlobal?.wompiIntegridadSecret || 'test_integrity_aHql6rp4EWgoSLM7bJ9INi9GkHfHVyRO';
+      try {
+        const cadena = `${referenciaUnica}${amountInCents}COP${secret}`;
+        const msgUint8 = new TextEncoder().encode(cadena);
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        console.log('✅ Firma de integridad generada vía Web Crypto:', signature);
+      } catch (errLocal) {
+        console.error('Error calculando firma local SHA-256:', errLocal);
+      }
+    }
+
+    if (!signature) {
+      alert('Error de seguridad: No se pudo generar la firma de integridad de Wompi. Por favor verifica que el backend esté activo.');
+      return;
+    }
+
+    // Guardar carrito temporal para recuperación ante redirección
+    localStorage.setItem('pendingWompiCart', JSON.stringify({
+      items: carrito.map(item => ({ catalogoItem: item._id, tipo: item.tipo, costo: item.costo, cantidad: item.cantidad })),
+      cliente: { nombre: userCliente.nombre, email: userCliente.email },
+      total: totalCarrito,
+      reference: referenciaUnica
+    }));
+
+    const checkoutConfig = {
+      currency: 'COP',
+      amountInCents: amountInCents,
+      reference: referenciaUnica,
+      publicKey: configGlobal?.wompiPublicKey || 'pub_test_ljKW2orNya3GoWqfTCl1wu6vOy50mnnh',
+      signature: { integrity: signature },
+      'signature:integrity': signature
+    };
+
+    // Solo agregar redirectUrl si es un dominio HTTPS público real, porque CloudFront bloquea localhost y IPs privadas con 403
+    if (window.location.protocol === 'https:' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+      checkoutConfig.redirectUrl = window.location.origin + window.location.pathname;
+    }
+
+    const checkout = new window.WidgetCheckout(checkoutConfig);
 
     checkout.open(async (result) => {
-      const transaction = result.transaction;
-      if (transaction && transaction.status === 'APPROVED') {
+      const transaction = result?.transaction;
+      const status = transaction?.status;
+
+      if (transaction && (status === 'APPROVED' || status === 'PENDING')) {
         try {
-          const ordenPayload = {
+          const verifyPayload = {
+            transactionId: transaction.id,
+            reference: transaction.reference || referenciaUnica,
             cliente: { nombre: userCliente.nombre, email: userCliente.email },
             items: carrito.map(item => ({ catalogoItem: item._id, tipo: item.tipo, costo: item.costo, cantidad: item.cantidad })),
-            total: totalCarrito, referenciaWompi: transaction.id || referenciaUnica
+            total: totalCarrito
           };
-          const res = await fetch('http://localhost:3000/api/ordenes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ordenPayload) });
+          const res = await fetch('http://localhost:3000/api/pagos/verificar-transaccion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(verifyPayload)
+          });
           const data = await res.json();
           if (data.success) {
-            alert(`✅ ¡Pago Exitoso!\nOrden registrada en base de datos.`);
-            setCarrito([]); setIsCartOpen(false);
-          } else alert('Error al registrar la orden: ' + data.mensaje);
-        } catch (err) { alert("Error de conexión al registrar la orden."); }
-      } else if (transaction) alert('❌ La transacción no se completó. Estado: ' + transaction.status);
+            alert('✅ ¡Pago Exitoso!\nTu orden ha sido registrada en base de datos y el stock fue descontado.');
+            setCarrito([]);
+            setIsCartOpen(false);
+            localStorage.removeItem('pendingWompiCart');
+            fetch('http://localhost:3000/api/catalogo').then(r => r.json()).then(d => { if (d.success) setCatalogo(d.data); });
+          } else {
+            alert('Aviso de pago: ' + (data.mensaje || 'Transacción procesada'));
+          }
+        } catch (err) {
+          console.error("Error al verificar orden:", err);
+          alert("Error de conexión al confirmar la orden.");
+        }
+      } else if (transaction) {
+        alert('❌ La transacción no se completó. Estado: ' + transaction.status);
+      }
     });
   };
 
@@ -198,61 +361,175 @@ export default function PublicHome() {
       <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-100/30 blur-[120px] -z-10 pointer-events-none"></div>
       <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-100/30 blur-[120px] -z-10 pointer-events-none"></div>
       
-      {/* HEADER FLOTANTE - Diseño Limpio */}
-      <header className="fixed top-6 left-1/2 transform -translate-x-1/2 w-[95%] max-w-7xl bg-white/70 backdrop-blur-xl shadow-lg shadow-slate-200/20 py-4 px-8 flex justify-between items-center rounded-full z-50 border border-white">
-        <div className="flex items-center">
-          <img src="/logo.png" alt="Logo Sembriogan" className="h-9 object-contain" />
-        </div>
+      {/* HEADER FLOTANTE INTERACTIVO Y PROFESIONAL */}
+      <header 
+        className={`fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-in-out w-[95%] max-w-7xl rounded-full border ${
+          isScrolled 
+            ? 'top-3 bg-white/95 backdrop-blur-2xl shadow-xl shadow-slate-900/10 py-2.5 px-5 md:px-7 border-slate-200/90 ring-1 ring-slate-900/5' 
+            : 'top-6 bg-white/85 backdrop-blur-xl shadow-lg shadow-slate-200/30 py-3.5 px-6 md:px-8 border-white/90'
+        }`}
+      >
+        <div className="flex justify-between items-center w-full">
+          {/* Logo Sembriogan interactivo con tamaño profesional y nítido */}
+          <a 
+            href="#inicio" 
+            onClick={(e) => scrollToSection(e, 'inicio')} 
+            className="flex items-center gap-2 group transition-transform duration-200 hover:scale-[1.02] cursor-pointer"
+            title="Sembriogan - Biotecnología Reproductiva"
+          >
+            <img 
+              src="/logo.png" 
+              alt="Logo Sembriogan" 
+              className={`w-auto object-contain transition-all duration-300 filter drop-shadow-sm ${
+                isScrolled ? 'h-9 md:h-11' : 'h-11 md:h-14'
+              }`} 
+            />
+          </a>
 
-        <nav className="hidden md:flex space-x-8 font-medium text-slate-600 text-sm">
-          <a href="#inicio" className="hover:text-primary transition">Inicio</a>
-          <a href="#nosotros" className="hover:text-primary transition">Nosotros</a>
-          <a href="#historias" className="hover:text-primary transition">Historias</a>
-          <a href="#servicios" className="hover:text-primary transition">Tienda</a>
-          <Link to="/admin" className="hover:text-blue-600 transition font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-lg">⚙️ Admin</Link>
-        </nav>
+          {/* Navegación Desktop Tipo Píldora / Glass Segmented */}
+          <nav className="hidden lg:flex items-center bg-slate-100/80 p-1 rounded-full border border-slate-200/60 backdrop-blur-sm text-sm gap-1">
+            {[
+              { id: 'inicio', label: 'Inicio' },
+              { id: 'nosotros', label: 'Nosotros' },
+              { id: 'historias', label: 'Historias' },
+              { id: 'servicios', label: 'Tienda' }
+            ].map((item) => {
+              const isActive = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={(e) => scrollToSection(e, item.id)}
+                  className={`px-4 py-1.5 rounded-full font-semibold transition-all duration-200 relative ${
+                    isActive 
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' 
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+            
+            <div className="h-4 w-px bg-slate-200 mx-1"></div>
 
-        <div className="flex items-center space-x-3">
-          <button onClick={() => setIsCartOpen(true)} className="relative bg-slate-50 border border-slate-100 p-2.5 rounded-xl hover:bg-slate-100 transition text-slate-700 flex items-center gap-2">
-            <ShoppingCart size={18} />
-            {carrito.length > 0 && <span className="absolute -top-2 -right-2 bg-secondary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">{carrito.reduce((sum, item) => sum + item.cantidad, 0)}</span>}
-          </button>
+            <Link 
+              to="/admin" 
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs text-slate-700 bg-white/90 hover:bg-white border border-slate-200/80 shadow-xs hover:text-blue-600 hover:border-blue-200 transition"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Admin
+            </Link>
+          </nav>
 
-          {userCliente ? (
-            <div className="relative" ref={dropdownRef}>
-              <button onClick={() => setIsDropdownMenuOpen(!isDropdownMenuOpen)} className="bg-blue-50 text-blue-700 hover:bg-blue-100 text-sm font-semibold px-4 py-2 rounded-xl transition flex items-center gap-2 border border-blue-100">
-                <User size={16} /> {userCliente.nombre.split(' ')[0]} <ChevronDown size={14} className={`transition-transform ${isDropdownMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {/* DROPDOWN MENU */}
-              {isDropdownMenuOpen && (
-                <div className="absolute right-0 mt-3 w-56 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 flex flex-col z-[70] overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-50 bg-slate-50/50">
-                    <p className="text-sm font-bold text-slate-800 truncate">{userCliente.nombre}</p>
-                    <p className="text-xs text-slate-500 truncate">{userCliente.email}</p>
-                  </div>
-                  <button onClick={() => { setIsClienteDashboardOpen(true); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition">
-                    <Package size={16} /> Historial de Compras
-                  </button>
-                  <button onClick={() => { setIsPerfilOpen(true); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition">
-                    <Settings size={16} /> Configurar Perfil
-                  </button>
-                  <Link to="/admin" className="flex items-center gap-3 px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 text-left transition font-semibold">
-                    ⚙️ Panel Administrador
-                  </Link>
-                  <div className="border-t border-slate-50 my-1"></div>
-                  <button onClick={() => { setUserCliente(null); localStorage.removeItem('clienteSembriogan'); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 text-left transition">
-                    <LogOut size={16} /> Cerrar Sesión
-                  </button>
-                </div>
+          {/* Acciones Derecha (Carrito, Usuario y Menú Móvil) */}
+          <div className="flex items-center space-x-2 md:space-x-3">
+            {/* Botón Carrito */}
+            <button 
+              onClick={() => setIsCartOpen(true)} 
+              className="relative bg-slate-50/90 border border-slate-200/80 p-2.5 rounded-2xl hover:bg-slate-100 transition text-slate-700 flex items-center justify-center group shadow-xs"
+              title="Ver Carrito de Compras"
+            >
+              <ShoppingCart size={19} className="group-hover:scale-110 transition-transform text-slate-700" />
+              {carrito.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[10px] min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center font-bold shadow-md shadow-blue-500/30 ring-2 ring-white animate-bounce">
+                  {carrito.reduce((sum, item) => sum + item.cantidad, 0)}
+                </span>
               )}
-            </div>
-          ) : (
-            <button onClick={() => setIsAuthOpen(true)} className="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-slate-700 transition shadow-sm text-sm">
-              Ingresar
             </button>
-          )}
+
+            {/* Menú Usuario / Login */}
+            {userCliente ? (
+              <div className="relative" ref={dropdownRef}>
+                <button 
+                  onClick={() => setIsDropdownMenuOpen(!isDropdownMenuOpen)} 
+                  className="bg-blue-50/90 text-blue-700 hover:bg-blue-100/90 text-xs md:text-sm font-semibold px-3 md:px-4 py-2 rounded-2xl transition flex items-center gap-2 border border-blue-200/70 shadow-xs"
+                >
+                  <User size={16} /> 
+                  <span className="max-w-[90px] md:max-w-none truncate">{userCliente.nombre.split(' ')[0]}</span> 
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${isDropdownMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {/* DROPDOWN MENU */}
+                {isDropdownMenuOpen && (
+                  <div className="absolute right-0 mt-3 w-60 bg-white/95 backdrop-blur-2xl border border-slate-100 rounded-3xl shadow-2xl py-2 flex flex-col z-[70] overflow-hidden">
+                    <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50/70">
+                      <p className="text-sm font-bold text-slate-800 truncate">{userCliente.nombre}</p>
+                      <p className="text-xs text-slate-500 truncate">{userCliente.email}</p>
+                    </div>
+                    <button onClick={() => { setIsClienteDashboardOpen(true); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition font-medium">
+                      <Package size={16} className="text-blue-600" /> Historial de Compras
+                    </button>
+                    <button onClick={() => { setIsPerfilOpen(true); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition font-medium">
+                      <Settings size={16} className="text-slate-500" /> Configurar Perfil
+                    </button>
+                    <Link to="/admin" className="flex items-center gap-3 px-5 py-3 text-sm text-blue-600 hover:bg-blue-50 text-left transition font-semibold">
+                      ⚙️ Panel Administrador
+                    </Link>
+                    <div className="border-t border-slate-100 my-1"></div>
+                    <button onClick={() => { setUserCliente(null); localStorage.removeItem('clienteSembriogan'); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-5 py-3 text-sm text-red-600 hover:bg-red-50 text-left transition font-medium">
+                      <LogOut size={16} /> Cerrar Sesión
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button 
+                onClick={() => setIsAuthOpen(true)} 
+                className="bg-slate-900 text-white px-4 md:px-5 py-2 md:py-2.5 rounded-2xl font-bold hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-600/20 transition-all duration-200 text-xs md:text-sm shadow-xs"
+              >
+                Ingresar
+              </button>
+            )}
+
+            {/* Botón Hamburguesa Móvil */}
+            <button 
+              onClick={() => setIsMobileNavOpen(!isMobileNavOpen)} 
+              className="lg:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-2xl transition border border-slate-200/60"
+              aria-label="Abrir menú"
+            >
+              {isMobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
+
+        {/* Barra sutil de progreso de lectura a lo largo de la página */}
+        <div className="absolute -bottom-[1px] left-10 right-10 h-[2px] bg-transparent rounded-full overflow-hidden pointer-events-none">
+          <div 
+            className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500 transition-all duration-150 ease-out"
+            style={{ width: `${scrollProgress}%` }}
+          />
+        </div>
+
+        {/* MENÚ MÓVIL DESPLEGABLE */}
+        {isMobileNavOpen && (
+          <div className="lg:hidden mt-3 pt-3 pb-2 border-t border-slate-200/60 flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+            {[
+              { id: 'inicio', label: 'Inicio' },
+              { id: 'nosotros', label: 'Nosotros' },
+              { id: 'historias', label: 'Historias' },
+              { id: 'servicios', label: 'Tienda' }
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={(e) => scrollToSection(e, item.id)}
+                className={`text-left px-4 py-2.5 rounded-xl font-semibold text-sm transition ${
+                  activeSection === item.id 
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+            <Link 
+              to="/admin" 
+              onClick={() => setIsMobileNavOpen(false)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-slate-800 bg-slate-100 hover:bg-slate-200 transition"
+            >
+              ⚙️ Acceso Panel Administrador
+            </Link>
+          </div>
+        )}
       </header>
 
       {/* SECCIÓN 1: CARRUSEL - Alto completo para impacto visual */}
@@ -425,10 +702,123 @@ export default function PublicHome() {
                              {proc.estadoPrenez}
                            </span>
                         </div>
+                        <button 
+                          onClick={() => setCertificadoClienteModal(proc)}
+                          className="mt-1 text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition w-fit"
+                        >
+                          <FileText size={13} /> Certificado Clínico (Imprimir / PDF)
+                        </button>
                       </div>
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CERTIFICADO CLÍNICO DEL CLIENTE (IMPRIMIBLE / PDF) */}
+      {certificadoClienteModal && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl p-6 sm:p-8 relative my-8 border border-slate-200 flex flex-col">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100 print:hidden">
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                <Award size={16} className="text-blue-600" /> Certificado Clínico Reproductivo Oficial
+              </span>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => window.print()} 
+                  className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 transition flex items-center gap-2 shadow-sm"
+                >
+                  <Printer size={16} /> Imprimir / Guardar PDF
+                </button>
+                <button 
+                  onClick={() => setCertificadoClienteModal(null)} 
+                  className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-6 print:m-0">
+              <div className="flex flex-col sm:flex-row justify-between items-center border-b-2 border-slate-900 pb-5 gap-4 text-center sm:text-left">
+                <img src="/logo.png" alt="Sembriogan" className="h-14 sm:h-16 object-contain" />
+                <div className="sm:text-right">
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight">SEMBRIOGAN - SOMOS EPSEA</h3>
+                  <p className="text-xs text-slate-600 font-semibold">Biotecnología Reproductiva y Mejoramiento Genético Bovino</p>
+                  <p className="text-[11px] text-slate-500">Certificación Oficial de Procedimientos de Campo</p>
+                </div>
+              </div>
+
+              <div className="text-center py-2">
+                <span className="text-[11px] font-mono uppercase tracking-widest text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                  Ficha No. {certificadoClienteModal._id.slice(-8).toUpperCase()}
+                </span>
+                <h4 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">CERTIFICADO CLÍNICO DE REPRODUCCIÓN</h4>
+                <p className="text-xs text-slate-500 mt-1">Expedido bajo estándares de buenas prácticas de manejo reproductivo y trazabilidad animal.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/70 p-4 rounded-2xl border border-slate-200 text-xs sm:text-sm">
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Identificación del Animal</p>
+                  <p className="font-black text-base text-slate-900 mt-1">Chapeta: <span className="text-blue-700">{certificadoClienteModal.animalId || certificadoClienteModal.arete}</span></p>
+                  <p className="text-slate-600 mt-0.5">Raza / Tipo: <span className="font-semibold text-slate-800">{certificadoClienteModal.raza || 'Bovino'}</span></p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Predio y Titular</p>
+                  <p className="font-black text-slate-900 mt-1">Finca: <span className="font-semibold text-slate-800">{certificadoClienteModal.finca || 'No especificada'}</span></p>
+                  <p className="text-slate-600 mt-0.5">Productor: <span className="font-semibold text-slate-800">{certificadoClienteModal.productor}</span></p>
+                </div>
+              </div>
+
+              <div className="border border-slate-200 rounded-2xl p-4 text-xs sm:text-sm space-y-3">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Protocolo Biotecnológico Aplicado</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div>
+                    <span className="text-xs text-slate-500 block">Técnica:</span>
+                    <span className="font-black text-slate-800 text-sm">{certificadoClienteModal.tipoProcedimiento}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-500 block">Genética / Pajilla:</span>
+                    <span className="font-bold text-slate-800 text-sm">{certificadoClienteModal.geneticaUtilizada || 'Convencional'}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-500 block">Fecha Inicio:</span>
+                    <span className="font-bold text-slate-800 text-sm">{new Date(certificadoClienteModal.fechasProtocolo?.dia0_sincronizacion || certificadoClienteModal.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
+                  <span className="text-xs text-slate-500 font-semibold">Estado Clínico Diagnosticado:</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-black uppercase ${certificadoClienteModal.estadoPrenez === 'Preñada' ? 'bg-green-100 text-green-700' : (certificadoClienteModal.estadoPrenez === 'Vacía' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700')}`}>
+                    {certificadoClienteModal.estadoPrenez}
+                  </span>
+                </div>
+              </div>
+
+              {certificadoClienteModal.observaciones && (
+                <div className="bg-amber-50/50 border border-amber-200/60 p-4 rounded-2xl text-xs sm:text-sm">
+                  <p className="text-[11px] font-bold text-amber-800 uppercase tracking-wider mb-1">Observaciones Clínicas / Novedades</p>
+                  <p className="text-slate-700 italic">"{certificadoClienteModal.observaciones}"</p>
+                </div>
+              )}
+
+              <div className="pt-6 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
+                <div>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wider">Fecha de Emisión:</p>
+                  <p className="text-xs font-bold text-slate-700">{new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  <div className="mt-2 flex items-center gap-2 text-emerald-700 text-xs font-semibold">
+                    <CheckCircle2 size={16} /> Entidad Prestadora del Servicio de Extensión Agropecuaria
+                  </div>
+                </div>
+                <div className="text-center sm:text-right border-t sm:border-t-0 pt-4 sm:pt-0">
+                  <div className="inline-block border-b-2 border-slate-800 w-48 mb-2"></div>
+                  <p className="font-black text-slate-900 text-sm">{certificadoClienteModal.veterinarioAsignado || 'Médico Veterinario Especialista'}</p>
+                  <p className="text-xs text-slate-500 font-medium">Médico Veterinario Zootecnista (MVZ)</p>
+                  <p className="text-[11px] text-slate-400">Equipo Técnico Oficial Sembriogan</p>
+                </div>
               </div>
             </div>
           </div>

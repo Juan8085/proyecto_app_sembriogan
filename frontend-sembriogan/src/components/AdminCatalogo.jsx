@@ -34,6 +34,13 @@ export default function AdminCatalogo() {
 
   useEffect(() => {
     cargarCatalogo();
+    const interval = setInterval(cargarCatalogo, 8000);
+    window.addEventListener('focus', cargarCatalogo);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', cargarCatalogo);
+    };
   }, []);
 
   const handleChange = (e) => {

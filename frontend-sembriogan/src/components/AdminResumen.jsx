@@ -63,11 +63,35 @@ export default function AdminResumen() {
     };
 
     fetchEstadisticas();
+
+    // Actualización automática cada 8 segundos para reflejar pagos de Wompi en tiempo real
+    const interval = setInterval(fetchEstadisticas, 8000);
+    window.addEventListener('focus', fetchEstadisticas);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', fetchEstadisticas);
+    };
   }, []);
 
   return (
     <div className="space-y-6">
       
+      {/* ENCABEZADO CON BOTÓN DE ACTUALIZAR */}
+      <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+        <div>
+          <h2 className="text-xl font-black text-slate-800">Panel Financiero y Métricas</h2>
+          <p className="text-xs text-slate-500">Métricas sincronizadas en tiempo real con Wompi y Trazabilidad.</p>
+        </div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+          title="Actualizar Métricas"
+        >
+          🔄 Refrescar
+        </button>
+      </div>
+
       {/* TARJETAS DE INDICADORES (KPIs) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4 border-l-4 border-primary">

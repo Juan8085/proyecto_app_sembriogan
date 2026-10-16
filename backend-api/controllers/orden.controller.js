@@ -19,13 +19,22 @@ const crearOrden = async (req, res) => {
 
         if (estadoFinal === 'Aprobado' && Array.isArray(items)) {
             for (let item of items) {
-                const itemId = item.id || item.catalogoItem || item.productoId;
+                const itemId = item.id || item.catalogoItem || item.productoId || item._id;
+                const cant = Number(item.cantidad) || 1;
                 if (itemId) {
-                    await Catalogo.findByIdAndUpdate(itemId, {
-                        $inc: { stock: -item.cantidad }
-                    });
+                    const prod = await Catalogo.findById(itemId);
+                    if (prod && !prod.esServicio) {
+                        prod.stock = Math.max(0, (prod.stock || 0) - cant);
+                        await prod.save();
+                        console.log(`[ORDEN] Stock descontado para "${prod.tipo}". Restante: ${prod.stock}`);
+                    }
                 }
             }
+        }
+
+        if (req.io) {
+            req.io.emit('actualizacion-catalogo');
+            req.io.emit('nueva-orden');
         }
 
         res.status(201).json({ success: true, mensaje: "Orden procesada y stock descontado", data: nuevaOrden });
