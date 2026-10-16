@@ -62,7 +62,7 @@ const loginUsuario = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: usuario._id, rol: usuario.rol }, 
+            { id: usuario._id, rol: usuario.rol, nombre: usuario.nombre }, 
             process.env.JWT_SECRET || 'FirmaSecretaSembriogan2026', 
             { expiresIn: '8h' }
         );
@@ -123,7 +123,7 @@ const googleLogin = async (req, res) => {
 
         // Generar el Token JWT propio de la plataforma
         const jwtToken = jwt.sign(
-            { id: usuario._id, rol: usuario.rol }, 
+            { id: usuario._id, rol: usuario.rol, nombre: usuario.nombre }, 
             process.env.JWT_SECRET || 'FirmaSecretaSembriogan2026', 
             { expiresIn: '8h' }
         );

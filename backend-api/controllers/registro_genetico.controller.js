@@ -28,9 +28,15 @@ const crearRegistro = async (req, res) => {
 
         const nuevoRegistro = new RegistroGenetico(req.body);
         
-        // Asignar el veterinario que viene del token de sesión (si tu middleware JWT lo inyecta)
+        // Asignar el veterinario que viene del token de sesión
         if (req.usuario && req.usuario.nombre) {
             nuevoRegistro.veterinarioAsignado = req.usuario.nombre;
+        } else if (req.usuario && req.usuario.id) {
+            const Usuario = require('../models/usuario.model');
+            const u = await Usuario.findById(req.usuario.id);
+            if (u && u.nombre) {
+                nuevoRegistro.veterinarioAsignado = u.nombre;
+            }
         }
 
         // NOTA: No necesitamos sumar los 45 días aquí manualmente. 

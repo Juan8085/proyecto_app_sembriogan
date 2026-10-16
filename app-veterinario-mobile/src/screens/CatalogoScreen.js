@@ -81,8 +81,15 @@ export default function CatalogoScreen() {
         resizeMode="cover"
       />
       <View style={styles.info}>
-        <Text style={styles.title}>{item.nombre}</Text>
-        <Text style={styles.raza}>{item.raza} - {item.categoria}</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+          <Text style={[styles.title, { flex: 1, marginRight: 8 }]}>{item.tipo || item.nombre}</Text>
+          <View style={[styles.typeBadge, item.esServicio ? styles.serviceBadge : styles.productBadge]}>
+            <Text style={[styles.typeBadgeText, item.esServicio ? styles.serviceBadgeText : styles.productBadgeText]}>
+              {item.esServicio ? 'Servicio' : `Stock: ${item.stock}`}
+            </Text>
+          </View>
+        </View>
+        <Text style={styles.raza}>{item.descripcion || item.categoria || 'Sin descripción'}</Text>
         <Text style={styles.price}>
           ${new Intl.NumberFormat('es-CO').format(item.costo)} COP
         </Text>
@@ -190,5 +197,26 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  typeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  serviceBadge: {
+    backgroundColor: '#e0f2fe',
+  },
+  productBadge: {
+    backgroundColor: '#dcfce7',
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  serviceBadgeText: {
+    color: '#0284c7',
+  },
+  productBadgeText: {
+    color: '#15803d',
   }
 });

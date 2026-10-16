@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert, Modal, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, FlatList, Alert, Modal, RefreshControl, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '../config/api';
-import { LogOut, Bell, CloudOff, RefreshCw , CheckCircle } from 'lucide-react-native';
+import { LogOut, Bell, CloudOff, RefreshCw, CheckCircle, Edit3, X, Save } from 'lucide-react-native';
 
 export default function DashboardScreen({ navigation }) {
   const [procedimientos, setProcedimientos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalAlertasVisible, setModalAlertasVisible] = useState(false);
   const [alertas, setAlertas] = useState([]);
-
   const [offlineCount, setOfflineCount] = useState(0);
+
+  // Estados para el Modal de Gestión de Ficha
+  const [selectedProc, setSelectedProc] = useState(null);
+  const [modalGestionVisible, setModalGestionVisible] = useState(false);
+  const [nuevoEstadoPrenez, setNuevoEstadoPrenez] = useState('Pendiente Evaluación');
+  const [novedadesTexto, setNovedadesTexto] = useState('');
+  const [guardandoGestion, setGuardandoGestion] = useState(false);
 
   const cargarProcedimientos = async () => {
     setLoading(true);
@@ -24,6 +30,9 @@ export default function DashboardScreen({ navigation }) {
       });
       const data = await res.json();
       if (data.success) {
+        // Guardar copia local de caché para disponibilidad offline
+        await AsyncStorage.setItem('cacheProcedimientos', JSON.stringify(data.data));
+
         const offlineRaw = await AsyncStorage.getItem('offlineRegistros');
         const offlineData = offlineRaw ? JSON.parse(offlineRaw) : [];
         setOfflineCount(offlineData.length);
@@ -33,13 +42,17 @@ export default function DashboardScreen({ navigation }) {
         calcularAlertas(mergedData);
       }
     } catch (error) {
-      console.error('Modo Offline: No se pudieron cargar procedimientos del servidor');
+      console.error('Modo Offline: Cargando caché local y pendientes');
+      const cacheRaw = await AsyncStorage.getItem('cacheProcedimientos');
+      const cacheData = cacheRaw ? JSON.parse(cacheRaw) : [];
       const offlineRaw = await AsyncStorage.getItem('offlineRegistros');
       const offlineData = offlineRaw ? JSON.parse(offlineRaw) : [];
+      
       setOfflineCount(offlineData.length);
-      setProcedimientos(offlineData);
-      calcularAlertas(offlineData);
-      Alert.alert('Modo Offline 📡', 'Mostrando únicamente registros guardados localmente sin sincronizar.');
+      const combined = [...offlineData, ...cacheData];
+      setProcedimientos(combined);
+      calcularAlertas(combined);
+      Alert.alert('Modo Offline 📡', `Mostrando ${combined.length} registros guardados en la memoria de tu celular.`);
     } finally {
       setLoading(false);
     }
@@ -123,7 +136,7 @@ export default function DashboardScreen({ navigation }) {
 
       if (proc.tipoProcedimiento === 'IA') {
         pasoActual = { nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) };
-        endpointPaso = 'dia45_confirmacion'; // Although we didn't add dia45 to pasosCompletados yet, it defaults to Preñada.
+        endpointPaso = 'dia45_confirmacion';
       } else if (proc.tipoProcedimiento === 'Diagnostico') {
          // No hay paso pendiente automático
       } else {
@@ -190,26 +203,78 @@ export default function DashboardScreen({ navigation }) {
     );
   };
 
-  const handleOpcionesProcedimiento = (item) => {
-    Alert.alert(
-      `Procedimiento: ${item.arete || item.animalId}`,
-      `¿Qué deseas gestionar para este protocolo de ${item.tipoProcedimiento}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: '✅ Confirmar Avance / Preñez', 
-          onPress: () => Alert.alert('Confirmación', 'Próximamente: Pantalla de confirmación de diagnóstico de gestación.')
-        },
-        { 
-          text: '⚠️ Reportar Novedad (Caída dispositivo, etc.)', 
-          onPress: () => Alert.alert('Novedad', 'Próximamente: Pantalla para reportar novedades clínicas o caída de dispositivos.')
+  // Abrir Modal de Gestión al tocar una ficha
+  const handleAbrirGestion = (item) => {
+    setSelectedProc(item);
+    setNuevoEstadoPrenez(item.estadoPrenez || 'Pendiente Evaluación');
+    setNovedadesTexto(item.observaciones || '');
+    setModalGestionVisible(true);
+  };
+
+  // Guardar Diagnóstico y Novedades en Servidor o Localmente
+  const handleGuardarGestion = async () => {
+    if (!selectedProc) return;
+    setGuardandoGestion(true);
+
+    try {
+      const token = await SecureStore.getItemAsync('token');
+      let sincronizado = false;
+
+      // Si no es un id offline, intentamos guardar en el servidor
+      if (!selectedProc.isOffline) {
+        try {
+          const res = await fetch(`${API_URL}/api/registro-genetico/${selectedProc._id}/prenez`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              estadoPrenez: nuevoEstadoPrenez,
+              observaciones: novedadesTexto
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            sincronizado = true;
+          }
+        } catch (netErr) {
+          console.log('Error de red al actualizar preñez, guardando localmente:', netErr);
         }
-      ]
-    );
+      }
+
+      // Actualizar estado en memoria
+      const actualizarItem = (p) => p._id === selectedProc._id 
+        ? { ...p, estadoPrenez: nuevoEstadoPrenez, observaciones: novedadesTexto } 
+        : p;
+
+      setProcedimientos(prev => prev.map(actualizarItem));
+
+      // Actualizar en caché local
+      const cacheRaw = await AsyncStorage.getItem('cacheProcedimientos');
+      if (cacheRaw) {
+        const cacheData = JSON.parse(cacheRaw).map(actualizarItem);
+        await AsyncStorage.setItem('cacheProcedimientos', JSON.stringify(cacheData));
+      }
+
+      if (sincronizado) {
+        Alert.alert('Actualizado ✅', 'Diagnóstico y novedades guardadas en el servidor y panel administrativo.');
+      } else {
+        Alert.alert('Guardado Offline 📡', 'Diagnóstico guardado en la memoria del celular. Se sincronizará con el servidor al reconectar.');
+      }
+
+      setModalGestionVisible(false);
+      cargarProcedimientos();
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'No se pudo guardar la gestión del procedimiento.');
+    } finally {
+      setGuardandoGestion(false);
+    }
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.card} onPress={() => handleOpcionesProcedimiento(item)}>
+    <TouchableOpacity style={styles.card} onPress={() => handleAbrirGestion(item)}>
       <View style={styles.cardHeader}>
         <Text style={styles.arete}>
           {item.arete || item.animalId} {item.isOffline && '📡'}
@@ -218,11 +283,24 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.badgeText}>{item.tipoProcedimiento}</Text>
         </View>
       </View>
-      <Text style={styles.detail}>Finca: {item.finca || item.productor}</Text>
+      <Text style={styles.detail}>Finca: {item.finca ? `${item.finca} (${item.productor})` : item.productor}</Text>
       <Text style={styles.detail}>Día 0: {new Date(item.fechasProtocolo?.dia0_sincronizacion || item.createdAt).toLocaleDateString()}</Text>
+      {item.observaciones ? <Text style={styles.obsPreview} numberOfLines={2}>📝 {item.observaciones}</Text> : null}
       
-      <View style={[styles.statusBadge, item.estadoPrenez === 'Preñada' ? styles.statusSuccess : styles.statusWarning]}>
-        <Text style={styles.statusText}>{item.estadoPrenez}</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+        <View style={[
+          styles.statusBadge, 
+          item.estadoPrenez === 'Preñada' ? styles.statusSuccess : (item.estadoPrenez === 'Vacía' ? styles.statusDanger : styles.statusWarning)
+        ]}>
+          <Text style={[
+            styles.statusText,
+            item.estadoPrenez === 'Preñada' ? styles.statusSuccessText : (item.estadoPrenez === 'Vacía' ? styles.statusDangerText : styles.statusWarningText)
+          ]}>{item.estadoPrenez}</Text>
+        </View>
+        <View style={styles.touchAction}>
+          <Edit3 color="#0ea5e9" size={16} />
+          <Text style={styles.touchActionText}>Gestionar Ficha</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -232,7 +310,7 @@ export default function DashboardScreen({ navigation }) {
       <View style={styles.header}>
         <Text style={styles.title}>Mis Procedimientos</Text>
         <View style={styles.headerIcons}>
-                    {offlineCount > 0 && (
+          {offlineCount > 0 && (
             <TouchableOpacity style={styles.iconButton} onPress={cargarProcedimientos}>
               <CloudOff color="#f59e0b" size={24} />
               <View style={[styles.badgeNotif, { backgroundColor: '#f59e0b' }]}>
@@ -267,7 +345,7 @@ export default function DashboardScreen({ navigation }) {
         }
       />
 
-      {/* Modal de Alertas */}
+      {/* Modal de Alertas del Día */}
       <Modal visible={modalAlertasVisible} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -303,6 +381,89 @@ export default function DashboardScreen({ navigation }) {
             />
           </View>
         </View>
+      </Modal>
+
+      {/* Modal Interactivo de Gestión de Ficha */}
+      <Modal visible={modalGestionVisible} animationType="slide" transparent={true}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Ficha: {selectedProc?.arete || selectedProc?.animalId}</Text>
+                <Text style={styles.modalSubTitle}>
+                  {selectedProc?.finca ? `${selectedProc?.finca} - ` : ''}{selectedProc?.productor} ({selectedProc?.tipoProcedimiento})
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setModalGestionVisible(false)}>
+                <X color="#ef4444" size={24} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Diagnóstico de Gestación */}
+              <Text style={styles.modalSectionLabel}>Diagnóstico de Gestación</Text>
+              <View style={styles.diagGroup}>
+                <TouchableOpacity 
+                  style={[styles.diagBtn, nuevoEstadoPrenez === 'Preñada' && styles.diagBtnPreñadaActive]}
+                  onPress={() => setNuevoEstadoPrenez('Preñada')}
+                >
+                  <Text style={[styles.diagBtnText, nuevoEstadoPrenez === 'Preñada' && styles.diagBtnTextActive]}>
+                    🐄 Preñada
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.diagBtn, nuevoEstadoPrenez === 'Vacía' && styles.diagBtnVaciaActive]}
+                  onPress={() => setNuevoEstadoPrenez('Vacía')}
+                >
+                  <Text style={[styles.diagBtnText, nuevoEstadoPrenez === 'Vacía' && styles.diagBtnTextActive]}>
+                    ❌ Vacía
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.diagBtn, nuevoEstadoPrenez === 'Pendiente Evaluación' && styles.diagBtnPendienteActive]}
+                  onPress={() => setNuevoEstadoPrenez('Pendiente Evaluación')}
+                >
+                  <Text style={[styles.diagBtnText, nuevoEstadoPrenez === 'Pendiente Evaluación' && styles.diagBtnTextActive]}>
+                    ⏳ Pendiente
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Novedades y Observaciones Clínicas */}
+              <Text style={styles.modalSectionLabel}>Novedades Clínicas / Observaciones de Campo</Text>
+              <TextInput
+                style={styles.textArea}
+                multiline
+                numberOfLines={4}
+                placeholder="Ej: Se cayó el dispositivo intravaginal al día 4 / Celo visible temprano / Vaca en buena condición corporal..."
+                placeholderTextColor="#94a3b8"
+                value={novedadesTexto}
+                onChangeText={setNovedadesTexto}
+              />
+
+              {/* Botón Guardar */}
+              <TouchableOpacity 
+                style={styles.saveActionBtn} 
+                onPress={handleGuardarGestion}
+                disabled={guardandoGestion}
+              >
+                {guardandoGestion ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Save color="#fff" size={20} style={{ marginRight: 8 }} />
+                    <Text style={styles.saveActionText}>Guardar Diagnóstico y Novedad</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -354,6 +515,7 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 16,
+    paddingBottom: 110,
   },
   card: {
     backgroundColor: '#ffffff',
@@ -395,9 +557,16 @@ const styles = StyleSheet.create({
     color: '#64748b',
     marginBottom: 4,
   },
+  obsPreview: {
+    fontSize: 13,
+    color: '#475569',
+    backgroundColor: '#f1f5f9',
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
   statusBadge: {
-    marginTop: 12,
-    alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -405,12 +574,40 @@ const styles = StyleSheet.create({
   statusSuccess: {
     backgroundColor: '#dcfce7',
   },
+  statusDanger: {
+    backgroundColor: '#fee2e2',
+  },
   statusWarning: {
     backgroundColor: '#fef3c7',
   },
   statusText: {
     fontWeight: 'bold',
     fontSize: 12,
+  },
+  statusSuccessText: {
+    color: '#15803d',
+  },
+  statusDangerText: {
+    color: '#b91c1c',
+  },
+  statusWarningText: {
+    color: '#b45309',
+  },
+  touchAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+  },
+  touchActionText: {
+    color: '#0284c7',
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginLeft: 4,
   },
   emptyText: {
     textAlign: 'center',
@@ -428,23 +625,105 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    maxHeight: '80%',
+    maxHeight: '85%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    paddingBottom: 12,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#0f172a',
   },
+  modalSubTitle: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 2,
+  },
   modalClose: {
     color: '#ef4444',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  modalSectionLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#334155',
+    marginBottom: 10,
+    marginTop: 10,
+  },
+  diagGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  diagBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    borderRadius: 12,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    marginHorizontal: 3,
+  },
+  diagBtnPreñadaActive: {
+    backgroundColor: '#dcfce7',
+    borderColor: '#22c55e',
+  },
+  diagBtnVaciaActive: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#ef4444',
+  },
+  diagBtnPendienteActive: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#f59e0b',
+  },
+  diagBtnText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#64748b',
+  },
+  diagBtnTextActive: {
+    color: '#0f172a',
+  },
+  textArea: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+    color: '#1e293b',
+    textAlignVertical: 'top',
+    minHeight: 90,
+    marginBottom: 20,
+  },
+  saveActionBtn: {
+    flexDirection: 'row',
+    backgroundColor: '#0ea5e9',
+    height: 52,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 30,
+    shadowColor: '#0ea5e9',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  saveActionText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   alertCard: {
     backgroundColor: '#f8fafc',

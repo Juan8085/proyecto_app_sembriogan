@@ -42,27 +42,40 @@ const webhookWompi = async (req, res) => {
                 if (!producto.esServicio && producto.stock > 0) {
                     producto.stock -= 1;
                     await producto.save();
-                    console.log(`Inventario reducido para ${producto.nombre}. Stock actual: ${producto.stock}`);
+                    console.log(`Inventario reducido para ${producto.tipo}. Stock actual: ${producto.stock}`);
                 }
 
-                // Crear o actualizar orden
+                // Crear o actualizar orden cumpliendo con el Schema de Mongoose
                 if (ordenExistente) {
                     ordenExistente.estado = 'Aprobado';
                     await ordenExistente.save();
                 } else {
+                    const clienteEmail = transaccion.customer_email || 'comprador@sembriogan.com';
+                    const clienteNombre = (transaccion.customer_data && transaccion.customer_data.full_name) 
+                        ? transaccion.customer_data.full_name 
+                        : (clienteEmail.split('@')[0] || 'Cliente Sembriogan');
+
                     const nuevaOrden = new Orden({
-                        clienteId: transaccion.customer_email || 'Invitado',
+                        cliente: {
+                            nombre: clienteNombre,
+                            email: clienteEmail
+                        },
                         referenciaWompi: reference,
                         total: transaccion.amount_in_cents / 100,
-                        productos: [{
-                            productoId: producto._id,
-                            nombre: producto.nombre,
-                            precio: producto.costo,
+                        items: [{
+                            catalogoItem: producto._id,
+                            tipo: producto.tipo,
+                            costo: producto.costo,
                             cantidad: 1
                         }],
                         estado: 'Aprobado'
                     });
                     await nuevaOrden.save();
+                }
+
+                if (req.io) {
+                    req.io.emit('actualizacion-catalogo');
+                    req.io.emit('nueva-orden');
                 }
             }
         }

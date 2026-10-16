@@ -36,7 +36,10 @@ export default function LoginScreen({ navigation }) {
       const data = await res.json();
       
       if (data.success) {
-        // En la PWA antigua validaban si era rol Veterinario, pero aquí lo omitiremos temporalmente
+        if (data.usuario.rol !== 'Veterinario' && data.usuario.rol !== 'Admin') {
+          Alert.alert('Acceso Denegado', 'Esta aplicación móvil es exclusiva para médicos veterinarios.');
+          return;
+        }
         await SecureStore.setItemAsync('token', data.token);
         await SecureStore.setItemAsync('usuario', JSON.stringify(data.usuario));
         navigation.replace('Dashboard');

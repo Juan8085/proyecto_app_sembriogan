@@ -4,25 +4,27 @@ const Catalogo = require('../models/catalogo.model');
 // 1. Crear una orden y descontar inventario
 const crearOrden = async (req, res) => {
     try {
-        const { cliente, comprador, items, total, referenciaWompi, estadoPago } = req.body;
+        const { cliente, items, total, referenciaWompi, estadoPago, estado } = req.body;
+        const estadoFinal = estado || estadoPago || 'Aprobado';
 
         const nuevaOrden = new Orden({
             cliente, 
-            comprador,
             items,
             total,
             referenciaWompi,
-            estadoPago: estadoPago || 'Pendiente',
-            fecha: new Date()
+            estado: estadoFinal
         });
         
         await nuevaOrden.save();
 
-        if (estadoPago === 'Aprobado') {
+        if (estadoFinal === 'Aprobado' && Array.isArray(items)) {
             for (let item of items) {
-                await Catalogo.findByIdAndUpdate(item.id, {
-                    $inc: { stock: -item.cantidad }
-                });
+                const itemId = item.id || item.catalogoItem || item.productoId;
+                if (itemId) {
+                    await Catalogo.findByIdAndUpdate(itemId, {
+                        $inc: { stock: -item.cantidad }
+                    });
+                }
             }
         }
 
