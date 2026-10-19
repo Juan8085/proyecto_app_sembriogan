@@ -25,7 +25,8 @@ const RegistroGeneticoSchema = new Schema({
     pasosCompletados: {
         dia8_retiro: { type: Boolean, default: false },
         dia10_inseminacion: { type: Boolean, default: false },
-        dia17_transferencia: { type: Boolean, default: false }
+        dia17_transferencia: { type: Boolean, default: false },
+        dia45_confirmacion: { type: Boolean, default: false }
     }
 }, { timestamps: true });
 
@@ -41,19 +42,35 @@ RegistroGeneticoSchema.pre('save', function() {
             return nuevaFecha;
         };
 
-        // Reglas compartidas para ambos protocolos
-        this.fechasProtocolo.dia8_retiro = sumarDias(dia0, 8);
-        this.fechasProtocolo.dia45_confirmacion = sumarDias(dia0, 45);
-
         // Reglas específicas según el procedimiento
-        if (this.tipoProcedimiento === 'IATF') {
+        if (this.tipoProcedimiento === 'IA') {
+            // IA: Inseminación en celo natural. NO requiere protocolo hormonal ni retiro de dispositivo ni día 10.
+            // Únicamente se evalúa confirmación de preñez a los 45 días post-inseminación.
+            this.fechasProtocolo.dia8_retiro = null;
+            this.fechasProtocolo.dia10_inseminacion = null;
+            this.fechasProtocolo.dia17_transferencia = null;
+            this.fechasProtocolo.dia45_confirmacion = sumarDias(dia0, 45);
+            this.fechasProtocolo.dia90_entrega = null;
+        } else if (this.tipoProcedimiento === 'IATF') {
+            // IATF: Protocolo hormonal a tiempo fijo
+            this.fechasProtocolo.dia8_retiro = sumarDias(dia0, 8);
             this.fechasProtocolo.dia10_inseminacion = sumarDias(dia0, 10);
             this.fechasProtocolo.dia17_transferencia = null;
+            this.fechasProtocolo.dia45_confirmacion = sumarDias(dia0, 45);
             this.fechasProtocolo.dia90_entrega = null;
         } else if (this.tipoProcedimiento === 'TE') {
+            // TE: Transferencia de Embriones
+            this.fechasProtocolo.dia8_retiro = sumarDias(dia0, 8);
             this.fechasProtocolo.dia10_inseminacion = null;
             this.fechasProtocolo.dia17_transferencia = sumarDias(dia0, 17);
+            this.fechasProtocolo.dia45_confirmacion = sumarDias(dia0, 45);
             this.fechasProtocolo.dia90_entrega = sumarDias(dia0, 90);
+        } else if (this.tipoProcedimiento === 'Diagnostico') {
+            this.fechasProtocolo.dia8_retiro = null;
+            this.fechasProtocolo.dia10_inseminacion = null;
+            this.fechasProtocolo.dia17_transferencia = null;
+            this.fechasProtocolo.dia45_confirmacion = dia0;
+            this.fechasProtocolo.dia90_entrega = null;
         }
     }
 });

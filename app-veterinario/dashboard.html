@@ -225,17 +225,22 @@
                     return nueva;
                 };
 
-                const pasos = [
-                    { key: 'dia8_retiro', nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8), completado: reg.pasosCompletados?.dia8_retiro }
-                ];
+                const pasos = [];
 
                 if (reg.tipoProcedimiento === 'IATF') {
+                    pasos.push({ key: 'dia8_retiro', nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8), completado: reg.pasosCompletados?.dia8_retiro });
                     pasos.push({ key: 'dia10_inseminacion', nombre: 'Inseminación (Día 10)', fecha: sumarDias(dia0, 10), completado: reg.pasosCompletados?.dia10_inseminacion });
+                    pasos.push({ key: 'dia45_confirmacion', nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45), completado: reg.pasosCompletados?.dia45_confirmacion });
+                } else if (reg.tipoProcedimiento === 'IA') {
+                    // IA en celo natural: únicamente confirmación de preñez
+                    pasos.push({ key: 'dia45_confirmacion', nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45), completado: reg.pasosCompletados?.dia45_confirmacion });
                 } else if (reg.tipoProcedimiento === 'TE') {
+                    pasos.push({ key: 'dia8_retiro', nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8), completado: reg.pasosCompletados?.dia8_retiro });
                     pasos.push({ key: 'dia17_transferencia', nombre: 'Transferencia (Día 17)', fecha: sumarDias(dia0, 17), completado: reg.pasosCompletados?.dia17_transferencia });
+                    pasos.push({ key: 'dia45_confirmacion', nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45), completado: reg.pasosCompletados?.dia45_confirmacion });
+                } else {
+                    pasos.push({ key: 'dia45_confirmacion', nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45), completado: reg.pasosCompletados?.dia45_confirmacion });
                 }
-                
-                pasos.push({ key: 'dia45_confirmacion', nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45), completado: false });
 
                 const pasoActual = pasos.find(p => !p.completado);
                 if (!pasoActual) return ''; // Ya completó todo

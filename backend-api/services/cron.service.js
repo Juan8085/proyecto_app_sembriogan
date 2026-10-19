@@ -37,7 +37,7 @@ const iniciarCron = () => {
                 
                 const payload = JSON.stringify({
                     title: '📅 Diagnóstico de Preñez',
-                    body: `La vaca ${registro.arete || 'Sin chapeta'} en la finca ${registro.finca || 'del cliente'} cumple hoy 45 días desde su IATF.`,
+                    body: `La vaca ${registro.arete || 'Sin chapeta'} en la finca ${registro.finca || 'del cliente'} cumple hoy 45 días desde su ${registro.tipoProcedimiento || 'procedimiento reproductivo'}.`,
                     icon: '/img/logo.png', // Logo de tu app
                     url: '/app-veterinario/dashboard.html'
                 });

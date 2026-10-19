@@ -131,24 +131,38 @@ export default function DashboardScreen({ navigation }) {
       dia0.setHours(0, 0, 0, 0);
       const comp = proc.pasosCompletados || {};
 
-      let pasoActual = null;
-      let endpointPaso = null;
-
-      if (proc.tipoProcedimiento === 'IA') {
-        pasoActual = { nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) };
-        endpointPaso = 'dia45_confirmacion';
-      } else if (proc.tipoProcedimiento === 'Diagnostico') {
-         // No hay paso pendiente automático
-      } else {
+      if (proc.tipoProcedimiento === 'IATF') {
         if (!comp.dia8_retiro) {
           pasoActual = { nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) };
           endpointPaso = 'dia8_retiro';
-        } else if (proc.tipoProcedimiento === 'IATF' && !comp.dia10_inseminacion) {
+        } else if (!comp.dia10_inseminacion) {
           pasoActual = { nombre: 'Inseminación (Día 10)', fecha: sumarDias(dia0, 10) };
           endpointPaso = 'dia10_inseminacion';
-        } else if (proc.tipoProcedimiento === 'TE' && !comp.dia17_transferencia) {
+        } else if (!comp.dia45_confirmacion) {
+          pasoActual = { nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) };
+          endpointPaso = 'dia45_confirmacion';
+        }
+      } else if (proc.tipoProcedimiento === 'IA') {
+        // IA en celo natural: solo confirmación de preñez
+        if (!comp.dia45_confirmacion) {
+          pasoActual = { nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) };
+          endpointPaso = 'dia45_confirmacion';
+        }
+      } else if (proc.tipoProcedimiento === 'TE') {
+        if (!comp.dia8_retiro) {
+          pasoActual = { nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) };
+          endpointPaso = 'dia8_retiro';
+        } else if (!comp.dia17_transferencia) {
           pasoActual = { nombre: 'Transferencia (Día 17)', fecha: sumarDias(dia0, 17) };
           endpointPaso = 'dia17_transferencia';
+        } else if (!comp.dia45_confirmacion) {
+          pasoActual = { nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) };
+          endpointPaso = 'dia45_confirmacion';
+        }
+      } else if (proc.tipoProcedimiento === 'Diagnostico') {
+        if (!comp.dia45_confirmacion) {
+          pasoActual = { nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) };
+          endpointPaso = 'dia45_confirmacion';
         }
       }
 
@@ -169,6 +183,12 @@ export default function DashboardScreen({ navigation }) {
   };
 
   const confirmarPaso = async (idProcedimiento, nombrePasoBD) => {
+    const proc = procedimientos.find(p => p._id === idProcedimiento);
+    if (nombrePasoBD === 'dia45_confirmacion' && proc) {
+      handleAbrirGestion(proc);
+      return;
+    }
+
     Alert.alert(
       'Confirmar Procedimiento',
       '¿Estás seguro de marcar este paso como completado?',

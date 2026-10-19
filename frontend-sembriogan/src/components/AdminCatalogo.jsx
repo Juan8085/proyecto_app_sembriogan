@@ -1,9 +1,31 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import * as XLSX from 'xlsx';
+import {
+  PackagePlus,
+  PackageCheck,
+  Package,
+  Edit3,
+  Trash2,
+  UploadCloud,
+  Download,
+  DollarSign,
+  Layers,
+  Search,
+  Sparkles,
+  Boxes,
+  FileSpreadsheet,
+  AlertCircle,
+  CheckCircle2,
+  Image as ImageIcon,
+  X,
+  Plus
+} from 'lucide-react';
 
 export default function AdminCatalogo() {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filtroTipo, setFiltroTipo] = useState('todos'); // 'todos' | 'servicios' | 'productos' | 'bajo_stock'
+  const [busqueda, setBusqueda] = useState('');
   
   // Estados del formulario (Creación o Edición)
   const [editandoId, setEditandoId] = useState(null);
@@ -15,8 +37,12 @@ export default function AdminCatalogo() {
     stock: ''
   });
   const [imagenFile, setImagenFile] = useState(null);
+  const [imagenPreview, setImagenPreview] = useState(null);
   const [error, setError] = useState('');
   const [mensaje, setMensaje] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fileInputRef = useRef(null);
 
   const cargarCatalogo = async () => {
     try {
@@ -46,7 +72,13 @@ export default function AdminCatalogo() {
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
     if (type === 'file') {
-      setImagenFile(files[0]);
+      const file = files[0];
+      setImagenFile(file);
+      if (file) {
+        setImagenPreview(URL.createObjectURL(file));
+      } else {
+        setImagenPreview(null);
+      }
     } else {
       setFormulario({ ...formulario, [name]: value });
     }
@@ -63,6 +95,7 @@ export default function AdminCatalogo() {
       stock: item.esServicio ? '' : item.stock
     });
     setImagenFile(null);
+    setImagenPreview(item.imagen ? `http://localhost:3000${item.imagen}` : null);
     setError('');
     setMensaje('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -72,6 +105,7 @@ export default function AdminCatalogo() {
     setEditandoId(null);
     setFormulario({ tipo: '', descripcion: '', costo: '', esServicio: 'true', stock: '' });
     setImagenFile(null);
+    setImagenPreview(null);
   };
 
   const handleSubmit = async (e) => {
@@ -89,6 +123,7 @@ export default function AdminCatalogo() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const token = localStorage.getItem('tokenSembriogan');
       const formData = new FormData();
@@ -118,13 +153,15 @@ export default function AdminCatalogo() {
       if (res.ok && data.success) {
         cancelarEdicion();
         cargarCatalogo();
-        setMensaje(editandoId ? '¡Ítem actualizado exitosamente!' : '¡Ítem agregado exitosamente!');
+        setMensaje(editandoId ? 'Ítem actualizado exitosamente' : 'Ítem agregado exitosamente al catálogo');
       } else {
         setError(data.mensaje || 'Error al procesar en el servidor.');
       }
     } catch (err) {
       console.error("Error en operación de catálogo:", err);
       setError('Error de conexión con el servidor.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -149,9 +186,6 @@ export default function AdminCatalogo() {
       alert("Error de conexión al intentar eliminar.");
     }
   };
-
-  
-  const fileInputRef = useRef(null);
 
   const descargarPlantilla = () => {
     const ws = XLSX.utils.json_to_sheet([{
@@ -186,202 +220,519 @@ export default function AdminCatalogo() {
         });
         const json = await res.json();
         if(json.success) {
-           alert(json.mensaje);
+           setMensaje(`Importación completada: ${json.mensaje}`);
            cargarCatalogo();
         } else {
-           alert("Error: " + json.mensaje);
+           setError("Error al importar: " + json.mensaje);
         }
       } catch(err) {
-         alert("Error procesando el archivo Excel");
+         setError("Error procesando el archivo Excel.");
       }
       e.target.value = null;
     };
     reader.readAsBinaryString(file);
   };
 
-  if (loading) return <div className="text-center p-4 text-gray-500">Cargando catálogo...</div>;
+  // Métricas
+  const metricas = useMemo(() => {
+    const total = productos.length;
+    const servicios = productos.filter(p => p.esServicio).length;
+    const productosFisicos = productos.filter(p => !p.esServicio).length;
+    const bajoStock = productos.filter(p => !p.esServicio && p.stock <= 5).length;
+    return { total, servicios, productosFisicos, bajoStock };
+  }, [productos]);
+
+  // Filtrado y Búsqueda
+  const productosFiltrados = useMemo(() => {
+    return productos.filter(p => {
+      const q = busqueda.toLowerCase().trim();
+      const matchBusqueda = !q || 
+        p.tipo?.toLowerCase().includes(q) || 
+        p.descripcion?.toLowerCase().includes(q);
+
+      if (!matchBusqueda) return false;
+
+      if (filtroTipo === 'servicios') return p.esServicio;
+      if (filtroTipo === 'productos') return !p.esServicio;
+      if (filtroTipo === 'bajo_stock') return !p.esServicio && p.stock <= 5;
+      return true;
+    });
+  }, [productos, busqueda, filtroTipo]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-16 text-slate-400 gap-3">
+        <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-600 rounded-full animate-spin"></div>
+        <p className="text-sm font-medium">Sincronizando catálogo con el almacén...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       
-      {/* FORMULARIO */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h2 className="text-xl font-bold text-primary mb-1">
-          {editandoId ? 'Editar Ítem del Catálogo' : 'Agregar Nuevo Servicio o Producto'}
-        </h2>
-        <p className="text-gray-500 text-sm mb-4">Gestiona precios, descripciones y control de inventario físico.</p>
-        
-        {error && <p className="text-red-600 text-sm mb-3 bg-red-50 p-3 rounded-lg font-medium">{error}</p>}
-        {mensaje && <p className="text-green-700 text-sm mb-3 bg-green-50 p-3 rounded-lg font-medium">{mensaje}</p>}
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Tipo de Ítem</label>
-              <select 
-                name="esServicio" 
-                value={formulario.esServicio} 
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none bg-white"
-              >
-                <option value="true">Servicio (Sin Stock / N/A)</option>
-                <option value="false">Producto (Control de Stock)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Nombre / Título</label>
-              <input 
-                type="text" name="tipo" 
-                value={formulario.tipo} onChange={handleChange} required
-                placeholder="Ej: Inseminación / Bloque Salino"
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Costo (COP)</label>
-              <input 
-                type="number" name="costo" 
-                value={formulario.costo} onChange={handleChange} required min="0"
-                placeholder="Ej: 150000"
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
-              />
-            </div>
+      {/* TARJETAS DE MÉTRICAS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Ítems</p>
+            <p className="text-2xl font-black text-slate-900 mt-1">{metricas.total}</p>
           </div>
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner">
+            <Boxes className="w-6 h-6" />
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {formulario.esServicio === 'false' && (
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Stock / Cantidad Inicial</label>
-                <input 
-                  type="number" name="stock" 
-                  value={formulario.stock} onChange={handleChange} required min="0"
-                  placeholder="Ej: 25"
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
-                />
-              </div>
-            )}
-            <div className={formulario.esServicio === 'true' ? 'md:col-span-2' : ''}>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Descripción</label>
-              <textarea 
-                name="descripcion" 
-                value={formulario.descripcion} onChange={handleChange} required
-                placeholder="Detalles o especificaciones..."
-                rows="2"
-                className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Imagen {editandoId && '(Opcional)'}</label>
-              <input 
-                type="file" name="imagen" 
-                onChange={handleChange} accept="image/*"
-                className="w-full p-2 border border-gray-300 rounded-xl bg-gray-50 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-blue-700 cursor-pointer text-xs"
-              />
-            </div>
+        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Servicios</p>
+            <p className="text-2xl font-black text-slate-900 mt-1">{metricas.servicios}</p>
           </div>
+          <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center shadow-inner">
+            <Layers className="w-6 h-6" />
+          </div>
+        </div>
 
-          <div className="flex gap-3 pt-2">
-            <button 
-              type="submit" 
-              className="bg-primary text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 transition shadow-md"
-            >
-              {editandoId ? 'Guardar Cambios' : '+ Agregar al Catálogo'}
-            </button>
-            {editandoId && (
-              <button 
-                type="button" 
-                onClick={cancelarEdicion}
-                className="bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-xl hover:bg-gray-400 transition"
-              >
-                Cancelar
-              </button>
-            )}
+        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Productos Físicos</p>
+            <p className="text-2xl font-black text-slate-900 mt-1">{metricas.productosFisicos}</p>
           </div>
-        </form>
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-inner">
+            <PackageCheck className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Alerta Stock</p>
+            <p className={`text-2xl font-black mt-1 ${metricas.bajoStock > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
+              {metricas.bajoStock}
+            </p>
+          </div>
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${metricas.bajoStock > 0 ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
+            <AlertCircle className="w-6 h-6" />
+          </div>
+        </div>
       </div>
 
-      {/* TABLA */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Catálogo Activo e Inventario</h2>
-          <div className="flex gap-2">
-            <button onClick={descargarPlantilla} className="bg-emerald-100 text-emerald-700 font-bold px-4 py-2 rounded-xl hover:bg-emerald-200 transition text-sm">
-              📥 Descargar Plantilla
+      {/* FORMULARIO DE CREACIÓN / EDICIÓN */}
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div className="p-6 md:p-8 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400 shadow-inner">
+              {editandoId ? <Edit3 className="w-5 h-5" /> : <PackagePlus className="w-5 h-5" />}
+            </div>
+            <div>
+              <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
+                {editandoId ? 'Editar Ítem del Catálogo' : 'Agregar Nuevo Producto o Servicio'}
+                {editandoId && (
+                  <span className="text-xs bg-amber-400/20 text-amber-300 border border-amber-400/40 px-2.5 py-0.5 rounded-full font-medium">
+                    Modo Edición
+                  </span>
+                )}
+              </h2>
+              <p className="text-slate-400 text-xs mt-0.5">Controla especificaciones técnicas, precio al público y niveles de stock.</p>
+            </div>
+          </div>
+
+          {editandoId && (
+            <button
+              type="button"
+              onClick={cancelarEdicion}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white rounded-xl text-xs font-semibold transition"
+            >
+              <X className="w-4 h-4" /> Cancelar Edición
             </button>
-            <button onClick={() => fileInputRef.current.click()} className="bg-blue-100 text-blue-700 font-bold px-4 py-2 rounded-xl hover:bg-blue-200 transition text-sm">
-              📤 Importar Masivo
-            </button>
-            <input type="file" ref={fileInputRef} onChange={handleImportarExcel} accept=".xlsx, .xls" className="hidden" />
+          )}
+        </div>
+
+        <div className="p-6 md:p-8">
+          {error && (
+            <div className="flex items-center gap-2.5 p-4 mb-6 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {mensaje && (
+            <div className="flex items-center gap-2.5 p-4 mb-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+              <CheckCircle2 className="w-5 h-5 shrink-0" />
+              <span>{mensaje}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              
+              {/* Tipo de Ítem */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Tipo de Publicación
+                </label>
+                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setFormulario({ ...formulario, esServicio: 'true', stock: '' })}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      formulario.esServicio === 'true'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    Servicio
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormulario({ ...formulario, esServicio: 'false' })}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      formulario.esServicio === 'false'
+                        ? 'bg-white text-emerald-600 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Package className="w-3.5 h-3.5" />
+                    Producto
+                  </button>
+                </div>
+              </div>
+
+              {/* Nombre */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Nombre / Título Oficial
+                </label>
+                <input 
+                  type="text" 
+                  name="tipo" 
+                  value={formulario.tipo} 
+                  onChange={handleChange} 
+                  required
+                  placeholder="Ej: Inseminación Artificial / Bloque Mineral"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                />
+              </div>
+
+              {/* Costo */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Precio al Público (COP)
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <DollarSign className="w-4 h-4" />
+                  </div>
+                  <input 
+                    type="number" 
+                    name="costo" 
+                    value={formulario.costo} 
+                    onChange={handleChange} 
+                    required 
+                    min="0"
+                    placeholder="150000"
+                    className="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              
+              {/* Stock (solo si es producto) */}
+              {formulario.esServicio === 'false' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    Stock en Inventario (Unidades)
+                  </label>
+                  <input 
+                    type="number" 
+                    name="stock" 
+                    value={formulario.stock} 
+                    onChange={handleChange} 
+                    required 
+                    min="0"
+                    placeholder="Ej: 30"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                  />
+                </div>
+              )}
+
+              {/* Descripción */}
+              <div className={formulario.esServicio === 'true' ? 'md:col-span-2' : ''}>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Descripción Detallada
+                </label>
+                <textarea 
+                  name="descripcion" 
+                  value={formulario.descripcion} 
+                  onChange={handleChange} 
+                  required
+                  placeholder="Detalles genéticos, dosis, especificaciones de uso..."
+                  rows="2"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium resize-none"
+                />
+              </div>
+
+              {/* Imagen */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Imagen Referencial {editandoId && '(Opcional)'}
+                </label>
+                <div className="flex items-center gap-3">
+                  {imagenPreview && (
+                    <img 
+                      src={imagenPreview} 
+                      alt="Preview" 
+                      className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0 shadow-sm"
+                    />
+                  )}
+                  <input 
+                    type="file" 
+                    name="imagen" 
+                    onChange={handleChange} 
+                    accept="image/*"
+                    className="w-full text-xs text-slate-500 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer bg-slate-50 border border-slate-200 rounded-2xl"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 hover:to-sky-700 text-white font-bold py-3 px-6 rounded-2xl shadow-lg shadow-blue-500/20 transition disabled:opacity-60 text-sm"
+              >
+                {editandoId ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    Guardar Cambios
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Agregar al Catálogo
+                  </>
+                )}
+              </button>
+
+              {editandoId && (
+                <button 
+                  type="button" 
+                  onClick={cancelarEdicion}
+                  className="px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition"
+                >
+                  Descartar
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* TABLA Y CONTROLES DEL CATÁLOGO */}
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+        
+        {/* Cabecera y Herramientas */}
+        <div className="p-6 md:p-8 border-b border-slate-100 space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">Inventario y Catálogo Activo</h2>
+              <p className="text-xs text-slate-500 mt-1">Servicios y productos ofrecidos en la tienda y la app de campo.</p>
+            </div>
+
+            {/* Acciones Masivas Excel */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button 
+                onClick={descargarPlantilla} 
+                className="inline-flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/70 font-semibold px-4 py-2.5 rounded-2xl transition text-xs shadow-sm"
+              >
+                <Download className="w-4 h-4" />
+                Descargar Plantilla
+              </button>
+              <button 
+                onClick={() => fileInputRef.current.click()} 
+                className="inline-flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/70 font-semibold px-4 py-2.5 rounded-2xl transition text-xs shadow-sm"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Importar Masivo
+              </button>
+              <input type="file" ref={fileInputRef} onChange={handleImportarExcel} accept=".xlsx, .xls" className="hidden" />
+            </div>
+          </div>
+
+          {/* Filtros y Buscador */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-2">
+            
+            {/* Buscador reactivo */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre o descripción..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs md:text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+              />
+              {busqueda && (
+                <button
+                  onClick={() => setBusqueda('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Chips de filtro */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/80 rounded-2xl border border-slate-200/70">
+              <button
+                onClick={() => setFiltroTipo('todos')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                  filtroTipo === 'todos'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Todos ({metricas.total})
+              </button>
+              <button
+                onClick={() => setFiltroTipo('servicios')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                  filtroTipo === 'servicios'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Servicios ({metricas.servicios})
+              </button>
+              <button
+                onClick={() => setFiltroTipo('productos')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                  filtroTipo === 'productos'
+                    ? 'bg-white text-emerald-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Productos ({metricas.productosFisicos})
+              </button>
+              <button
+                onClick={() => setFiltroTipo('bajo_stock')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                  filtroTipo === 'bajo_stock'
+                    ? 'bg-white text-amber-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Stock Bajo ({metricas.bajoStock})
+              </button>
+            </div>
           </div>
         </div>
         
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
-          <table className="w-full text-sm text-left text-gray-600">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+        {/* Tabla */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left text-slate-600">
+            <thead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/75 border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4 font-bold">Imagen</th>
-                <th className="px-6 py-4 font-bold">Tipo</th>
-                <th className="px-6 py-4 font-bold">Nombre / Descripción</th>
-                <th className="px-6 py-4 font-bold">Costo</th>
-                <th className="px-6 py-4 font-bold">Stock</th>
-                <th className="px-6 py-4 font-bold text-center">Acciones</th>
+                <th className="px-6 py-4">Ítem</th>
+                <th className="px-6 py-4">Modalidad</th>
+                <th className="px-6 py-4">Precio COP</th>
+                <th className="px-6 py-4">Disponibilidad</th>
+                <th className="px-6 py-4 text-center">Acciones</th>
               </tr>
             </thead>
-            <tbody>
-              {productos.length === 0 ? (
+            <tbody className="divide-y divide-slate-100">
+              {productosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">No hay registros en el sistema.</td>
+                  <td colSpan="5" className="px-6 py-12 text-center text-slate-400">
+                    <Package className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm font-medium">No se encontraron ítems con los filtros seleccionados.</p>
+                  </td>
                 </tr>
               ) : (
-                productos.map((item) => (
-                  <tr key={item._id} className="bg-white border-b hover:bg-gray-50 transition">
+                productosFiltrados.map((item) => (
+                  <tr key={item._id} className="hover:bg-slate-50/80 transition-colors">
+                    
+                    {/* Imagen + Título + Descripción */}
                     <td className="px-6 py-4">
-                      {item.imagen ? (
-                        <img 
-                          src={`http://localhost:3000${item.imagen}`} 
-                          alt={item.tipo} 
-                          className="w-12 h-12 object-cover rounded-lg shadow-sm border" 
-                        />
-                      ) : (
-                        <span className="text-xs text-gray-400 italic">Sin imagen</span>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {item.imagen ? (
+                          <img 
+                            src={`http://localhost:3000${item.imagen}`} 
+                            alt={item.tipo} 
+                            className="w-12 h-12 object-cover rounded-2xl shadow-sm border border-slate-200 shrink-0" 
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-400 shrink-0">
+                            <ImageIcon className="w-5 h-5" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-bold text-slate-900">{item.tipo}</div>
+                          <div className="text-xs text-slate-500 max-w-sm line-clamp-1">{item.descripcion}</div>
+                        </div>
+                      </div>
                     </td>
+
+                    {/* Modalidad (Servicio vs Producto) */}
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${item.esServicio ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                        item.esServicio 
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200/60' 
+                          : 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                      }`}>
+                        {item.esServicio ? <Layers className="w-3 h-3" /> : <Package className="w-3 h-3" />}
                         {item.esServicio ? 'Servicio' : 'Producto'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-gray-900">{item.tipo}</div>
-                      <div className="text-xs text-gray-500">{item.descripcion}</div>
-                    </td>
-                    <td className="px-6 py-4 font-bold text-green-600">
+
+                    {/* Costo */}
+                    <td className="px-6 py-4 font-black text-slate-900">
                       {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(item.costo)}
                     </td>
-                    <td className="px-6 py-4 font-semibold">
+
+                    {/* Stock */}
+                    <td className="px-6 py-4">
                       {item.esServicio ? (
-                        <span className="text-gray-400 italic">N/A</span>
+                        <span className="text-slate-400 text-xs italic font-medium">Bajo demanda (N/A)</span>
                       ) : (
-                        <span className={item.stock > 0 ? 'text-gray-700' : 'text-red-600 font-bold'}>
-                          {item.stock} unids.
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                          item.stock > 5 
+                            ? 'bg-slate-100 text-slate-700' 
+                            : item.stock > 0
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            : 'bg-rose-50 text-rose-700 border border-rose-200'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${item.stock > 5 ? 'bg-emerald-500' : item.stock > 0 ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                          {item.stock} {item.stock === 1 ? 'unidad' : 'unidades'}
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-center space-x-2">
-                      <button 
-                        type="button"
-                        onClick={() => iniciarEdicion(item)}
-                        className="text-blue-600 hover:text-blue-800 font-bold px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition text-xs"
-                      >
-                        Editar
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => eliminarProducto(item._id, item.tipo)}
-                        className="text-red-600 hover:text-red-800 font-bold px-3 py-1.5 bg-red-50 hover:bg-red-100 rounded-lg transition text-xs"
-                      >
-                        Eliminar
-                      </button>
+
+                    {/* Acciones */}
+                    <td className="px-6 py-4 text-center">
+                      <div className="inline-flex items-center gap-2">
+                        <button 
+                          type="button"
+                          onClick={() => iniciarEdicion(item)}
+                          className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 font-bold px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-xl transition text-xs"
+                          title="Editar"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          Editar
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => eliminarProducto(item._id, item.tipo)}
+                          className="inline-flex items-center gap-1.5 text-rose-600 hover:text-rose-800 font-bold px-3 py-1.5 bg-rose-50 hover:bg-rose-100 rounded-xl transition text-xs"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Eliminar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
