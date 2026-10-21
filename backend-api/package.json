@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "tunnel": "ngrok http 5173",
+    "tunnel:api": "ngrok http 3000",
+    "tunnel:lt": "npx localtunnel --port 5173",
+    "tunnel:lt:api": "npx localtunnel --port 3000"
   },
   "keywords": [],
   "author": "",

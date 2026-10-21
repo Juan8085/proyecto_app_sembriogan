@@ -16,7 +16,9 @@
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "tunnel": "ngrok http 5173",
     "tunnel:api": "ngrok http 3000",
-    "tunnel:all": "ngrok start --config ngrok.yml --all"
+    "tunnel:all": "ngrok start --config ngrok.yml --all",
+    "tunnel:lt": "npx localtunnel --port 5173",
+    "tunnel:lt:api": "npx localtunnel --port 3000"
   },
   "devDependencies": {
     "prettier": "^3.0.3"
