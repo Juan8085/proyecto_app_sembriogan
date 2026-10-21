@@ -6,7 +6,8 @@ const CatalogoSchema = new Schema({
     costo: { type: Number, required: true },
     imagen: { type: String, required: false },
     esServicio: { type: Boolean, default: true }, // true = Servicio (N/A stock), false = Producto
-    stock: { type: Number, default: 0 } // Unidades disponibles si es producto
+    stock: { type: Number, default: 0 }, // Unidades disponibles si es producto
+    destacado: { type: Boolean, default: false } // true = Producto / Servicio Estrella para la página principal
 }, {
     versionKey: false
 });

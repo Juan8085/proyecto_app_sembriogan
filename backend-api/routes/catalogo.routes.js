@@ -6,12 +6,15 @@ const {
     crearCatalogoItem, 
     eliminarCatalogoItem,
     actualizarCatalogoItem,
+    toggleDestacadoItem,
     crearCatalogoMasivo
 } = require('../controllers/catalogo.controller');
 
 router.get('/', obtenerCatalogo);
 router.post('/masivo', crearCatalogoMasivo);
 router.post('/', upload.single('imagen'), crearCatalogoItem);
+router.put('/:id/destacado', toggleDestacadoItem);
+router.patch('/:id/destacado', toggleDestacadoItem);
 router.put('/:id', upload.single('imagen'), actualizarCatalogoItem); // <--- NUEVA RUTA PUT PARA EDITAR
 router.delete('/:id', eliminarCatalogoItem);
 

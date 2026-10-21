@@ -3,6 +3,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import PublicHome from './pages/PublicHome';
+import CatalogoTienda from './pages/CatalogoTienda';
 import ChatWidget from './components/ChatWidget';
 import useInactivityLogout from './hooks/useInactivityLogout';
 
@@ -19,8 +20,12 @@ function App() {
       <BrowserRouter>
         <GlobalInactivityWatcher />
         <Routes>
-          {/* Ruta raíz ahora muestra la Página Web Pública */}
+          {/* Ruta raíz muestra la Página Web Pública con Productos Estrella */}
           <Route path="/" element={<PublicHome />} />
+
+          {/* Rutas de Catálogo Completo / Tienda */}
+          <Route path="/tienda" element={<CatalogoTienda />} />
+          <Route path="/catalogo" element={<CatalogoTienda />} />
           
           {/* Rutas de Operación */}
           <Route path="/login" element={<Login />} />

@@ -11,7 +11,7 @@ const obtenerCatalogo = async (req, res) => {
 
 const crearCatalogoItem = async (req, res) => {
     try {
-        const { tipo, descripcion, costo, esServicio, stock } = req.body;
+        const { tipo, descripcion, costo, esServicio, stock, destacado } = req.body;
         const imagen = req.file ? `/uploads/${req.file.filename}` : '';
 
         if (!tipo || !descripcion || costo === undefined || costo === null) {
@@ -20,6 +20,7 @@ const crearCatalogoItem = async (req, res) => {
 
         const esServicioBool = esServicio === 'true' || esServicio === true;
         const stockVal = esServicioBool ? 0 : (Number(stock) || 0);
+        const destacadoBool = destacado === 'true' || destacado === true;
 
         const nuevoItem = new Catalogo({ 
             tipo, 
@@ -27,7 +28,8 @@ const crearCatalogoItem = async (req, res) => {
             costo, 
             imagen, 
             esServicio: esServicioBool, 
-            stock: stockVal 
+            stock: stockVal,
+            destacado: destacadoBool
         });
         const itemGuardado = await nuevoItem.save();
 
@@ -63,7 +65,7 @@ const eliminarCatalogoItem = async (req, res) => {
 const actualizarCatalogoItem = async (req, res) => {
     try {
         const { id } = req.params;
-        const { tipo, descripcion, costo, esServicio, stock } = req.body;
+        const { tipo, descripcion, costo, esServicio, stock, destacado } = req.body;
 
         const esServicioBool = esServicio === 'true' || esServicio === true;
         let datosActualizados = { 
@@ -73,6 +75,10 @@ const actualizarCatalogoItem = async (req, res) => {
             esServicio: esServicioBool,
             stock: esServicioBool ? 0 : (Number(stock) || 0)
         };
+
+        if (destacado !== undefined) {
+            datosActualizados.destacado = destacado === 'true' || destacado === true;
+        }
         
         if (req.file) {
             datosActualizados.imagen = `/uploads/${req.file.filename}`;
@@ -97,6 +103,29 @@ const actualizarCatalogoItem = async (req, res) => {
         res.status(500).json({ success: false, mensaje: "Error al actualizar el item", error: error.message });
     }
 };
+
+const toggleDestacadoItem = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const item = await Catalogo.findById(id);
+
+        if (!item) {
+            return res.status(404).json({ success: false, mensaje: "Item no encontrado" });
+        }
+
+        item.destacado = !item.destacado;
+        await item.save();
+
+        res.status(200).json({
+            success: true,
+            mensaje: item.destacado ? "Ítem marcado como Estrella (Portada)" : "Ítem removido de Estrella",
+            data: item
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, mensaje: "Error al modificar estado estrella", error: error.message });
+    }
+};
+
 const crearCatalogoMasivo = async (req, res) => {
     try {
         const items = req.body;
@@ -110,6 +139,7 @@ const crearCatalogoMasivo = async (req, res) => {
             costo: Number(item.costo) || 0,
             esServicio: item.esServicio === true || item.esServicio === 'true' || item.esServicio === 'SI',
             stock: Number(item.stock) || 0,
+            destacado: item.destacado === true || item.destacado === 'true' || item.destacado === 'SI',
             imagen: item.imagen || ''
         }));
 
@@ -130,5 +160,6 @@ module.exports = {
     crearCatalogoItem, 
     eliminarCatalogoItem, 
     actualizarCatalogoItem,
+    toggleDestacadoItem,
     crearCatalogoMasivo
 };

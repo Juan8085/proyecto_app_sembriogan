@@ -1,15 +1,45 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 // Importamos los íconos profesionales de Lucide
-import { ShoppingCart, User, ChevronDown, Package, Settings, LogOut, Star, CheckCircle, Menu, X, FileText, Printer, Award, CheckCircle2 } from 'lucide-react';
+import { 
+  ShoppingCart, 
+  User, 
+  ChevronDown, 
+  Package, 
+  Settings, 
+  LogOut, 
+  Star, 
+  CheckCircle, 
+  Menu, 
+  X, 
+  FileText, 
+  Printer, 
+  Award, 
+  CheckCircle2,
+  ShoppingBag,
+  ArrowRight,
+  Sparkles
+} from 'lucide-react';
 
 export default function PublicHome() {
   const [imagenesHero, setImagenesHero] = useState([]);
   const [indiceActual, setIndiceActual] = useState(0);
   const [catalogo, setCatalogo] = useState([]);
   const [testimonios, setTestimonios] = useState([]);
-  const [carrito, setCarrito] = useState([]);
+  const [carrito, setCarrito] = useState(() => {
+    try {
+      const saved = localStorage.getItem('carritoSembriogan');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Sincronizar carrito con localStorage
+  useEffect(() => {
+    localStorage.setItem('carritoSembriogan', JSON.stringify(carrito));
+  }, [carrito]);
   
   // Modales
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -53,7 +83,7 @@ export default function PublicHome() {
       }
 
       // ScrollSpy: identificar qué sección se encuentra en vista
-      const sections = ['inicio', 'nosotros', 'historias', 'servicios'];
+      const sections = ['inicio', 'nosotros', 'historias', 'destacados'];
       const scrollPosition = scrollPos + 220; // Offset para activación oportuna
 
       for (let i = sections.length - 1; i >= 0; i--) {
@@ -71,6 +101,11 @@ export default function PublicHome() {
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Filtrar ÚNICAMENTE productos y servicios marcados como estrella para la página principal
+  const productosEstrella = useMemo(() => {
+    return catalogo.filter(item => item.destacado === true);
+  }, [catalogo]);
 
   // Navegación suave compensando la barra flotante
   const scrollToSection = (e, sectionId) => {
@@ -392,7 +427,7 @@ export default function PublicHome() {
               { id: 'inicio', label: 'Inicio' },
               { id: 'nosotros', label: 'Nosotros' },
               { id: 'historias', label: 'Historias' },
-              { id: 'servicios', label: 'Tienda' }
+              { id: 'destacados', label: '⭐ Destacados' }
             ].map((item) => {
               const isActive = activeSection === item.id;
               return (
@@ -410,6 +445,14 @@ export default function PublicHome() {
               );
             })}
             
+            <Link 
+              to="/tienda" 
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/25 transition ml-1"
+            >
+              <ShoppingBag size={13} />
+              Tienda Completa
+            </Link>
+
             <div className="h-4 w-px bg-slate-200 mx-1"></div>
 
             <Link 
@@ -507,7 +550,7 @@ export default function PublicHome() {
               { id: 'inicio', label: 'Inicio' },
               { id: 'nosotros', label: 'Nosotros' },
               { id: 'historias', label: 'Historias' },
-              { id: 'servicios', label: 'Tienda' }
+              { id: 'destacados', label: '⭐ Destacados' }
             ].map((item) => (
               <button
                 key={item.id}
@@ -521,6 +564,14 @@ export default function PublicHome() {
                 {item.label}
               </button>
             ))}
+            <Link 
+              to="/tienda" 
+              onClick={() => setIsMobileNavOpen(false)}
+              className="flex items-center justify-between px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white shadow-sm"
+            >
+              <span>🛍️ Tienda y Catálogo Completo</span>
+              <ArrowRight size={16} />
+            </Link>
             <Link 
               to="/admin" 
               onClick={() => setIsMobileNavOpen(false)}
@@ -543,9 +594,14 @@ export default function PublicHome() {
                     <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-6 max-w-5xl mx-auto text-white transition-all duration-1000 ${index === indiceActual ? 'translate-y-0 scale-100' : 'translate-y-8 scale-95'}`}>
                         <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-6 tracking-tight leading-tight drop-shadow-2xl">{img.titulo || "Biotecnología Reproductiva"}</h1>
                         <p className="text-lg md:text-2xl text-slate-100 mb-12 max-w-3xl font-light drop-shadow-lg leading-relaxed">{img.descripcion || "Maximizando la genética bovina con tecnología de punta."}</p>
-                        <a href="#servicios" className="bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold py-4 px-10 rounded-full hover:bg-white hover:text-slate-900 transition-all duration-500 shadow-2xl text-lg flex items-center gap-3">
-                           Explorar Catálogo <ChevronDown size={20} className="animate-bounce"/>
-                        </a>
+                        <div className="flex flex-wrap items-center justify-center gap-4">
+                          <a href="#destacados" className="bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold py-4 px-8 rounded-full hover:bg-white hover:text-slate-900 transition-all duration-300 shadow-2xl text-base flex items-center gap-2">
+                             ⭐ Productos Estrella <ChevronDown size={18} className="animate-bounce"/>
+                          </a>
+                          <Link to="/tienda" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-full transition-all duration-300 shadow-2xl shadow-blue-500/30 text-base flex items-center gap-2">
+                             <ShoppingBag size={18} /> Tienda y Catálogo Completo
+                          </Link>
+                        </div>
                     </div>
                 </div>
             ))
@@ -608,38 +664,94 @@ export default function PublicHome() {
         </div>
       </section>
 
-      {/* SECCIÓN 4: CATÁLOGO - Fondo Blanco */}
-      <section id="servicios" className="py-32 px-6 max-w-7xl mx-auto w-full relative z-40">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-4xl font-black text-slate-800 mb-4">Catálogo de Servicios</h2>
-          <p className="text-slate-500 font-light text-lg">Insumos y biotecnología reproductiva a un clic de distancia.</p>
+      {/* SECCIÓN 4: PRODUCTOS Y SERVICIOS ESTRELLA (PORTADA) */}
+      <section id="destacados" className="py-32 px-6 max-w-7xl mx-auto w-full relative z-40">
+        <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200/80 shadow-xs">
+            <Star size={13} className="fill-amber-500 text-amber-600" />
+            Productos y Servicios Estrella
+          </span>
+          <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Lo Más Destacado de Sembriogan</h2>
+          <p className="text-slate-500 font-light text-base md:text-lg">
+            Genética probada y biotecnología líder seleccionada especialmente para potenciar los índices productivos de tu hato.
+          </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-stretch">
-          {catalogo.map((item) => (
-            <div key={item._id} className="bg-white/80 backdrop-blur-lg rounded-[2.5rem] border border-white overflow-hidden flex flex-col justify-between hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-300 hover:-translate-y-2">
-              <div>
-                <div className="h-60 w-full bg-slate-50 relative overflow-hidden flex items-center justify-center">
-                  {item.imagen ? <img src={`http://localhost:3000${item.imagen}`} alt={item.tipo} className="w-full h-full object-cover" /> : <Package size={48} className="text-slate-300" />}
-                  <span className={`absolute top-4 right-4 px-3 py-1 rounded-full text-[10px] uppercase font-black tracking-wider shadow-sm ${item.esServicio ? 'bg-blue-600 text-white' : 'bg-emerald-500 text-white'}`}>{item.esServicio ? 'Servicio' : 'Producto'}</span>
-                </div>
-                <div className="p-6 space-y-2">
-                  <h3 className="text-xl font-bold text-slate-800">{item.tipo}</h3>
-                  <p className="text-sm text-slate-500 line-clamp-2">{item.descripcion}</p>
-                </div>
-              </div>
-              <div className="p-6 pt-0 space-y-5">
-                <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
-                  <span className="text-2xl font-black text-slate-800">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(item.costo)}</span>
-                </div>
-                <button 
-                  onClick={() => agregarAlCarrito(item)} 
-                  disabled={!item.esServicio && item.stock <= 0}
-                  className={`w-full text-white font-bold py-3.5 rounded-xl transition flex justify-center items-center gap-2 ${(!item.esServicio && item.stock <= 0) ? 'bg-slate-300 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-700'}`}>
-                  <ShoppingCart size={18}/> {(!item.esServicio && item.stock <= 0) ? 'Agotado' : 'Agregar'}
-                </button>
-              </div>
+
+        {productosEstrella.length === 0 ? (
+          <div className="py-16 px-8 text-center bg-white/70 backdrop-blur-xl rounded-3xl border border-slate-200/80 shadow-sm max-w-xl mx-auto space-y-4">
+            <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mx-auto shadow-inner border border-amber-200/60">
+              <Star size={32} className="fill-amber-400 text-amber-500" />
             </div>
-          ))}
+            <h3 className="text-xl font-bold text-slate-800">Próximamente Productos Estrella</h3>
+            <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+              Los productos destacados en portada se están actualizando desde la administración. Puedes explorar todos nuestros productos y servicios en la tienda completa.
+            </p>
+            <div className="pt-2">
+              <Link 
+                to="/tienda" 
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-3 rounded-full shadow-lg shadow-blue-500/20 transition-all hover:scale-105"
+              >
+                <ShoppingBag size={16} /> Ver Catálogo en la Tienda
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-stretch">
+            {productosEstrella.map((item) => (
+              <div key={item._id} className="bg-white/80 backdrop-blur-lg rounded-[2.5rem] border border-white overflow-hidden flex flex-col justify-between hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-300 hover:-translate-y-2 group">
+                <div>
+                  <div className="h-60 w-full bg-slate-50 relative overflow-hidden flex items-center justify-center">
+                    {item.imagen ? (
+                      <img src={`http://localhost:3000${item.imagen}`} alt={item.tipo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <Package size={48} className="text-slate-300" />
+                    )}
+                    <div className="absolute top-4 left-4 flex flex-col gap-1">
+                      <span className={`px-3 py-1 rounded-full text-[10px] uppercase font-black tracking-wider shadow-sm ${item.esServicio ? 'bg-blue-600 text-white' : 'bg-emerald-500 text-white'}`}>
+                        {item.esServicio ? 'Servicio' : 'Producto'}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-900 shadow-md inline-flex items-center gap-1">
+                        <Star size={10} className="fill-slate-900 text-slate-900" /> Estrella
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-6 space-y-2">
+                    <h3 className="text-xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{item.tipo}</h3>
+                    <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">{item.descripcion}</p>
+                  </div>
+                </div>
+                <div className="p-6 pt-0 space-y-5">
+                  <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
+                    <span className="text-2xl font-black text-slate-800">
+                      {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(item.costo)}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => agregarAlCarrito(item)} 
+                    disabled={!item.esServicio && item.stock <= 0}
+                    className={`w-full text-white font-bold py-3.5 rounded-xl transition flex justify-center items-center gap-2 ${(!item.esServicio && item.stock <= 0) ? 'bg-slate-300 cursor-not-allowed' : 'bg-slate-800 hover:bg-slate-700'}`}
+                  >
+                    <ShoppingCart size={18}/> {(!item.esServicio && item.stock <= 0) ? 'Agotado' : 'Agregar'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* CALL TO ACTION A LA TIENDA COMPLETA */}
+        <div className="mt-16 text-center">
+          <Link 
+            to="/tienda" 
+            className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 hover:from-blue-700 hover:to-sky-700 text-white font-black text-base md:text-lg py-4 md:py-5 px-8 md:px-12 rounded-full shadow-2xl shadow-blue-500/30 hover:scale-105 transition-all duration-300 group"
+          >
+            <ShoppingBag size={22} className="group-hover:rotate-12 transition-transform" />
+            <span>Explorar Catálogo Completo en la Tienda ({catalogo.length} ítems)</span>
+            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+          </Link>
+          <p className="text-xs text-slate-400 mt-3 font-medium">
+            Accede a todo nuestro portafolio de pajillas, bloques minerales, servicios y protocolos reproductivos.
+          </p>
         </div>
       </section>
 

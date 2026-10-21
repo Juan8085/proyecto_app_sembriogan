@@ -18,13 +18,14 @@ import {
   CheckCircle2,
   Image as ImageIcon,
   X,
-  Plus
+  Plus,
+  Star
 } from 'lucide-react';
 
 export default function AdminCatalogo() {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filtroTipo, setFiltroTipo] = useState('todos'); // 'todos' | 'servicios' | 'productos' | 'bajo_stock'
+  const [filtroTipo, setFiltroTipo] = useState('todos'); // 'todos' | 'servicios' | 'productos' | 'destacados' | 'bajo_stock'
   const [busqueda, setBusqueda] = useState('');
   
   // Estados del formulario (Creación o Edición)
@@ -34,7 +35,8 @@ export default function AdminCatalogo() {
     descripcion: '',
     costo: '',
     esServicio: 'true',
-    stock: ''
+    stock: '',
+    destacado: false
   });
   const [imagenFile, setImagenFile] = useState(null);
   const [imagenPreview, setImagenPreview] = useState(null);
@@ -70,7 +72,7 @@ export default function AdminCatalogo() {
   }, []);
 
   const handleChange = (e) => {
-    const { name, value, type, files } = e.target;
+    const { name, value, type, files, checked } = e.target;
     if (type === 'file') {
       const file = files[0];
       setImagenFile(file);
@@ -79,6 +81,8 @@ export default function AdminCatalogo() {
       } else {
         setImagenPreview(null);
       }
+    } else if (type === 'checkbox') {
+      setFormulario({ ...formulario, [name]: checked });
     } else {
       setFormulario({ ...formulario, [name]: value });
     }
@@ -92,7 +96,8 @@ export default function AdminCatalogo() {
       descripcion: item.descripcion,
       costo: item.costo,
       esServicio: item.esServicio ? 'true' : 'false',
-      stock: item.esServicio ? '' : item.stock
+      stock: item.esServicio ? '' : item.stock,
+      destacado: item.destacado || false
     });
     setImagenFile(null);
     setImagenPreview(item.imagen ? `http://localhost:3000${item.imagen}` : null);
@@ -103,9 +108,37 @@ export default function AdminCatalogo() {
 
   const cancelarEdicion = () => {
     setEditandoId(null);
-    setFormulario({ tipo: '', descripcion: '', costo: '', esServicio: 'true', stock: '' });
+    setFormulario({ tipo: '', descripcion: '', costo: '', esServicio: 'true', stock: '', destacado: false });
     setImagenFile(null);
     setImagenPreview(null);
+  };
+
+  // Toggle rápido de producto estrella (destacado en portada)
+  const toggleDestacado = async (id, e) => {
+    if (e) e.stopPropagation();
+    try {
+      // Optimistic update
+      setProductos(prev => prev.map(p => p._id === id ? { ...p, destacado: !p.destacado } : p));
+
+      const token = localStorage.getItem('tokenSembriogan');
+      const res = await fetch(`http://localhost:3000/api/catalogo/${id}/destacado`, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMensaje(data.mensaje);
+        setTimeout(() => setMensaje(''), 3000);
+      } else {
+        cargarCatalogo(); // revert if failed
+      }
+    } catch (err) {
+      console.error("Error toggle destacado:", err);
+      cargarCatalogo();
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -132,6 +165,7 @@ export default function AdminCatalogo() {
       formData.append('costo', Number(formulario.costo));
       formData.append('esServicio', formulario.esServicio);
       formData.append('stock', formulario.esServicio === 'true' ? 0 : Number(formulario.stock));
+      formData.append('destacado', formulario.destacado);
       if (imagenFile) {
         formData.append('imagen', imagenFile);
       }
@@ -194,6 +228,7 @@ export default function AdminCatalogo() {
       costo: 150000,
       esServicio: "NO",
       stock: 50,
+      destacado: "SI",
       imagen: ""
     }]);
     const wb = XLSX.utils.book_new();
@@ -238,8 +273,9 @@ export default function AdminCatalogo() {
     const total = productos.length;
     const servicios = productos.filter(p => p.esServicio).length;
     const productosFisicos = productos.filter(p => !p.esServicio).length;
+    const destacados = productos.filter(p => p.destacado).length;
     const bajoStock = productos.filter(p => !p.esServicio && p.stock <= 5).length;
-    return { total, servicios, productosFisicos, bajoStock };
+    return { total, servicios, productosFisicos, destacados, bajoStock };
   }, [productos]);
 
   // Filtrado y Búsqueda
@@ -254,6 +290,7 @@ export default function AdminCatalogo() {
 
       if (filtroTipo === 'servicios') return p.esServicio;
       if (filtroTipo === 'productos') return !p.esServicio;
+      if (filtroTipo === 'destacados') return p.destacado;
       if (filtroTipo === 'bajo_stock') return !p.esServicio && p.stock <= 5;
       return true;
     });
@@ -272,7 +309,7 @@ export default function AdminCatalogo() {
     <div className="space-y-8">
       
       {/* TARJETAS DE MÉTRICAS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Ítems</p>
@@ -303,14 +340,25 @@ export default function AdminCatalogo() {
           </div>
         </div>
 
+        {/* MÉTRICA: PRODUCTOS ESTRELLA (PORTADA) */}
+        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">En Portada ⭐</p>
+            <p className="text-2xl font-black text-amber-500 mt-1">{metricas.destacados}</p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center shadow-inner">
+            <Star className="w-6 h-6 fill-amber-400 text-amber-500" />
+          </div>
+        </div>
+
         <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Alerta Stock</p>
-            <p className={`text-2xl font-black mt-1 ${metricas.bajoStock > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
+            <p className={`text-2xl font-black mt-1 ${metricas.bajoStock > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
               {metricas.bajoStock}
             </p>
           </div>
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${metricas.bajoStock > 0 ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${metricas.bajoStock > 0 ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-400'}`}>
             <AlertCircle className="w-6 h-6" />
           </div>
         </div>
@@ -332,7 +380,7 @@ export default function AdminCatalogo() {
                   </span>
                 )}
               </h2>
-              <p className="text-slate-400 text-xs mt-0.5">Controla especificaciones técnicas, precio al público y niveles de stock.</p>
+              <p className="text-slate-400 text-xs mt-0.5">Controla especificaciones técnicas, precio al público, niveles de stock y visibilidad de portada.</p>
             </div>
           </div>
 
@@ -437,7 +485,7 @@ export default function AdminCatalogo() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
               
               {/* Stock (solo si es producto) */}
               {formulario.esServicio === 'false' && (
@@ -498,6 +546,32 @@ export default function AdminCatalogo() {
               </div>
             </div>
 
+            {/* TOGGLE: PRODUCTO ESTRELLA (DESTACADO EN PORTADA) */}
+            <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                  <Star className="w-5 h-5 fill-amber-400 text-amber-500" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">¿Marcar como Producto / Servicio Estrella?</h4>
+                  <p className="text-xs text-slate-500">
+                    Los productos estrella se exhiben de forma prioritaria en la portada principal de la web.
+                  </p>
+                </div>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input 
+                  type="checkbox" 
+                  name="destacado" 
+                  checked={formulario.destacado} 
+                  onChange={handleChange}
+                  className="sr-only peer"
+                />
+                <div className="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
+
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button 
                 type="submit" 
@@ -539,7 +613,7 @@ export default function AdminCatalogo() {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-black text-slate-900 tracking-tight">Inventario y Catálogo Activo</h2>
-              <p className="text-xs text-slate-500 mt-1">Servicios y productos ofrecidos en la tienda y la app de campo.</p>
+              <p className="text-xs text-slate-500 mt-1">Controla productos, servicios, stock y haz clic en la estrella ⭐ para destacarlos en la página principal.</p>
             </div>
 
             {/* Acciones Masivas Excel */}
@@ -598,6 +672,17 @@ export default function AdminCatalogo() {
                 Todos ({metricas.total})
               </button>
               <button
+                onClick={() => setFiltroTipo('destacados')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${
+                  filtroTipo === 'destacados'
+                    ? 'bg-amber-500 text-white shadow-sm'
+                    : 'text-amber-700 bg-amber-50 hover:bg-amber-100'
+                }`}
+              >
+                <Star className={`w-3.5 h-3.5 ${filtroTipo === 'destacados' ? 'fill-white text-white' : 'fill-amber-400 text-amber-500'}`} />
+                Portada ({metricas.destacados})
+              </button>
+              <button
                 onClick={() => setFiltroTipo('servicios')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                   filtroTipo === 'servicios'
@@ -621,7 +706,7 @@ export default function AdminCatalogo() {
                 onClick={() => setFiltroTipo('bajo_stock')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                   filtroTipo === 'bajo_stock'
-                    ? 'bg-white text-amber-600 shadow-sm'
+                    ? 'bg-white text-rose-600 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -636,6 +721,7 @@ export default function AdminCatalogo() {
           <table className="w-full text-sm text-left text-slate-600">
             <thead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/75 border-b border-slate-100">
               <tr>
+                <th className="px-4 py-4 text-center">Portada</th>
                 <th className="px-6 py-4">Ítem</th>
                 <th className="px-6 py-4">Modalidad</th>
                 <th className="px-6 py-4">Precio COP</th>
@@ -646,7 +732,7 @@ export default function AdminCatalogo() {
             <tbody className="divide-y divide-slate-100">
               {productosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-400">
                     <Package className="w-8 h-8 mx-auto mb-2 opacity-40" />
                     <p className="text-sm font-medium">No se encontraron ítems con los filtros seleccionados.</p>
                   </td>
@@ -655,6 +741,21 @@ export default function AdminCatalogo() {
                 productosFiltrados.map((item) => (
                   <tr key={item._id} className="hover:bg-slate-50/80 transition-colors">
                     
+                    {/* Botón Estrella (Activar/Desactivar en Portada) */}
+                    <td className="px-4 py-4 text-center">
+                      <button
+                        onClick={(e) => toggleDestacado(item._id, e)}
+                        className={`p-2 rounded-xl transition-all ${
+                          item.destacado 
+                            ? 'bg-amber-50 hover:bg-amber-100 text-amber-500 shadow-xs' 
+                            : 'text-slate-300 hover:text-amber-400 hover:bg-slate-100'
+                        }`}
+                        title={item.destacado ? '⭐ Producto Estrella en Portada (Clic para desmarcar)' : 'Marcar como Producto Estrella en Portada'}
+                      >
+                        <Star className={`w-5 h-5 transition-transform hover:scale-125 ${item.destacado ? 'fill-amber-400 text-amber-500' : ''}`} />
+                      </button>
+                    </td>
+
                     {/* Imagen + Título + Descripción */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -670,7 +771,14 @@ export default function AdminCatalogo() {
                           </div>
                         )}
                         <div>
-                          <div className="font-bold text-slate-900">{item.tipo}</div>
+                          <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <span>{item.tipo}</span>
+                            {item.destacado && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200/60 inline-flex items-center gap-0.5">
+                                <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-600" /> Estrella
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-slate-500 max-w-sm line-clamp-1">{item.descripcion}</div>
                         </div>
                       </div>
