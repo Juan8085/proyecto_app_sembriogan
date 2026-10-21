@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import {
   Users,
   UserCheck,
@@ -28,7 +29,7 @@ export default function AdminUsuarios() {
   const cargarUsuarios = async () => {
     try {
       const token = localStorage.getItem('tokenSembriogan');
-      const res = await fetch('http://localhost:3000/api/auth/usuarios', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -57,7 +58,7 @@ export default function AdminUsuarios() {
       setError('');
       setMensaje('');
       const token = localStorage.getItem('tokenSembriogan');
-      const res = await fetch(`http://localhost:3000/api/auth/usuarios/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import {
   MessageSquareQuote,
   CheckCircle2,
@@ -21,7 +22,7 @@ export default function AdminTestimonios() {
 
   const cargarTestimoniosAdmin = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/testimonios/admin/todos');
+      const res = await fetch(`${API_BASE_URL}/api/testimonios/admin/todos`);
       const data = await res.json();
       if (data.success) {
         setTestimonios(data.data);
@@ -39,7 +40,7 @@ export default function AdminTestimonios() {
 
   const cambiarEstado = async (id, estadoActual, autor) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/testimonios/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/testimonios/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ aprobado: !estadoActual })
@@ -57,7 +58,7 @@ export default function AdminTestimonios() {
   const eliminarTestimonio = async (id, autor) => {
     if (!window.confirm(`¿Estás seguro de eliminar permanentemente el testimonio de "${autor}"?`)) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/testimonios/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/testimonios/${id}`, {
         method: 'DELETE'
       });
       const data = await res.json();

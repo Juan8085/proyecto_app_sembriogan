@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { 
   DollarSign, 
@@ -30,7 +31,7 @@ export default function AdminResumen() {
       const token = localStorage.getItem('tokenSembriogan');
       
       // 1. Obtener registros genéticos para métricas de campo
-      const resGen = await fetch('http://localhost:3000/api/registro-genetico', {
+      const resGen = await fetch(`${API_BASE_URL}/api/registro-genetico`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dataGen = await resGen.json();
@@ -50,7 +51,7 @@ export default function AdminResumen() {
       }
 
       // 2. Obtener resumen financiero real del backend de órdenes
-      const resFin = await fetch('http://localhost:3000/api/ordenes/resumen-financiero', {
+      const resFin = await fetch(`${API_BASE_URL}/api/ordenes/resumen-financiero`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dataFin = await resFin.json();

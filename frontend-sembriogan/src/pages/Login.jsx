@@ -1,3 +1,4 @@
+import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,7 +22,7 @@ export default function Login() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:3000/api/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email, password: formData.password })
@@ -58,7 +59,7 @@ export default function Login() {
     setError('');
     setSuccess('');
     try {
-      const res = await fetch('http://localhost:3000/api/auth/registro', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/registro`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, rol: 'Admin' })

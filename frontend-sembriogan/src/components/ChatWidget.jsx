@@ -1,3 +1,4 @@
+import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import { useState, useRef, useEffect } from 'react';
 // 1. Importamos los íconos de Lucide
 import { Bot, X, Send } from 'lucide-react'; 
@@ -32,7 +33,7 @@ const ChatWidget = () => {
         setIsLoading(true);
 
         try {
-            const res = await fetch('http://localhost:3000/api/ia/consultar', {
+            const res = await fetch(`${API_BASE_URL}/api/ia/consultar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ historial: nuevoHistorial, rol: 'ganadero' })

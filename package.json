@@ -13,7 +13,10 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\""
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "tunnel": "ngrok http 5173",
+    "tunnel:api": "ngrok http 3000",
+    "tunnel:all": "ngrok start --config ngrok.yml --all"
   },
   "devDependencies": {
     "prettier": "^3.0.3"

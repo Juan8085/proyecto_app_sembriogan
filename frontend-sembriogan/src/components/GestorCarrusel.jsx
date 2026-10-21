@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import {
   Image as ImageIcon,
   UploadCloud,
@@ -39,7 +40,7 @@ const GestorCarrusel = () => {
   // --- FUNCIONES CARRUSEL ---
   const cargarImagenes = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/carrusel');
+      const res = await fetch(`${API_BASE_URL}/api/carrusel`);
       const data = await res.json();
       if (data.success) setImagenes(data.data);
     } catch (error) { 
@@ -71,7 +72,7 @@ const GestorCarrusel = () => {
     formData.append('descripcion', descripcion);
     const token = localStorage.getItem('tokenSembriogan'); 
     try {
-      const res = await fetch('http://localhost:3000/api/carrusel', {
+      const res = await fetch(`${API_BASE_URL}/api/carrusel`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -100,7 +101,7 @@ const GestorCarrusel = () => {
     if (!window.confirm("¿Seguro de eliminar este banner del carrusel?")) return;
     const token = localStorage.getItem('tokenSembriogan');
     try {
-      const res = await fetch(`http://localhost:3000/api/carrusel/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/carrusel/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -117,7 +118,7 @@ const GestorCarrusel = () => {
   // --- FUNCIONES NOSOTROS ---
   const cargarNosotros = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/nosotros');
+      const res = await fetch(`${API_BASE_URL}/api/nosotros`);
       const data = await res.json();
       if (data.success && data.data) {
         setNosotrosData(data.data);
@@ -150,7 +151,7 @@ const GestorCarrusel = () => {
     
     const token = localStorage.getItem('tokenSembriogan'); 
     try {
-      const res = await fetch('http://localhost:3000/api/nosotros', {
+      const res = await fetch(`${API_BASE_URL}/api/nosotros`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
@@ -217,7 +218,7 @@ const GestorCarrusel = () => {
                 {nosotrosPreview ? (
                   <img src={nosotrosPreview} alt="Nueva vista previa" className="w-full h-full object-cover" />
                 ) : nosotrosData?.imagenUrl ? (
-                  <img src={`http://localhost:3000${nosotrosData.imagenUrl}`} alt="Nosotros actual" className="w-full h-full object-cover" />
+                  <img src={`${API_BASE_URL}${nosotrosData.imagenUrl}`} alt="Nosotros actual" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
                     <ImageIcon className="w-8 h-8 opacity-40" />
@@ -382,7 +383,7 @@ const GestorCarrusel = () => {
                 imagenes.map((img) => (
                   <div key={img._id} className="relative group rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm bg-slate-900">
                     <img 
-                      src={`http://localhost:3000${img.imagenUrl}`} 
+                      src={`${API_BASE_URL}${img.imagenUrl}`} 
                       alt={img.titulo || 'Banner'} 
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100" 
                     />

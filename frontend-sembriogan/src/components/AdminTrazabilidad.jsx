@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import { 
   FileText, 
   MessageCircle, 
@@ -35,7 +36,7 @@ export default function AdminTrazabilidad() {
   const cargarRegistros = async () => {
     try {
       const token = localStorage.getItem('tokenSembriogan');
-      const res = await fetch('http://localhost:3000/api/registro-genetico', {
+      const res = await fetch(`${API_BASE_URL}/api/registro-genetico`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();

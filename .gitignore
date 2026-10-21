@@ -32,4 +32,8 @@ out/
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+*.sw?
+
+# Tunnels & Secrets
+ngrok.yml
+.ngrok

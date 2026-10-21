@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import * as XLSX from 'xlsx';
 import {
   PackagePlus,
@@ -48,7 +49,7 @@ export default function AdminCatalogo() {
 
   const cargarCatalogo = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/catalogo');
+      const res = await fetch(`${API_BASE_URL}/api/catalogo`);
       const data = await res.json();
       if (data.success) {
         setProductos(data.data);
@@ -100,7 +101,7 @@ export default function AdminCatalogo() {
       destacado: item.destacado || false
     });
     setImagenFile(null);
-    setImagenPreview(item.imagen ? `http://localhost:3000${item.imagen}` : null);
+    setImagenPreview(item.imagen ? `${API_BASE_URL}${item.imagen}` : null);
     setError('');
     setMensaje('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -121,7 +122,7 @@ export default function AdminCatalogo() {
       setProductos(prev => prev.map(p => p._id === id ? { ...p, destacado: !p.destacado } : p));
 
       const token = localStorage.getItem('tokenSembriogan');
-      const res = await fetch(`http://localhost:3000/api/catalogo/${id}/destacado`, {
+      const res = await fetch(`${API_BASE_URL}/api/catalogo/${id}/destacado`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -171,8 +172,8 @@ export default function AdminCatalogo() {
       }
 
       const url = editandoId 
-        ? `http://localhost:3000/api/catalogo/${editandoId}` 
-        : 'http://localhost:3000/api/catalogo';
+        ? `${API_BASE_URL}/api/catalogo/${editandoId}` 
+        : `${API_BASE_URL}/api/catalogo`;
       
       const method = editandoId ? 'PUT' : 'POST';
 
@@ -204,7 +205,7 @@ export default function AdminCatalogo() {
 
     try {
       const token = localStorage.getItem('tokenSembriogan');
-      const res = await fetch(`http://localhost:3000/api/catalogo/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/catalogo/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -248,7 +249,7 @@ export default function AdminCatalogo() {
         const ws = wb.Sheets[wsname];
         const data = XLSX.utils.sheet_to_json(ws);
         
-        const res = await fetch('http://localhost:3000/api/catalogo/masivo', {
+        const res = await fetch(`${API_BASE_URL}/api/catalogo/masivo`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
@@ -761,7 +762,7 @@ export default function AdminCatalogo() {
                       <div className="flex items-center gap-3">
                         {item.imagen ? (
                           <img 
-                            src={`http://localhost:3000${item.imagen}`} 
+                            src={`${API_BASE_URL}${item.imagen}`} 
                             alt={item.tipo} 
                             className="w-12 h-12 object-cover rounded-2xl shadow-sm border border-slate-200 shrink-0" 
                           />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import {
   User,
   Mail,
@@ -48,7 +49,7 @@ export default function AdminConfiguracion() {
       
       setUsuario({ nombre: user.nombre || '', email: user.email || '', password: '' });
 
-      const resConf = await fetch('http://localhost:3000/api/configuracion', {
+      const resConf = await fetch(`${API_BASE_URL}/api/configuracion`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dataConf = await resConf.json();
@@ -69,7 +70,7 @@ export default function AdminConfiguracion() {
       const token = localStorage.getItem('tokenSembriogan');
       const user = JSON.parse(localStorage.getItem('usuarioSembriogan') || '{}');
       
-      const res = await fetch(`http://localhost:3000/api/auth/usuarios/${user.id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/usuarios/${user.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ nombre: usuario.nombre, password: usuario.password })
@@ -94,7 +95,7 @@ export default function AdminConfiguracion() {
     setMsgWompi({ type: '', text: '' });
     try {
       const token = localStorage.getItem('tokenSembriogan');
-      const res = await fetch(`http://localhost:3000/api/configuracion`, {
+      const res = await fetch(`${API_BASE_URL}/api/configuracion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(configuracion)

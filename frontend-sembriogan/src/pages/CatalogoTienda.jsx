@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import { Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { 
@@ -71,11 +72,11 @@ export default function CatalogoTienda() {
   // Cargar catálogo y configuración
   const cargarDatos = async () => {
     try {
-      const resCat = await fetch('http://localhost:3000/api/catalogo');
+      const resCat = await fetch(`${API_BASE_URL}/api/catalogo`);
       const dataCat = await resCat.json();
       if (dataCat.success) setCatalogo(dataCat.data);
 
-      const resConf = await fetch('http://localhost:3000/api/configuracion');
+      const resConf = await fetch(`${API_BASE_URL}/api/configuracion`);
       const dataConf = await resConf.json();
       if (dataConf.success) setConfigGlobal(dataConf.data);
     } catch (err) {
@@ -97,7 +98,7 @@ export default function CatalogoTienda() {
       const pendingCartRaw = localStorage.getItem('pendingWompiCart');
       const pendingCart = pendingCartRaw ? JSON.parse(pendingCartRaw) : null;
 
-      fetch('http://localhost:3000/api/pagos/verificar-transaccion', {
+      fetch(`${API_BASE_URL}/api/pagos/verificar-transaccion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transactionId: wompiTxId, pendingCart })
@@ -120,13 +121,13 @@ export default function CatalogoTienda() {
   // Cargar historial de compras al abrir el panel
   useEffect(() => {
     if (userCliente && isClienteDashboardOpen) {
-      fetch(`http://localhost:3000/api/ordenes?email=${userCliente.email}`)
+      fetch(`${API_BASE_URL}/api/ordenes?email=${userCliente.email}`)
         .then(res => res.json())
         .then(data => { if (data.success) setMisOrdenesCliente(data.data); })
         .catch(console.error);
 
       const token = localStorage.getItem('tokenSembriogan') || '';
-      fetch(`http://localhost:3000/api/registro-genetico?email=${userCliente.email}`, {
+      fetch(`${API_BASE_URL}/api/registro-genetico?email=${userCliente.email}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
@@ -187,7 +188,7 @@ export default function CatalogoTienda() {
     const amountInCents = Math.round(totalCarrito * 100);
 
     let signature = '';
-    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3000' : `http://${window.location.hostname}:3000`;
+    const apiBase = window.location.hostname === 'localhost' ? `${API_BASE_URL}` : `http://${window.location.hostname}:3000`;
     
     try {
       const resSig = await fetch(`${apiBase}/api/configuracion/generar-firma`, {
@@ -258,7 +259,7 @@ export default function CatalogoTienda() {
     e.preventDefault();
     const endpoint = authMode === 'login' ? 'login' : 'registro';
     try {
-      const res = await fetch(`http://localhost:3000/api/auth/${endpoint}`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(authData)
@@ -278,7 +279,7 @@ export default function CatalogoTienda() {
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const res = await fetch('http://localhost:3000/api/auth/google', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: credentialResponse.credential })
@@ -601,7 +602,7 @@ export default function CatalogoTienda() {
                     <div className="h-64 w-full bg-slate-100 relative overflow-hidden flex items-center justify-center">
                       {item.imagen ? (
                         <img 
-                          src={`http://localhost:3000${item.imagen}`} 
+                          src={`${API_BASE_URL}${item.imagen}`} 
                           alt={item.tipo} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                         />

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import { Link } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 // Importamos los íconos profesionales de Lucide
@@ -135,11 +136,11 @@ export default function PublicHome() {
   }, []);
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/catalogo').then(res => res.json()).then(data => { if (data.success) setCatalogo(data.data); }).catch(console.error);
-    fetch('http://localhost:3000/api/testimonios').then(res => res.json()).then(data => { if (data.success) setTestimonios(data.data); }).catch(console.error);
-    fetch('http://localhost:3000/api/carrusel').then(res => res.json()).then(data => { if (data.success && data.data.length > 0) setImagenesHero(data.data); }).catch(console.error);
-    fetch('http://localhost:3000/api/nosotros').then(res => res.json()).then(data => { if (data.success && data.data) setInfoNosotros(data.data); }).catch(console.error);
-    fetch('http://localhost:3000/api/configuracion').then(res => res.json()).then(data => { if (data.success) setConfigGlobal(data.data); }).catch(console.error);
+    fetch(`${API_BASE_URL}/api/catalogo`).then(res => res.json()).then(data => { if (data.success) setCatalogo(data.data); }).catch(console.error);
+    fetch(`${API_BASE_URL}/api/testimonios`).then(res => res.json()).then(data => { if (data.success) setTestimonios(data.data); }).catch(console.error);
+    fetch(`${API_BASE_URL}/api/carrusel`).then(res => res.json()).then(data => { if (data.success && data.data.length > 0) setImagenesHero(data.data); }).catch(console.error);
+    fetch(`${API_BASE_URL}/api/nosotros`).then(res => res.json()).then(data => { if (data.success && data.data) setInfoNosotros(data.data); }).catch(console.error);
+    fetch(`${API_BASE_URL}/api/configuracion`).then(res => res.json()).then(data => { if (data.success) setConfigGlobal(data.data); }).catch(console.error);
 
     const clienteGuardado = localStorage.getItem('clienteSembriogan');
     if (clienteGuardado) setUserCliente(JSON.parse(clienteGuardado));
@@ -151,7 +152,7 @@ export default function PublicHome() {
       const pendingCartRaw = localStorage.getItem('pendingWompiCart');
       const pendingCart = pendingCartRaw ? JSON.parse(pendingCartRaw) : null;
 
-      fetch('http://localhost:3000/api/pagos/verificar-transaccion', {
+      fetch(`${API_BASE_URL}/api/pagos/verificar-transaccion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -169,7 +170,7 @@ export default function PublicHome() {
           localStorage.removeItem('pendingWompiCart');
           setCarrito([]);
           window.history.replaceState({}, document.title, window.location.pathname);
-          fetch('http://localhost:3000/api/catalogo').then(res => res.json()).then(d => { if (d.success) setCatalogo(d.data); });
+          fetch(`${API_BASE_URL}/api/catalogo`).then(res => res.json()).then(d => { if (d.success) setCatalogo(d.data); });
         }
       })
       .catch(console.error);
@@ -186,13 +187,13 @@ export default function PublicHome() {
   // Cargar historial de compras al abrir el panel
   useEffect(() => {
     if (userCliente && isClienteDashboardOpen) {
-      fetch(`http://localhost:3000/api/ordenes?email=${userCliente.email}`)
+      fetch(`${API_BASE_URL}/api/ordenes?email=${userCliente.email}`)
         .then(res => res.json())
         .then(data => { if (data.success) setMisOrdenesCliente(data.data); })
         .catch(console.error);
 
       const token = localStorage.getItem('tokenSembriogan') || '';
-      fetch(`http://localhost:3000/api/registro-genetico?email=${userCliente.email}`, {
+      fetch(`${API_BASE_URL}/api/registro-genetico?email=${userCliente.email}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
@@ -229,7 +230,7 @@ export default function PublicHome() {
 
     // Obtener firma de integridad del backend con fallback local SHA-256
     let signature = '';
-    const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3000' : `http://${window.location.hostname}:3000`;
+    const apiBase = window.location.hostname === 'localhost' ? `${API_BASE_URL}` : `http://${window.location.hostname}:3000`;
     
     try {
       const resSig = await fetch(`${apiBase}/api/configuracion/generar-firma`, {
@@ -302,7 +303,7 @@ export default function PublicHome() {
             items: carrito.map(item => ({ catalogoItem: item._id, tipo: item.tipo, costo: item.costo, cantidad: item.cantidad })),
             total: totalCarrito
           };
-          const res = await fetch('http://localhost:3000/api/pagos/verificar-transaccion', {
+          const res = await fetch(`${API_BASE_URL}/api/pagos/verificar-transaccion`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(verifyPayload)
@@ -313,7 +314,7 @@ export default function PublicHome() {
             setCarrito([]);
             setIsCartOpen(false);
             localStorage.removeItem('pendingWompiCart');
-            fetch('http://localhost:3000/api/catalogo').then(r => r.json()).then(d => { if (d.success) setCatalogo(d.data); });
+            fetch(`${API_BASE_URL}/api/catalogo`).then(r => r.json()).then(d => { if (d.success) setCatalogo(d.data); });
           } else {
             alert('Aviso de pago: ' + (data.mensaje || 'Transacción procesada'));
           }
@@ -330,7 +331,7 @@ export default function PublicHome() {
   
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const res = await fetch('http://localhost:3000/api/auth/google', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: credentialResponse.credential })
@@ -369,7 +370,7 @@ export default function PublicHome() {
   const enviarTestimonio = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3000/api/testimonios', {
+      const res = await fetch(`${API_BASE_URL}/api/testimonios`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nuevoTestimonio)
@@ -588,7 +589,7 @@ export default function PublicHome() {
         {imagenesHero.length > 0 ? (
             imagenesHero.map((img, index) => (
                 <div key={img._id} className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === indiceActual ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
-                    <img src={`http://localhost:3000${img.imagenUrl}`} alt={img.titulo} className="w-full h-full object-cover" />
+                    <img src={`${API_BASE_URL}${img.imagenUrl}`} alt={img.titulo} className="w-full h-full object-cover" />
                     {/* Gradient Overlay that fades into the page background */}
                     <div className="absolute inset-0 bg-gradient-to-b from-slate-900/70 via-slate-900/40 to-slate-50/50 z-10"></div>
                     <div className={`absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-6 max-w-5xl mx-auto text-white transition-all duration-1000 ${index === indiceActual ? 'translate-y-0 scale-100' : 'translate-y-8 scale-95'}`}>
@@ -623,7 +624,7 @@ export default function PublicHome() {
             </p>
           </div>
           <div className="relative">
-            <img src={infoNosotros?.imagenUrl ? `http://localhost:3000${infoNosotros.imagenUrl}` : "https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?q=80&w=800"} alt="Ganadería Sembriogan" className="rounded-[2.5rem] shadow-2xl shadow-blue-900/10 object-cover h-[500px] w-full border border-white" />
+            <img src={infoNosotros?.imagenUrl ? `${API_BASE_URL}${infoNosotros.imagenUrl}` : "https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?q=80&w=800"} alt="Ganadería Sembriogan" className="rounded-[2.5rem] shadow-2xl shadow-blue-900/10 object-cover h-[500px] w-full border border-white" />
             <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-4">
               <CheckCircle size={32} className="text-emerald-500" />
               <div>
@@ -702,7 +703,7 @@ export default function PublicHome() {
                 <div>
                   <div className="h-60 w-full bg-slate-50 relative overflow-hidden flex items-center justify-center">
                     {item.imagen ? (
-                      <img src={`http://localhost:3000${item.imagen}`} alt={item.tipo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img src={`${API_BASE_URL}${item.imagen}`} alt={item.tipo} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <Package size={48} className="text-slate-300" />
                     )}

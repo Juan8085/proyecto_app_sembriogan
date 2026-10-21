@@ -1,0 +1,23 @@
+# Archivo de ejemplo para configuración avanzada de túneles con ngrok
+# Para usarlo:
+# 1. Copia este archivo como 'ngrok.yml'
+# 2. Registra tu authtoken con: ngrok config add-authtoken <TU_AUTHTOKEN>
+# 3. Inicia ambos túneles simultáneamente con: ngrok start --config ngrok.yml --all
+
+version: 2
+# authtoken: TU_AUTHTOKEN_AQUI (Opcional si ya ejecutaste ngrok config add-authtoken)
+
+tunnels:
+  # Túnel para la aplicación web completa (Frontend + Backend proxy en puerto 5173)
+  web:
+    proto: http
+    addr: 5173
+    schemes:
+      - https
+
+  # Túnel exclusivo para el backend API (puerto 3000, ideal para conectar app móvil remotamente)
+  api:
+    proto: http
+    addr: 3000
+    schemes:
+      - https
