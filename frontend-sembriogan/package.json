@@ -11,7 +11,8 @@
     "tunnel": "ngrok http 5173",
     "tunnel:api": "ngrok http 3000",
     "tunnel:lt": "npx localtunnel --port 5173",
-    "tunnel:lt:api": "npx localtunnel --port 3000"
+    "tunnel:lt:api": "npx localtunnel --port 3000",
+    "compartir": "node ../scripts/compartir.js"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",

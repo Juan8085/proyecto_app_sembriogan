@@ -18,7 +18,8 @@
     "tunnel:api": "ngrok http 3000",
     "tunnel:all": "ngrok start --config ngrok.yml --all",
     "tunnel:lt": "npx localtunnel --port 5173",
-    "tunnel:lt:api": "npx localtunnel --port 3000"
+    "tunnel:lt:api": "npx localtunnel --port 3000",
+    "compartir": "node scripts/compartir.js"
   },
   "devDependencies": {
     "prettier": "^3.0.3"
