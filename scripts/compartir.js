@@ -103,19 +103,11 @@ async function iniciarTunelProgramatico(tunnelPassword) {
       subdomain: 'sembriogan-app'
     });
 
-    if (activeTunnel.url !== 'https://sembriogan-app.loca.lt') {
-      console.log(`\n⏳ El servidor asignó temporalmente (${activeTunnel.url}).`);
-      console.log('🔄 Reclamando el enlace oficial https://sembriogan-app.loca.lt en 3 segundos...');
-      try { activeTunnel.close(); } catch (e) {}
-      setTimeout(() => iniciarTunelProgramatico(tunnelPassword), 3000);
-      return;
-    }
-
     console.log('\n===========================================================');
     console.log('🎉 ¡PROYECTO LISTO Y COMPARTIDO CON ÉXITO!');
     console.log('===========================================================');
-    console.log(`\n🌍 ENLACE PÚBLICO FIJO (Para abrir en cualquier celular o equipo):`);
-    console.log(`   👉 \x1b[32m\x1b[1mhttps://sembriogan-app.loca.lt\x1b[0m`);
+    console.log(`\n🌍 ENLACE PÚBLICO:`);
+    console.log(`   👉 \x1b[32m\x1b[1m${activeTunnel.url}\x1b[0m`);
     if (tunnelPassword) {
       console.log(`\n🔑 Contraseña del túnel (si la página te la pide al entrar):`);
       console.log(`   👉 \x1b[33m\x1b[1m${tunnelPassword}\x1b[0m (y clic en "Click to Submit")`);
