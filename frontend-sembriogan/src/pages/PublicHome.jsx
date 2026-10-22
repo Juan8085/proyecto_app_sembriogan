@@ -351,13 +351,34 @@ export default function PublicHome() {
     }
   };
 
-  const handleAuthSubmit = (e) => {
+  const handleAuthSubmit = async (e) => {
     e.preventDefault();
-    const clienteSimulado = { nombre: authData.nombre || authData.email.split('@')[0], email: authData.email, password: authData.password };
-    setUserCliente(clienteSimulado); 
-    localStorage.setItem('clienteSembriogan', JSON.stringify(clienteSimulado));
-    setIsAuthOpen(false); 
-    alert(`¡Bienvenido, ${clienteSimulado.nombre}!`);
+    const endpoint = authMode === 'login' ? 'login' : 'registro';
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(authData)
+      });
+      const data = await res.json();
+      if (data.success) {
+        const usuarioFinal = data.usuario || { nombre: authData.nombre || authData.email.split('@')[0], email: authData.email };
+        setUserCliente(usuarioFinal);
+        if (data.token) localStorage.setItem('tokenSembriogan', data.token);
+        localStorage.setItem('clienteSembriogan', JSON.stringify(usuarioFinal));
+        setIsAuthOpen(false);
+        alert(`¡Bienvenido, ${usuarioFinal.nombre}!`);
+      } else {
+        alert(data.mensaje || 'Error en autenticación');
+      }
+    } catch {
+      // Fallback local en caso de desconexión
+      const clienteSimulado = { nombre: authData.nombre || authData.email.split('@')[0], email: authData.email, password: authData.password };
+      setUserCliente(clienteSimulado); 
+      localStorage.setItem('clienteSembriogan', JSON.stringify(clienteSimulado));
+      setIsAuthOpen(false); 
+      alert(`¡Bienvenido, ${clienteSimulado.nombre}!`);
+    }
   };
 
   const handleUpdateProfile = (e) => {
@@ -971,6 +992,18 @@ export default function PublicHome() {
           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 relative">
             <button onClick={() => setIsAuthOpen(false)} className="absolute top-5 right-5 text-slate-400 hover:text-slate-700"><X size={20}/></button>
             <div className="text-center mb-6"><h3 className="text-2xl font-black text-slate-800">{authMode === 'login' ? 'Bienvenido' : 'Crear Cuenta'}</h3></div>
+
+            {/^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname) && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-3 text-xs mb-4 text-left shadow-xs">
+                <p className="font-bold flex items-center gap-1.5">
+                  <span>💡</span> Navegando por IP ({window.location.hostname})
+                </p>
+                <p className="text-[11px] text-amber-800 mt-1 leading-relaxed">
+                  Por seguridad, Google no permite su botón desde IPs numéricas. <strong>Inicia sesión con tu Correo y Contraseña</strong> aquí abajo (funciona en cualquier equipo), o abre <strong>https://sembriogan-app.loca.lt</strong> para usar el botón de Google.
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               {authMode === 'registro' && <input type="text" required value={authData.nombre} onChange={(e) => setAuthData({...authData, nombre: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary text-sm" placeholder="Tu Nombre" />}
               <input type="email" required value={authData.email} onChange={(e) => setAuthData({...authData, email: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary text-sm" placeholder="Correo Electrónico" />
