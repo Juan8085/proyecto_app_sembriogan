@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal, ActivityIndicator } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '../config/api';
-import { User, Lock } from 'lucide-react-native';
+import { API_URL, setCustomApiUrl, getDefaultApiUrl, initApiUrl } from '../config/api';
+import { User, Lock, Globe, RotateCcw, X, CheckCircle2, Server } from 'lucide-react-native';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Estados para configuración de servidor / túnel
+  const [servidorActual, setServidorActual] = useState(API_URL);
+  const [modalServidorVisible, setModalServidorVisible] = useState(false);
+  const [inputUrlServidor, setInputUrlServidor] = useState('');
+  const [probandoConexion, setProbandoConexion] = useState(false);
+
   useEffect(() => {
     // Check if user is already logged in
     const checkLogin = async () => {
+      const url = await initApiUrl();
+      setServidorActual(url);
       const token = await SecureStore.getItemAsync('token');
       if (token) {
         navigation.replace('Dashboard');
@@ -48,10 +56,46 @@ export default function LoginScreen({ navigation }) {
       }
     } catch (error) {
       console.error(error);
-      Alert.alert('Error de conexión', 'No se pudo conectar con el servidor.');
+      Alert.alert(
+        'Error de conexión',
+        `No fue posible conectar con el servidor:\n${API_URL}\n\nSi estás en el SENA o fuera de tu casa, toca "Cambiar Servidor" para colocar el enlace del túnel público.`
+      );
     } finally {
       setLoading(false);
     }
+  };
+
+  const probarYGuardarServidor = async (urlAProbar) => {
+    const urlLimpia = (urlAProbar || '').trim().replace(/\/$/, '');
+    if (!urlLimpia) {
+      Alert.alert('Error', 'Por favor ingresa una URL válida.');
+      return;
+    }
+
+    setProbandoConexion(true);
+    try {
+      const res = await fetch(`${urlLimpia}/api/configuracion`);
+      const data = await res.json();
+      if (data && data.success !== undefined) {
+        const nuevaUrl = await setCustomApiUrl(urlLimpia);
+        setServidorActual(nuevaUrl);
+        setModalServidorVisible(false);
+        Alert.alert('✅ Conexión Exitosa', `Servidor configurado correctamente en:\n${nuevaUrl}`);
+      } else {
+        Alert.alert('Aviso', 'El servidor respondió pero no es un backend de Sembriogan válido.');
+      }
+    } catch (e) {
+      Alert.alert('Error de Conexión', `No se pudo conectar a "${urlLimpia}". Verifica que el servidor o túnel esté encendido.`);
+    } finally {
+      setProbandoConexion(false);
+    }
+  };
+
+  const restaurarDeteccionAuto = async () => {
+    const defaultUrl = await setCustomApiUrl(null);
+    setServidorActual(defaultUrl);
+    setModalServidorVisible(false);
+    Alert.alert('🔄 Restaurado', `Se restauró la detección automática de Wi-Fi:\n${defaultUrl}`);
   };
 
   return (
@@ -62,7 +106,7 @@ export default function LoginScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.title}>Sembriogan</Text>
-          <Text style={styles.subtitle}>Portal Veterinario</Text>
+          <Text style={styles.subtitle}>Portal Veterinario Móvil</Text>
         </View>
 
         <View style={styles.card}>
@@ -94,8 +138,73 @@ export default function LoginScreen({ navigation }) {
           <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
             <Text style={styles.buttonText}>{loading ? 'Iniciando...' : 'Entrar al Sistema'}</Text>
           </TouchableOpacity>
+
+          {/* Selector interactivo de servidor/túnel */}
+          <TouchableOpacity 
+            style={styles.serverPill} 
+            onPress={() => {
+              setInputUrlServidor(servidorActual);
+              setModalServidorVisible(true);
+            }}
+          >
+            <Server size={14} color="#0284c7" />
+            <Text style={styles.serverPillText} numberOfLines={1}>
+              {servidorActual}
+            </Text>
+            <Text style={styles.serverPillAction}>Cambiar</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* MODAL CONFIGURACIÓN DE SERVIDOR */}
+      <Modal visible={modalServidorVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Globe size={20} color="#0284c7" />
+                <Text style={styles.modalTitle}>Configurar Servidor</Text>
+              </View>
+              <TouchableOpacity onPress={() => setModalServidorVisible(false)}>
+                <X size={20} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalDesc}>
+              Si estás en el SENA o en otra red, pega aquí la URL del túnel público (ej: localtunnel o ngrok) o el IP de tu computadora:
+            </Text>
+
+            <TextInput 
+              style={styles.modalInput} 
+              placeholder="https://tu-tunel.loca.lt"
+              value={inputUrlServidor}
+              onChangeText={setInputUrlServidor}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <TouchableOpacity 
+              style={styles.saveBtn} 
+              onPress={() => probarYGuardarServidor(inputUrlServidor)}
+              disabled={probandoConexion}
+            >
+              {probandoConexion ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.saveBtnText}>Guardar y Probar Conexión</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.resetBtn} 
+              onPress={restaurarDeteccionAuto}
+            >
+              <RotateCcw size={16} color="#475569" style={{ marginRight: 6 }} />
+              <Text style={styles.resetBtnText}>Restaurar Detección Wi-Fi Automática</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -173,5 +282,98 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  serverPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginTop: 20,
+    gap: 8,
+  },
+  serverPillText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#0369a1',
+    fontWeight: '600',
+  },
+  serverPillAction: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#0284c7',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#0f172a',
+  },
+  modalDesc: {
+    fontSize: 13,
+    color: '#64748b',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  modalInput: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 48,
+    fontSize: 14,
+    color: '#0f172a',
+    marginBottom: 16,
+  },
+  saveBtn: {
+    backgroundColor: '#0284c7',
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  saveBtnText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  resetBtn: {
+    flexDirection: 'row',
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f5f9',
+  },
+  resetBtnText: {
+    color: '#475569',
+    fontWeight: '600',
+    fontSize: 13,
   },
 });

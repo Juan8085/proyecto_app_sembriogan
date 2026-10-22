@@ -63,10 +63,16 @@ export default function CatalogoScreen({ navigation }) {
       console.error('Error fetching signature', err);
     }
 
-    // Wompi Web Checkout Link sin redirect-url local para evitar bloqueo CloudFront 403
+    // Wompi Web Checkout Link
     const finalKey = (config.wompiPublicKey && config.wompiPublicKey !== 'undefined') ? config.wompiPublicKey : 'pub_test_ljKW2orNya3GoWqfTCl1wu6vOy50mnnh';
     let wompiUrl = `https://checkout.wompi.co/p/?public-key=${finalKey}&currency=COP&amount-in-cents=${amountInCents}&reference=${reference}`;
     
+    // Si la API está en un túnel público HTTPS (localtunnel o ngrok), Wompi permite redirect-url para confirmación automática
+    if (API_URL.startsWith('https://')) {
+      const redirectUrl = `${API_URL}/api/pagos/confirmar-wompi?prodId=${producto._id}&cantidad=1`;
+      wompiUrl += `&redirect-url=${encodeURIComponent(redirectUrl)}`;
+    }
+
     // Add signature if successfully generated
     if (signature) {
       wompiUrl += `&signature:integrity=${signature}`;
