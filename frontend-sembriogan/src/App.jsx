@@ -13,7 +13,7 @@ function GlobalInactivityWatcher() {
 }
 
 function App() {
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "220138760087-placeholder.apps.googleusercontent.com"; // Reemplazar con el Client ID real
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "139804712217-bbb21in6u732p325tlib9n6nq4oui3lj.apps.googleusercontent.com";
 
   return (
     <GoogleOAuthProvider clientId={googleClientId}>

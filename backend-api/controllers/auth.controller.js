@@ -87,16 +87,25 @@ const loginUsuario = async (req, res) => {
 // 3. NUEVO: AUTENTICACIÓN / REGISTRO CON GOOGLE
 const googleLogin = async (req, res) => {
     try {
-        const { token } = req.body; // Token de Google enviado desde el frontend
+        const { token, userInfo } = req.body; // Token o UserInfo de Google enviado desde el frontend
 
-        // Verificar el token con la API de Google
-        const ticket = await client.verifyIdToken({
-            idToken: token,
-            audience: process.env.GOOGLE_CLIENT_ID
-        });
-        
-        const payload = ticket.getPayload();
-        const { name, email } = payload;
+        let name, email;
+
+        if (userInfo && userInfo.email) {
+            name = userInfo.name || userInfo.email.split('@')[0];
+            email = userInfo.email;
+        } else if (token) {
+            // Verificar el token con la API de Google
+            const ticket = await client.verifyIdToken({
+                idToken: token,
+                audience: process.env.GOOGLE_CLIENT_ID
+            });
+            const payload = ticket.getPayload();
+            name = payload.name;
+            email = payload.email;
+        } else {
+            return res.status(400).json({ success: false, mensaje: "Datos de Google no proporcionados" });
+        }
 
         // Comprobar si el usuario ya se encuentra registrado
         let usuario = await Usuario.findOne({ email });
