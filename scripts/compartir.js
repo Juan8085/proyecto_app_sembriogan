@@ -26,9 +26,7 @@ console.log('===========================================================\n');
 
 // 0.1 Limpieza preventiva de puertos anteriores (3000, 5173, 5174)
 try {
-  if (process.platform === 'win32') {
-    execSync('powershell -Command "3000, 5173, 5174 | ForEach-Object { Get-NetTCPConnection -LocalPort $_ -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue } }"', { stdio: 'ignore' });
-  }
+  execSync('npx --yes kill-port 3000 5173 5174', { stdio: 'ignore' });
 } catch (e) {}
 
 // 1. Iniciar Backend (Puerto 3000)
