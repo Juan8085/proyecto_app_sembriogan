@@ -89,12 +89,18 @@ setTimeout(async () => {
 
 }, 4500);
 
+let keepAliveTimer = null;
+
 async function iniciarTunelProgramatico(tunnelPassword) {
   if (isShuttingDown) return;
 
   try {
     if (activeTunnel) {
       try { activeTunnel.close(); } catch (e) {}
+    }
+    if (keepAliveTimer) {
+      clearInterval(keepAliveTimer);
+      keepAliveTimer = null;
     }
 
     activeTunnel = await localtunnel({
@@ -103,11 +109,20 @@ async function iniciarTunelProgramatico(tunnelPassword) {
       subdomain: 'sembriogan-app'
     });
 
+    // Si el servidor loca.lt asignó un subdominio aleatorio temporal mientras libera el oficial
+    if (activeTunnel.url !== 'https://sembriogan-app.loca.lt') {
+      console.log(`\n⏳ Servidor loca.lt liberando subdominio oficial (asignó temporalmente ${activeTunnel.url})...`);
+      console.log(`   Reclamando https://sembriogan-app.loca.lt en 6 segundos...`);
+      try { activeTunnel.close(); } catch (e) {}
+      setTimeout(() => iniciarTunelProgramatico(tunnelPassword), 6000);
+      return;
+    }
+
     console.log('\n===========================================================');
     console.log('🎉 ¡PROYECTO LISTO Y COMPARTIDO CON ÉXITO!');
     console.log('===========================================================');
-    console.log(`\n🌍 ENLACE PÚBLICO:`);
-    console.log(`   👉 \x1b[32m\x1b[1m${activeTunnel.url}\x1b[0m`);
+    console.log(`\n🌍 ENLACE PÚBLICO OFICIAL:`);
+    console.log(`   👉 \x1b[32m\x1b[1mhttps://sembriogan-app.loca.lt\x1b[0m`);
     if (tunnelPassword) {
       console.log(`\n🔑 Contraseña del túnel (si la página te la pide al entrar):`);
       console.log(`   👉 \x1b[33m\x1b[1m${tunnelPassword}\x1b[0m (y clic en "Click to Submit")`);
@@ -117,9 +132,20 @@ async function iniciarTunelProgramatico(tunnelPassword) {
     console.log('\n===========================================================');
     console.log('💡 Presiona Ctrl + C en cualquier momento para detener todo.\n');
 
+    // Keep-alive continuo cada 20 segundos para evitar que loca.lt cierre el túnel por inactividad (Error 503)
+    keepAliveTimer = setInterval(() => {
+      if (isShuttingDown || !activeTunnel) return;
+      https.get('https://sembriogan-app.loca.lt', (res) => {
+        // Ping exitoso para mantener el socket caliente
+      }).on('error', () => {
+        // Silenciar errores temporales de ping
+      });
+    }, 20000);
+
     activeTunnel.on('close', () => {
       if (!isShuttingDown) {
-        console.log('\n⚠️ Túnel desconectado por inactividad. Reconectando en 3s...');
+        console.log('\n⚠️ Túnel desconectado por el servidor remoto. Reconectando en 3s...');
+        if (keepAliveTimer) clearInterval(keepAliveTimer);
         setTimeout(() => iniciarTunelProgramatico(tunnelPassword), 3000);
       }
     });
@@ -127,14 +153,16 @@ async function iniciarTunelProgramatico(tunnelPassword) {
     activeTunnel.on('error', (err) => {
       if (!isShuttingDown) {
         console.log('\n⚠️ Reconectando túnel...', err.message);
+        if (keepAliveTimer) clearInterval(keepAliveTimer);
         setTimeout(() => iniciarTunelProgramatico(tunnelPassword), 3000);
       }
     });
 
   } catch (err) {
     if (!isShuttingDown) {
-      console.log('⚠️ Reintentando conexión con loca.lt en 4s...', err.message);
-      setTimeout(() => iniciarTunelProgramatico(tunnelPassword), 4000);
+      console.log('⚠️ Reintentando conexión con loca.lt en 5s...', err.message);
+      if (keepAliveTimer) clearInterval(keepAliveTimer);
+      setTimeout(() => iniciarTunelProgramatico(tunnelPassword), 5000);
     }
   }
 }
@@ -142,6 +170,9 @@ async function iniciarTunelProgramatico(tunnelPassword) {
 function cleanup() {
   isShuttingDown = true;
   console.log('\nApagando servidores y túnel...');
+  if (keepAliveTimer) {
+    clearInterval(keepAliveTimer);
+  }
   if (activeTunnel) {
     try { activeTunnel.close(); } catch (e) {}
   }

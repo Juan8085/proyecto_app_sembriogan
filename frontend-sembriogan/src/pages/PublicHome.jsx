@@ -411,8 +411,19 @@ export default function PublicHome() {
   };
 
   const handleClickGoogle = () => {
-    if (/^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname)) {
-      alert(`💡 Por políticas de seguridad, Google no permite autenticación desde direcciones IP numéricas (${window.location.hostname}).\n\nPor favor:\n1. Inicia sesión con Correo y Contraseña aquí en el formulario, o\n2. Ingresa a la plataforma usando el enlace seguro: https://sembriogan-app.loca.lt`);
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isOfficialDomain = window.location.hostname === 'sembriogan-app.loca.lt';
+
+    if (!isLocalhost && !isOfficialDomain) {
+      alert(
+        `💡 El botón de Google está configurado exclusivamente para el enlace oficial de Sembriogan:\n\n` +
+        `👉 https://sembriogan-app.loca.lt\n` +
+        `(O http://localhost:5173 en este equipo)\n\n` +
+        `Desde cualquier otro enlace o dirección IP, Google bloquea el acceso por seguridad (Error 400: redirect_uri_mismatch).\n\n` +
+        `Por favor:\n` +
+        `1. Abre https://sembriogan-app.loca.lt para usar el botón de Google, o\n` +
+        `2. Inicia sesión con tu Correo y Contraseña en este formulario (funciona en cualquier lugar).`
+      );
       return;
     }
 
@@ -1276,13 +1287,13 @@ export default function PublicHome() {
             <button onClick={() => setIsAuthOpen(false)} className="absolute top-5 right-5 text-slate-400 hover:text-slate-700"><X size={20}/></button>
             <div className="text-center mb-6"><h3 className="text-2xl font-black text-slate-800">{authMode === 'login' ? 'Bienvenido' : 'Crear Cuenta'}</h3></div>
 
-            {/^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname) && (
+            {(!['localhost', '127.0.0.1', 'sembriogan-app.loca.lt'].includes(window.location.hostname)) && (
               <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-3 text-xs mb-4 text-left shadow-xs">
                 <p className="font-bold flex items-center gap-1.5">
-                  <span>💡</span> Navegando por IP ({window.location.hostname})
+                  <span>💡</span> Navegando desde {window.location.hostname}
                 </p>
                 <p className="text-[11px] text-amber-800 mt-1 leading-relaxed">
-                  Por seguridad, Google no permite su botón desde IPs numéricas. <strong>Inicia sesión con tu Correo y Contraseña</strong> aquí abajo (funciona en cualquier equipo), o abre <strong>https://sembriogan-app.loca.lt</strong> para usar el botón de Google.
+                  Por políticas de Google, su botón solo opera en <strong>https://sembriogan-app.loca.lt</strong> o <strong>localhost</strong>. En esta ventana puedes <strong>iniciar sesión directamente con tu Correo y Contraseña</strong> aquí abajo (funciona siempre).
                 </p>
               </div>
             )}
