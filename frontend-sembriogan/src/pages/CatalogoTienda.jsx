@@ -319,10 +319,9 @@ export default function CatalogoTienda() {
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-600 selection:text-white flex flex-col justify-between">
       
       {/* ============================================================ */}
-      {/* BARRA DE NAVEGACIÓN SUPERIOR (FLOTANTE GLASS)                */}
-      {/* ============================================================ */}
+      {/* BARRA DE NAVEGACIÓN SUPERIOR (FLOTANTE GLASS) */}
       <header className="fixed top-3 md:top-5 inset-x-3 md:inset-x-8 z-50 transition-all duration-300">
-        <div className="bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-3xl shadow-xl shadow-slate-900/5 px-4 md:px-6 py-2.5 md:py-3 flex items-center justify-between max-w-7xl mx-auto">
+        <div className="bg-white/75 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-xl shadow-slate-900/5 px-4 md:px-6 py-2.5 md:py-3 flex items-center justify-between max-w-7xl mx-auto">
           
           {/* Logo y Enlace a Inicio */}
           <Link to="/" className="flex items-center gap-2 group">
@@ -334,22 +333,22 @@ export default function CatalogoTienda() {
           </Link>
 
           {/* Menú Desktop */}
-          <nav className="hidden lg:flex items-center bg-slate-100/80 p-1 rounded-full border border-slate-200/60 backdrop-blur-sm text-sm gap-1">
+          <nav className="hidden lg:flex items-center bg-white/40 backdrop-blur-md p-1 rounded-full border border-white/50 text-sm gap-1">
             <Link 
               to="/" 
-              className="px-4 py-1.5 rounded-full font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/70 transition"
+              className="px-4 py-1.5 rounded-full font-semibold text-slate-700 hover:text-blue-600 hover:bg-white/70 transition"
             >
               Inicio
             </Link>
             <Link 
               to="/#nosotros" 
-              className="px-4 py-1.5 rounded-full font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/70 transition"
+              className="px-4 py-1.5 rounded-full font-semibold text-slate-700 hover:text-blue-600 hover:bg-white/70 transition"
             >
               Nosotros
             </Link>
             <Link 
               to="/#historias" 
-              className="px-4 py-1.5 rounded-full font-semibold text-slate-600 hover:text-slate-900 hover:bg-white/70 transition"
+              className="px-4 py-1.5 rounded-full font-semibold text-slate-700 hover:text-blue-600 hover:bg-white/70 transition"
             >
               Historias
             </Link>
@@ -360,11 +359,11 @@ export default function CatalogoTienda() {
               Tienda Oficial
             </Link>
             
-            <div className="h-4 w-px bg-slate-200 mx-1"></div>
+            <div className="h-4 w-px bg-white/60 mx-1"></div>
 
             <Link 
               to="/admin" 
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs text-slate-700 bg-white/90 hover:bg-white border border-slate-200/80 shadow-xs hover:text-blue-600 hover:border-blue-200 transition"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs text-slate-800 bg-white/80 hover:bg-white border border-white/60 shadow-xs hover:text-blue-600 hover:border-blue-200 transition"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               Admin
@@ -376,7 +375,7 @@ export default function CatalogoTienda() {
             {/* Botón Carrito */}
             <button 
               onClick={() => setIsCartOpen(true)} 
-              className="relative bg-slate-50 border border-slate-200/80 p-2.5 rounded-2xl hover:bg-slate-100 transition text-slate-700 flex items-center justify-center group shadow-xs"
+              className="relative bg-white/50 hover:bg-white/80 backdrop-blur-md border border-white/60 p-2.5 rounded-2xl transition text-slate-800 flex items-center justify-center group shadow-xs"
               title="Ver Carrito de Compras"
             >
               <ShoppingCart size={19} className="group-hover:scale-110 transition-transform text-slate-700" />

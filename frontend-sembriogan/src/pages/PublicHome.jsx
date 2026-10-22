@@ -397,12 +397,14 @@ export default function PublicHome() {
       <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-100/30 blur-[120px] -z-10 pointer-events-none"></div>
       <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-100/30 blur-[120px] -z-10 pointer-events-none"></div>
       
-      {/* HEADER FLOTANTE INTERACTIVO Y PROFESIONAL */}
+      {/* HEADER FLOTANTE INTERACTIVO Y PROFESIONAL CON VIDRIO ESMERILADO (GLASSMORPHISM) */}
       <header 
-        className={`fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-in-out w-[95%] max-w-7xl rounded-full border ${
+        className={`fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-in-out w-[95%] max-w-7xl border ${
+          isMobileNavOpen ? 'rounded-3xl' : 'rounded-full'
+        } ${
           isScrolled 
-            ? 'top-3 bg-white/95 backdrop-blur-2xl shadow-xl shadow-slate-900/10 py-2.5 px-5 md:px-7 border-slate-200/90 ring-1 ring-slate-900/5' 
-            : 'top-6 bg-white/85 backdrop-blur-xl shadow-lg shadow-slate-200/30 py-3.5 px-6 md:px-8 border-white/90'
+            ? 'top-3 bg-white/70 backdrop-blur-2xl shadow-xl shadow-slate-900/10 py-2.5 px-5 md:px-7 border-white/60 ring-1 ring-slate-900/5' 
+            : 'top-6 bg-white/20 backdrop-blur-xl shadow-2xl shadow-black/15 py-3 px-6 md:px-8 border-white/35 ring-1 ring-white/20 hover:bg-white/25'
         }`}
       >
         <div className="flex justify-between items-center w-full">
@@ -423,7 +425,7 @@ export default function PublicHome() {
           </a>
 
           {/* Navegación Desktop Tipo Píldora / Glass Segmented */}
-          <nav className="hidden lg:flex items-center bg-slate-100/80 p-1 rounded-full border border-slate-200/60 backdrop-blur-sm text-sm gap-1">
+          <nav className="hidden lg:flex items-center bg-white/30 backdrop-blur-md p-1 rounded-full border border-white/40 shadow-xs text-sm gap-1">
             {[
               { id: 'inicio', label: 'Inicio' },
               { id: 'nosotros', label: 'Nosotros' },
@@ -438,7 +440,7 @@ export default function PublicHome() {
                   className={`px-4 py-1.5 rounded-full font-semibold transition-all duration-200 relative ${
                     isActive 
                       ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' 
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                      : 'text-slate-800 hover:text-blue-600 hover:bg-white/60'
                   }`}
                 >
                   {item.label}
@@ -454,11 +456,11 @@ export default function PublicHome() {
               Tienda Completa
             </Link>
 
-            <div className="h-4 w-px bg-slate-200 mx-1"></div>
+            <div className="h-4 w-px bg-white/50 mx-1"></div>
 
             <Link 
               to="/admin" 
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs text-slate-700 bg-white/90 hover:bg-white border border-slate-200/80 shadow-xs hover:text-blue-600 hover:border-blue-200 transition"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs text-slate-800 bg-white/80 hover:bg-white border border-white/60 shadow-xs hover:text-blue-600 hover:border-blue-200 transition"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               Admin
@@ -470,10 +472,10 @@ export default function PublicHome() {
             {/* Botón Carrito */}
             <button 
               onClick={() => setIsCartOpen(true)} 
-              className="relative bg-slate-50/90 border border-slate-200/80 p-2.5 rounded-2xl hover:bg-slate-100 transition text-slate-700 flex items-center justify-center group shadow-xs"
+              className="relative bg-white/40 hover:bg-white/70 backdrop-blur-md border border-white/50 p-2.5 rounded-2xl transition text-slate-800 flex items-center justify-center group shadow-xs"
               title="Ver Carrito de Compras"
             >
-              <ShoppingCart size={19} className="group-hover:scale-110 transition-transform text-slate-700" />
+              <ShoppingCart size={19} className="group-hover:scale-110 transition-transform text-slate-800" />
               {carrito.length > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[10px] min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center font-bold shadow-md shadow-blue-500/30 ring-2 ring-white animate-bounce">
                   {carrito.reduce((sum, item) => sum + item.cantidad, 0)}
@@ -528,7 +530,7 @@ export default function PublicHome() {
             {/* Botón Hamburguesa Móvil */}
             <button 
               onClick={() => setIsMobileNavOpen(!isMobileNavOpen)} 
-              className="lg:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-2xl transition border border-slate-200/60"
+              className="lg:hidden p-2 text-slate-800 hover:bg-white/60 bg-white/30 backdrop-blur-md rounded-2xl transition border border-white/40"
               aria-label="Abrir menú"
             >
               {isMobileNavOpen ? <X size={20} /> : <Menu size={20} />}
@@ -546,7 +548,7 @@ export default function PublicHome() {
 
         {/* MENÚ MÓVIL DESPLEGABLE */}
         {isMobileNavOpen && (
-          <div className="lg:hidden mt-3 pt-3 pb-2 border-t border-slate-200/60 flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="lg:hidden mt-3 pt-3 pb-2 border-t border-white/30 flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
             {[
               { id: 'inicio', label: 'Inicio' },
               { id: 'nosotros', label: 'Nosotros' },
@@ -559,7 +561,7 @@ export default function PublicHome() {
                 className={`text-left px-4 py-2.5 rounded-xl font-semibold text-sm transition ${
                   activeSection === item.id 
                     ? 'bg-blue-600 text-white shadow-sm' 
-                    : 'text-slate-700 hover:bg-slate-100'
+                    : 'text-slate-800 hover:bg-white/40'
                 }`}
               >
                 {item.label}
@@ -576,7 +578,7 @@ export default function PublicHome() {
             <Link 
               to="/admin" 
               onClick={() => setIsMobileNavOpen(false)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-slate-800 bg-slate-100 hover:bg-slate-200 transition"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-slate-800 bg-white/70 hover:bg-white transition border border-white/40"
             >
               ⚙️ Acceso Panel Administrador
             </Link>
