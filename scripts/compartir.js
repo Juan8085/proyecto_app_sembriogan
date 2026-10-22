@@ -56,33 +56,65 @@ setTimeout(async () => {
 }, 4000);
 
 function iniciarTunel(tunnelPassword) {
-  const tunnel = spawn('npx', ['-y', 'localtunnel', '--port', '5173'], {
-    shell: true,
-  });
+  let isShuttingDown = false;
+  let currentTunnel = null;
+  let pingInterval = null;
 
-  tunnel.stdout.on('data', (data) => {
-    const text = data.toString();
-    const match = text.match(/https:\/\/[^\s]+/);
-    if (match) {
-      const publicUrl = match[0];
-      console.log('\n===========================================================');
-      console.log('🎉 ¡PROYECTO LISTO Y COMPARTIDO CON ÉXITO!');
-      console.log('===========================================================');
-      console.log(`\n🌍 ENLACE PÚBLICO (Para abrir en cualquier celular o equipo):`);
-      console.log(`   👉 \x1b[32m\x1b[1m${publicUrl}\x1b[0m`);
-      if (tunnelPassword) {
-        console.log(`\n🔑 Contraseña del túnel (si la página te la pide al entrar):`);
-        console.log(`   👉 \x1b[33m\x1b[1m${tunnelPassword}\x1b[0m (y clic en "Click to Submit")`);
+  const start = () => {
+    if (isShuttingDown) return;
+    
+    // Subdominio fijo para que NUNCA cambie la URL ni toque reconfigurar Google Cloud
+    currentTunnel = spawn('npx', ['-y', 'localtunnel', '--port', '5173', '--subdomain', 'sembriogan-app'], {
+      shell: true,
+    });
+
+    currentTunnel.stdout.on('data', (data) => {
+      const text = data.toString();
+      const match = text.match(/https:\/\/[^\s]+/);
+      if (match) {
+        const publicUrl = match[0];
+        console.log('\n===========================================================');
+        console.log('🎉 ¡PROYECTO LISTO Y COMPARTIDO CON ÉXITO!');
+        console.log('===========================================================');
+        console.log(`\n🌍 ENLACE PÚBLICO FIJO (Para abrir en cualquier celular o equipo):`);
+        console.log(`   👉 \x1b[32m\x1b[1m${publicUrl}\x1b[0m`);
+        if (tunnelPassword) {
+          console.log(`\n🔑 Contraseña del túnel (si la página te la pide al entrar):`);
+          console.log(`   👉 \x1b[33m\x1b[1m${tunnelPassword}\x1b[0m (y clic en "Click to Submit")`);
+        }
+        console.log(`\n📶 ENLACE DE RED LOCAL (Para la misma red Wi-Fi en el SENA / Casa):`);
+        console.log(`   👉 \x1b[36mhttp://${localIP}:5173\x1b[0m (Sin túnel ni contraseñas)`);
+        console.log('\n===========================================================');
+        console.log('💡 Presiona Ctrl + C en cualquier momento para detener todo.\n');
+
+        // Keep-alive: Pings regulares cada 30 segundos para evitar que loca.lt cierre el túnel por inactividad
+        if (pingInterval) clearInterval(pingInterval);
+        pingInterval = setInterval(() => {
+          https.get(publicUrl, () => {}).on('error', () => {});
+        }, 30000);
       }
-      console.log(`\n📶 ENLACE DE RED LOCAL (Para la misma red Wi-Fi en el SENA / Casa):`);
-      console.log(`   👉 \x1b[36mhttp://${localIP}:5173\x1b[0m (Sin túnel ni contraseñas)`);
-      console.log('\n===========================================================');
-      console.log('💡 Presiona Ctrl + C en cualquier momento para detener todo.\n');
-    }
-  });
+    });
 
-  tunnel.stderr.on('data', (data) => {
-    // Silencioso
+    currentTunnel.on('close', (code) => {
+      if (!isShuttingDown) {
+        console.log('\n⚠️ Túnel desconectado temporalmente por inactividad. Reconectando automáticamente...');
+        setTimeout(start, 2000);
+      }
+    });
+
+    currentTunnel.on('error', () => {
+      if (!isShuttingDown) {
+        setTimeout(start, 3000);
+      }
+    });
+  };
+
+  start();
+
+  process.on('SIGINT', () => {
+    isShuttingDown = true;
+    if (pingInterval) clearInterval(pingInterval);
+    if (currentTunnel) currentTunnel.kill();
   });
 }
 
