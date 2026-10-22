@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, FlatList, Alert, Modal, RefreshControl, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView, Linking } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '../config/api';
-import { LogOut, Bell, CloudOff, RefreshCw, CheckCircle, Edit3, X, Save, MessageCircle, Share2 } from 'lucide-react-native';
+import { API_URL, getApiUrl, setCustomApiUrl, getDefaultApiUrl, initApiUrl } from '../config/api';
+import { LogOut, Bell, CloudOff, RefreshCw, CheckCircle, Edit3, X, Save, MessageCircle, Share2, Server, Globe, RotateCcw } from 'lucide-react-native';
 
 export default function DashboardScreen({ navigation }) {
   const [procedimientos, setProcedimientos] = useState([]);
@@ -19,17 +19,66 @@ export default function DashboardScreen({ navigation }) {
   const [novedadesTexto, setNovedadesTexto] = useState('');
   const [guardandoGestion, setGuardandoGestion] = useState(false);
 
+  // Estados para configuración de servidor
+  const [servidorActual, setServidorActual] = useState(API_URL);
+  const [modalServidorVisible, setModalServidorVisible] = useState(false);
+  const [inputUrlServidor, setInputUrlServidor] = useState('');
+  const [probandoConexion, setProbandoConexion] = useState(false);
+  const [servidorConectado, setServidorConectado] = useState(true);
+
+  useEffect(() => {
+    initApiUrl().then(url => setServidorActual(url));
+  }, []);
+
+  const probarYGuardarServidor = async (urlAProbar) => {
+    const urlLimpia = (urlAProbar || '').trim().replace(/\/$/, '');
+    if (!urlLimpia) {
+      Alert.alert('Error', 'Por favor ingresa una URL válida.');
+      return;
+    }
+
+    setProbandoConexion(true);
+    try {
+      const res = await fetch(`${urlLimpia}/api/configuracion`);
+      const data = await res.json();
+      if (data && data.success !== undefined) {
+        const nuevaUrl = await setCustomApiUrl(urlLimpia);
+        setServidorActual(nuevaUrl);
+        setServidorConectado(true);
+        setModalServidorVisible(false);
+        Alert.alert('✅ Conexión Exitosa', `Servidor configurado correctamente en:\n${nuevaUrl}`);
+        cargarProcedimientos();
+      } else {
+        Alert.alert('Aviso', 'El servidor respondió pero no es un backend de Sembriogan válido.');
+      }
+    } catch (e) {
+      Alert.alert('Error de Conexión', `No se pudo conectar a "${urlLimpia}". Verifica que el túnel o servidor esté encendido.`);
+    } finally {
+      setProbandoConexion(false);
+    }
+  };
+
+  const restaurarDeteccionAuto = async () => {
+    const defaultUrl = await setCustomApiUrl(null);
+    setServidorActual(defaultUrl);
+    setModalServidorVisible(false);
+    Alert.alert('🔄 Restaurado', `Se restauró la detección automática de Wi-Fi:\n${defaultUrl}`);
+    cargarProcedimientos();
+  };
+
   const cargarProcedimientos = async () => {
     setLoading(true);
     try {
       await sincronizarOffline();
 
+      const currentUrl = getApiUrl() || API_URL;
       const token = await SecureStore.getItemAsync('token');
-      const res = await fetch(`${API_URL}/api/registro-genetico`, {
+      const res = await fetch(`${currentUrl}/api/registro-genetico`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
       if (data.success) {
+        setServidorConectado(true);
         // Guardar copia local de caché para disponibilidad offline
         await AsyncStorage.setItem('cacheProcedimientos', JSON.stringify(data.data));
 
@@ -42,6 +91,7 @@ export default function DashboardScreen({ navigation }) {
         calcularAlertas(mergedData);
       }
     } catch (error) {
+      setServidorConectado(false);
       console.error('Modo Offline: Cargando caché local y pendientes');
       const cacheRaw = await AsyncStorage.getItem('cacheProcedimientos');
       const cacheData = cacheRaw ? JSON.parse(cacheRaw) : [];
@@ -70,10 +120,11 @@ export default function DashboardScreen({ navigation }) {
       let subidos = 0;
       let fallidos = [];
 
+      const currentUrl = getApiUrl() || API_URL;
       for (let reg of offlineData) {
         const { _id, isOffline, ...payload } = reg;
         try {
-          const res = await fetch(`${API_URL}/api/registro-genetico`, {
+          const res = await fetch(`${currentUrl}/api/registro-genetico`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(payload)
@@ -126,6 +177,9 @@ export default function DashboardScreen({ navigation }) {
 
     procs.forEach(proc => {
       if (proc.estadoPrenez === 'Preñada' || proc.estadoPrenez === 'Vacía') return;
+
+      let pasoActual = null;
+      let endpointPaso = null;
 
       const dia0 = new Date(proc.fechasProtocolo?.dia0_sincronizacion || proc.createdAt);
       dia0.setHours(0, 0, 0, 0);
@@ -198,8 +252,9 @@ export default function DashboardScreen({ navigation }) {
           text: 'Sí, Completar', 
           onPress: async () => {
             try {
+              const currentUrl = getApiUrl() || API_URL;
               const token = await SecureStore.getItemAsync('token');
-              const res = await fetch(`${API_URL}/api/registro-genetico/${idProcedimiento}/paso`, {
+              const res = await fetch(`${currentUrl}/api/registro-genetico/${idProcedimiento}/paso`, {
                 method: 'PUT',
                 headers: {
                   'Content-Type': 'application/json',
@@ -243,7 +298,8 @@ export default function DashboardScreen({ navigation }) {
       // Si no es un id offline, intentamos guardar en el servidor
       if (!selectedProc.isOffline) {
         try {
-          const res = await fetch(`${API_URL}/api/registro-genetico/${selectedProc._id}/prenez`, {
+          const currentUrl = getApiUrl() || API_URL;
+          const res = await fetch(`${currentUrl}/api/registro-genetico/${selectedProc._id}/prenez`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -406,10 +462,39 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
               </View>
             )}
           </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.iconButton} 
+            onPress={() => {
+              setInputUrlServidor(servidorActual);
+              setModalServidorVisible(true);
+            }}
+          >
+            <Server color="#0284c7" size={24} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
             <LogOut color="#ef4444" size={24} />
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Barra de Estado del Servidor */}
+      <View style={styles.serverBar}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
+          <View style={[styles.dotStatus, { backgroundColor: servidorConectado ? '#22c55e' : '#f59e0b' }]} />
+          <Text style={styles.serverBarText} numberOfLines={1}>
+            Servidor: <Text style={{ fontWeight: 'bold' }}>{servidorActual}</Text>
+          </Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.serverBarAction}
+          onPress={() => {
+            setInputUrlServidor(servidorActual);
+            setModalServidorVisible(true);
+          }}
+        >
+          <Globe size={14} color="#0284c7" />
+          <Text style={styles.serverBarActionText}>Cambiar</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -555,6 +640,61 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
                 <Text style={styles.whatsappActionText}>📲 Compartir Reporte Clínico WhatsApp</Text>
               </TouchableOpacity>
             </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Modal de Configuración de Servidor */}
+      <Modal visible={modalServidorVisible} animationType="slide" transparent={true}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Server color="#0284c7" size={22} />
+                <Text style={styles.modalTitle}>Conexión con el Servidor</Text>
+              </View>
+              <TouchableOpacity onPress={() => setModalServidorVisible(false)}>
+                <X color="#64748b" size={22} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalDesc}>
+              Si estás en el SENA, fuera de tu casa o en otra red, ingresa la dirección HTTPS del túnel de compartir (o la IP de tu PC):
+            </Text>
+
+            <TextInput
+              style={styles.modalInput}
+              placeholder="https://ejemplo.loca.lt o http://192.168.1.X:3000"
+              placeholderTextColor="#94a3b8"
+              value={inputUrlServidor}
+              onChangeText={setInputUrlServidor}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <TouchableOpacity 
+              style={[styles.saveBtn, probandoConexion && { opacity: 0.7 }]}
+              onPress={() => probarYGuardarServidor(inputUrlServidor)}
+              disabled={probandoConexion}
+            >
+              {probandoConexion ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.saveBtnText}>Guardar y Probar Conexión</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.resetBtn}
+              onPress={restaurarDeteccionAuto}
+              disabled={probandoConexion}
+            >
+              <RotateCcw size={16} color="#475569" style={{ marginRight: 6 }} />
+              <Text style={styles.resetBtnText}>Restaurar Detección Automática</Text>
+            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -891,5 +1031,85 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     marginLeft: 8,
-  }
+  },
+  serverBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  serverBarText: {
+    fontSize: 12,
+    color: '#334155',
+    flex: 1,
+  },
+  dotStatus: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  serverBarAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+  },
+  serverBarActionText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#0284c7',
+  },
+  modalDesc: {
+    fontSize: 13,
+    color: '#64748b',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  modalInput: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 48,
+    fontSize: 14,
+    color: '#0f172a',
+    marginBottom: 16,
+  },
+  saveBtn: {
+    backgroundColor: '#0284c7',
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  saveBtnText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  resetBtn: {
+    flexDirection: 'row',
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f5f9',
+  },
+  resetBtnText: {
+    color: '#475569',
+    fontWeight: '600',
+    fontSize: 13,
+  },
 });

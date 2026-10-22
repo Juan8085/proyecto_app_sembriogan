@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal, ActivityIndicator } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { API_URL, setCustomApiUrl, getDefaultApiUrl, initApiUrl } from '../config/api';
+import { API_URL, setCustomApiUrl, getDefaultApiUrl, initApiUrl, getApiUrl } from '../config/api';
 import { User, Lock, Globe, RotateCcw, X, CheckCircle2, Server } from 'lucide-react-native';
 
 export default function LoginScreen({ navigation }) {
@@ -35,8 +35,9 @@ export default function LoginScreen({ navigation }) {
     }
 
     setLoading(true);
+    const currentUrl = getApiUrl() || API_URL;
     try {
-      const res = await fetch(`${API_URL}/api/auth/login`, {
+      const res = await fetch(`${currentUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -58,7 +59,7 @@ export default function LoginScreen({ navigation }) {
       console.error(error);
       Alert.alert(
         'Error de conexión',
-        `No fue posible conectar con el servidor:\n${API_URL}\n\nSi estás en el SENA o fuera de tu casa, toca "Cambiar Servidor" para colocar el enlace del túnel público.`
+        `No fue posible conectar con el servidor:\n${currentUrl}\n\nSi estás en el SENA o fuera de tu casa, toca "Cambiar Servidor" para colocar el enlace del túnel público.`
       );
     } finally {
       setLoading(false);

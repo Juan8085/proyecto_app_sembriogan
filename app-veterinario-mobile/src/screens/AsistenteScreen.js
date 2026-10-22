@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard } from 'react-native';
-import { API_URL } from '../config/api';
+import { API_URL, getApiUrl } from '../config/api';
 import { Bot, Send, User } from 'lucide-react-native';
 
 export default function AsistenteScreen() {
@@ -32,7 +32,8 @@ export default function AsistenteScreen() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/ia/consultar`, {
+      const currentUrl = getApiUrl() || API_URL;
+      const res = await fetch(`${currentUrl}/api/ia/consultar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mensaje: userText, rol: 'veterinario' })

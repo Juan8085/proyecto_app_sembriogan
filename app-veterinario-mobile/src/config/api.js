@@ -7,7 +7,7 @@ const getDevServerHost = () => {
     const scriptURL = NativeModules?.SourceCode?.scriptURL;
     if (scriptURL) {
       const address = scriptURL.split('://')[1]?.split('/')[0]?.split(':')[0];
-      if (address && address !== 'localhost' && address !== '127.0.0.1') {
+      if (address && address !== 'localhost' && address !== '127.0.0.1' && address !== '10.0.2.2') {
         return address;
       }
     }
@@ -17,15 +17,15 @@ const getDevServerHost = () => {
 
 const devHost = getDevServerHost();
 
+// IP por defecto de la computadora en la red Wi-Fi
 export const getDefaultApiUrl = () => {
   if (devHost) return `http://${devHost}:3000`;
-  if (Platform.OS === 'android') return 'http://10.0.2.2:3000';
-  return 'http://localhost:3000';
+  return 'http://192.168.1.105:3000';
 };
 
 export let API_URL = getDefaultApiUrl();
 
-// Inicializar desde almacenamiento local
+// Inicializar desde almacenamiento local (guarda túneles como https://xxxx.loca.lt)
 export const initApiUrl = async () => {
   try {
     const saved = await AsyncStorage.getItem('custom_api_url');
@@ -62,9 +62,12 @@ export const setCustomApiUrl = async (newUrl) => {
   }
 };
 
+export const getApiUrl = () => API_URL;
+
 export default {
   API_URL,
   getDefaultApiUrl,
   initApiUrl,
-  setCustomApiUrl
+  setCustomApiUrl,
+  getApiUrl
 };

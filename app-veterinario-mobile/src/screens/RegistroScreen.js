@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { API_URL } from '../config/api';
+import { API_URL, getApiUrl } from '../config/api';
 import { ArrowLeft, Save } from 'lucide-react-native';
 
 export default function RegistroScreen({ navigation }) {
@@ -36,7 +36,8 @@ export default function RegistroScreen({ navigation }) {
       };
 
       try {
-        const res = await fetch(`${API_URL}/api/registro-genetico`, {
+        const currentUrl = getApiUrl() || API_URL;
+        const res = await fetch(`${currentUrl}/api/registro-genetico`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

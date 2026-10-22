@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicator, Linking, Modal } from 'react-native';
-import { API_URL } from '../config/api';
-import { ShoppingBag, CheckCircle, ExternalLink, X, CreditCard } from 'lucide-react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicator, Linking, Modal, TextInput } from 'react-native';
+import { API_URL, getApiUrl, setCustomApiUrl, getDefaultApiUrl, initApiUrl } from '../config/api';
+import { ShoppingBag, CheckCircle, ExternalLink, X, CreditCard, Server, Globe, RotateCcw } from 'lucide-react-native';
 
 export default function CatalogoScreen({ navigation }) {
   const [productos, setProductos] = useState([]);
@@ -10,10 +10,23 @@ export default function CatalogoScreen({ navigation }) {
   const [pagoPendiente, setPagoPendiente] = useState(null);
   const [verificandoPago, setVerificandoPago] = useState(false);
 
+  // Estados para configuración de servidor
+  const [servidorActual, setServidorActual] = useState(API_URL);
+  const [modalServidorVisible, setModalServidorVisible] = useState(false);
+  const [inputUrlServidor, setInputUrlServidor] = useState('');
+  const [probandoConexion, setProbandoConexion] = useState(false);
+
   useEffect(() => {
-    cargarDatos();
-    const unsubscribe = navigation?.addListener?.('focus', () => {
+    initApiUrl().then(url => {
+      setServidorActual(url);
       cargarDatos();
+    });
+
+    const unsubscribe = navigation?.addListener?.('focus', () => {
+      initApiUrl().then(url => {
+        setServidorActual(url);
+        cargarDatos();
+      });
     });
     return unsubscribe;
   }, [navigation]);
@@ -21,9 +34,10 @@ export default function CatalogoScreen({ navigation }) {
   const cargarDatos = async () => {
     setLoading(true);
     try {
+      const currentUrl = getApiUrl() || API_URL;
       const [resCat, resConf] = await Promise.all([
-        fetch(`${API_URL}/api/catalogo`),
-        fetch(`${API_URL}/api/configuracion`)
+        fetch(`${currentUrl}/api/catalogo`),
+        fetch(`${currentUrl}/api/configuracion`)
       ]);
       const dataCat = await resCat.json();
       const dataConf = await resConf.json();
@@ -37,7 +51,44 @@ export default function CatalogoScreen({ navigation }) {
     }
   };
 
+  const probarYGuardarServidor = async (urlAProbar) => {
+    const urlLimpia = (urlAProbar || '').trim().replace(/\/$/, '');
+    if (!urlLimpia) {
+      Alert.alert('Error', 'Por favor ingresa una URL válida.');
+      return;
+    }
+
+    setProbandoConexion(true);
+    try {
+      const res = await fetch(`${urlLimpia}/api/configuracion`);
+      const data = await res.json();
+      if (data && data.success !== undefined) {
+        const nuevaUrl = await setCustomApiUrl(urlLimpia);
+        setServidorActual(nuevaUrl);
+        setModalServidorVisible(false);
+        Alert.alert('✅ Conexión Exitosa', `Servidor configurado correctamente en:\n${nuevaUrl}`);
+        cargarDatos();
+      } else {
+        Alert.alert('Aviso', 'El servidor respondió pero no es un backend de Sembriogan válido.');
+      }
+    } catch (e) {
+      Alert.alert('Error de Conexión', `No se pudo conectar a "${urlLimpia}". Verifica que el túnel o servidor esté encendido.`);
+    } finally {
+      setProbandoConexion(false);
+    }
+  };
+
+  const restaurarDeteccionAuto = async () => {
+    const defaultUrl = await setCustomApiUrl(null);
+    setServidorActual(defaultUrl);
+    setModalServidorVisible(false);
+    Alert.alert('🔄 Restaurado', `Se restauró la detección automática de Wi-Fi:\n${defaultUrl}`);
+    cargarDatos();
+  };
+
   const generarPagoWompi = async (producto) => {
+    const currentUrl = getApiUrl() || API_URL;
+
     if (!config || !config.wompiPublicKey) {
       Alert.alert('Error', 'El sistema de pagos no está configurado (Falta Llave Pública).');
       return;
@@ -50,7 +101,7 @@ export default function CatalogoScreen({ navigation }) {
     // Fetch signature from backend to comply with Wompi's Integrity requirement
     let signature = '';
     try {
-      const res = await fetch(`${API_URL}/api/configuracion/generar-firma`, {
+      const res = await fetch(`${currentUrl}/api/configuracion/generar-firma`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reference, amountInCents, currency: 'COP' })
@@ -68,8 +119,8 @@ export default function CatalogoScreen({ navigation }) {
     let wompiUrl = `https://checkout.wompi.co/p/?public-key=${finalKey}&currency=COP&amount-in-cents=${amountInCents}&reference=${reference}`;
     
     // Si la API está en un túnel público HTTPS (localtunnel o ngrok), Wompi permite redirect-url para confirmación automática
-    if (API_URL.startsWith('https://')) {
-      const redirectUrl = `${API_URL}/api/pagos/confirmar-wompi?prodId=${producto._id}&cantidad=1`;
+    if (currentUrl.startsWith('https://')) {
+      const redirectUrl = `${currentUrl}/api/pagos/confirmar-wompi?ref=${reference}&prodId=${producto._id}&cantidad=1`;
       wompiUrl += `&redirect-url=${encodeURIComponent(redirectUrl)}`;
     }
 
@@ -98,7 +149,8 @@ export default function CatalogoScreen({ navigation }) {
     setVerificandoPago(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/pagos/verificar-transaccion`, {
+      const currentUrl = getApiUrl() || API_URL;
+      const res = await fetch(`${currentUrl}/api/pagos/verificar-transaccion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -132,10 +184,12 @@ export default function CatalogoScreen({ navigation }) {
     }
   };
 
+  const currentUrl = getApiUrl() || API_URL;
+
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <Image 
-        source={{ uri: item.imagen ? (item.imagen.startsWith('http') ? item.imagen : `${API_URL}${item.imagen}`) : 'https://via.placeholder.com/150?text=Sembriogan' }} 
+        source={{ uri: item.imagen ? (item.imagen.startsWith('http') ? item.imagen : `${currentUrl}${item.imagen}`) : 'https://via.placeholder.com/150?text=Sembriogan' }} 
         style={styles.image} 
         resizeMode="cover"
       />
@@ -144,20 +198,36 @@ export default function CatalogoScreen({ navigation }) {
           <Text style={[styles.title, { flex: 1, marginRight: 8 }]}>{item.tipo || item.nombre}</Text>
           <View style={[styles.typeBadge, item.esServicio ? styles.serviceBadge : styles.productBadge]}>
             <Text style={[styles.typeBadgeText, item.esServicio ? styles.serviceBadgeText : styles.productBadgeText]}>
-              {item.esServicio ? 'Servicio' : `Stock: ${item.stock}`}
+              {item.esServicio ? 'Servicio' : 'Producto'}
             </Text>
           </View>
         </View>
-        <Text style={styles.raza}>{item.descripcion || item.categoria || 'Sin descripción'}</Text>
-        <Text style={styles.price}>
-          ${new Intl.NumberFormat('es-CO').format(item.costo)} COP
+        
+        <Text style={styles.description} numberOfLines={2}>
+          {item.descripcion || 'Sin descripción disponible'}
         </Text>
+        
+        <View style={styles.metaRow}>
+          <Text style={styles.price}>
+            ${new Intl.NumberFormat('es-CO').format(item.costo || 0)} COP
+          </Text>
+          
+          {!item.esServicio && (
+            <Text style={[styles.stock, item.stock <= 5 ? styles.stockLow : styles.stockOk]}>
+              Stock: {item.stock || 0}
+            </Text>
+          )}
+        </View>
+
         <TouchableOpacity 
-          style={[styles.buyButton, (!item.esServicio && item.stock <= 0) && { backgroundColor: '#cbd5e1' }]}
+          style={[styles.buyButton, (!item.esServicio && item.stock <= 0) && styles.buyButtonDisabled]}
           onPress={() => generarPagoWompi(item)}
           disabled={!item.esServicio && item.stock <= 0}
         >
-          <Text style={styles.buyText}>{(!item.esServicio && item.stock <= 0) ? 'Agotado' : 'Generar Pago Wompi'}</Text>
+          <CreditCard color="#ffffff" size={16} />
+          <Text style={styles.buyButtonText}>
+            {(!item.esServicio && item.stock <= 0) ? 'Agotado' : 'Cobrar con Wompi'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -166,27 +236,100 @@ export default function CatalogoScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <ShoppingBag color="#0ea5e9" size={28} />
-        <Text style={styles.headerTitle}>Catálogo Móvil</Text>
+        <ShoppingBag color="#0ea5e9" size={28} style={{ marginRight: 12 }} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Catálogo de Ventas</Text>
+          <Text style={styles.headerSubtitle}>Productos y servicios veterinarios</Text>
+        </View>
       </View>
 
+      {/* Barra de Servidor / Red */}
+      <TouchableOpacity 
+        style={styles.serverBar} 
+        onPress={() => { setInputUrlServidor(servidorActual); setModalServidorVisible(true); }}
+      >
+        <Server size={14} color="#0284c7" />
+        <Text style={styles.serverBarText} numberOfLines={1}>
+          Servidor: {servidorActual}
+        </Text>
+        <Text style={styles.serverBarAction}>Cambiar</Text>
+      </TouchableOpacity>
+
       {loading ? (
-        <ActivityIndicator size="large" color="#0ea5e9" style={{ marginTop: 50 }} />
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#0ea5e9" />
+          <Text style={styles.loadingText}>Cargando catálogo...</Text>
+        </View>
       ) : (
         <FlatList
           data={productos}
-          keyExtractor={item => item._id}
+          keyExtractor={(item) => item._id}
           renderItem={renderItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No hay productos disponibles en este momento.</Text>
+            </View>
+          }
         />
       )}
 
-      {/* MODAL DE CONFIRMACIÓN DE PAGO WOMPI */}
+      {/* MODAL CONFIGURACIÓN DE SERVIDOR */}
+      <Modal visible={modalServidorVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Globe size={20} color="#0284c7" />
+                <Text style={styles.modalTitle}>Configurar Servidor</Text>
+              </View>
+              <TouchableOpacity onPress={() => setModalServidorVisible(false)}>
+                <X size={20} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalDesc}>
+              Si estás en el SENA o fuera de tu casa, pega aquí la URL del túnel público (ej: localtunnel o ngrok):
+            </Text>
+
+            <TextInput 
+              style={styles.modalInput} 
+              placeholder="https://tu-tunel.loca.lt"
+              value={inputUrlServidor}
+              onChangeText={setInputUrlServidor}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <TouchableOpacity 
+              style={styles.saveBtn} 
+              onPress={() => probarYGuardarServidor(inputUrlServidor)}
+              disabled={probandoConexion}
+            >
+              {probandoConexion ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.saveBtnText}>Guardar y Probar Conexión</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.resetBtn} 
+              onPress={restaurarDeteccionAuto}
+            >
+              <RotateCcw size={16} color="#475569" style={{ marginRight: 6 }} />
+              <Text style={styles.resetBtnText}>Restaurar Detección Wi-Fi Automática</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL DE CONFIRMACIÓN DE PAGO */}
       {pagoPendiente && (
-        <Modal transparent animationType="fade" visible={!!pagoPendiente}>
+        <Modal visible={true} transparent={true} animationType="fade">
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <CreditCard color="#0ea5e9" size={24} />
@@ -268,31 +411,57 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e2e8f0',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#0f172a',
-    marginLeft: 12,
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1e293b',
   },
-  list: {
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  serverBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#bae6fd',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  serverBarText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#0369a1',
+    fontWeight: '600',
+  },
+  serverBarAction: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#0284c7',
+  },
+  listContainer: {
     padding: 16,
-    paddingBottom: 100, // Espacio para el Tab Bar flotante
+    paddingBottom: 32,
   },
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
+    borderRadius: 16,
     marginBottom: 16,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#e2e8f0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 2,
   },
   image: {
     width: '100%',
-    height: 180,
+    height: 160,
+    backgroundColor: '#e2e8f0',
   },
   info: {
     padding: 16,
@@ -302,69 +471,108 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1e293b',
   },
-  raza: {
-    fontSize: 14,
-    color: '#64748b',
-    marginTop: 4,
-  },
-  price: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#10b981',
-    marginTop: 10,
-    marginBottom: 16,
-  },
-  buyButton: {
-    backgroundColor: '#0ea5e9',
-    padding: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  buyText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
   typeBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   serviceBadge: {
     backgroundColor: '#e0f2fe',
   },
   productBadge: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: '#fef3c7',
   },
   typeBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
   },
   serviceBadgeText: {
-    color: '#0284c7',
+    color: '#0369a1',
   },
   productBadgeText: {
-    color: '#15803d',
+    color: '#b45309',
   },
-  // Estilos del Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+  description: {
+    fontSize: 13,
+    color: '#64748b',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    paddingTop: 10,
+  },
+  price: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0ea5e9',
+  },
+  stock: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  stockOk: {
+    color: '#10b981',
+  },
+  stockLow: {
+    color: '#ef4444',
+  },
+  buyButton: {
+    backgroundColor: '#0ea5e9',
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 8,
+  },
+  buyButtonDisabled: {
+    backgroundColor: '#cbd5e1',
+  },
+  buyButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#64748b',
+    fontSize: 14,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#94a3b8',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
     padding: 20,
   },
-  modalContainer: {
-    width: '100%',
-    maxWidth: 380,
+  modalContent: {
     backgroundColor: '#ffffff',
-    borderRadius: 24,
-    padding: 22,
+    borderRadius: 20,
+    padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.25,
     shadowRadius: 20,
-    elevation: 8,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -373,9 +581,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   modalTitle: {
-    fontSize: 19,
-    fontWeight: '900',
-    color: '#0f172a',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e293b',
   },
   modalSubtitle: {
     fontSize: 13,
@@ -383,19 +591,62 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 16,
   },
+  modalDesc: {
+    fontSize: 13,
+    color: '#64748b',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  modalInput: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 48,
+    fontSize: 14,
+    color: '#0f172a',
+    marginBottom: 16,
+  },
+  saveBtn: {
+    backgroundColor: '#0284c7',
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  saveBtnText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  resetBtn: {
+    flexDirection: 'row',
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f5f9',
+  },
+  resetBtnText: {
+    color: '#475569',
+    fontWeight: '600',
+    fontSize: 13,
+  },
   productSummary: {
     backgroundColor: '#f8fafc',
+    borderRadius: 12,
     padding: 14,
-    borderRadius: 14,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginBottom: 18,
+    borderColor: '#f1f5f9',
   },
   summaryLabel: {
     fontSize: 11,
-    color: '#94a3b8',
-    fontWeight: '700',
+    color: '#64748b',
     textTransform: 'uppercase',
+    fontWeight: '700',
   },
   summaryValue: {
     fontSize: 15,
@@ -408,43 +659,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
     paddingVertical: 14,
-    borderRadius: 14,
+    borderRadius: 12,
+    gap: 8,
     marginBottom: 10,
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
   },
   confirmButtonText: {
     color: '#ffffff',
-    fontWeight: 'bold',
     fontSize: 15,
+    fontWeight: 'bold',
   },
   reopenButton: {
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1,
+    borderColor: '#bae6fd',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 6,
     paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: '#e0f2fe',
+    borderRadius: 12,
+    gap: 8,
     marginBottom: 10,
   },
   reopenButtonText: {
     color: '#0284c7',
-    fontWeight: 'bold',
     fontSize: 14,
+    fontWeight: '600',
   },
   cancelButton: {
-    alignItems: 'center',
     paddingVertical: 10,
+    alignItems: 'center',
   },
   cancelButtonText: {
     color: '#94a3b8',
     fontSize: 13,
-    fontWeight: '600',
-  }
+    fontWeight: '500',
+  },
 });
