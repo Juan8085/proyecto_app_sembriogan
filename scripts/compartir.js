@@ -64,7 +64,7 @@ function iniciarTunel(tunnelPassword) {
     if (isShuttingDown) return;
     
     // Subdominio fijo para que NUNCA cambie la URL ni toque reconfigurar Google Cloud
-    currentTunnel = spawn('npx', ['-y', 'localtunnel', '--port', '5173', '--subdomain', 'sembriogan-app'], {
+    currentTunnel = spawn('npx', ['-y', 'localtunnel', '--port', '5173', '--local-host', '127.0.0.1', '--subdomain', 'sembriogan-app'], {
       shell: true,
     });
 

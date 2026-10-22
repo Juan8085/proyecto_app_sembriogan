@@ -9,8 +9,28 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
-    host: true, // Escucha en 0.0.0.0 (red local y túneles)
-    allowedHosts: true, // Permite cualquier dominio de ngrok o túnel
+    host: '0.0.0.0', // Escucha en 0.0.0.0 (red local y túneles)
+    port: 5173,
+    strictPort: true,
+    allowedHosts: true, // Permite cualquier dominio de túnel
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/uploads': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 5173,
+    strictPort: true,
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
