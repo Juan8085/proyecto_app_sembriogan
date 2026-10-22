@@ -20,20 +20,41 @@ function App() {
     if (window.location.hash && window.location.hash.includes('access_token')) {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
-      if (accessToken && window.opener) {
-        window.opener.postMessage({ type: 'GOOGLE_AUTH_TOKEN', token: accessToken }, '*');
-        window.close();
+      if (accessToken) {
+        localStorage.setItem('google_access_token_temp', accessToken);
+        if (window.opener) {
+          try {
+            window.opener.postMessage({ type: 'GOOGLE_AUTH_TOKEN', token: accessToken }, '*');
+          } catch (e) {}
+        }
+        document.body.innerHTML = '<div style="font-family:sans-serif;text-align:center;padding:50px;"><h2>✅ ¡Inicio de sesión exitoso!</h2><p>Cerrando esta ventana automáticamente...</p></div>';
+        setTimeout(() => window.close(), 600);
       }
     }
 
-    // Escuchar el mensaje emitido por el popup
+    // Escuchar el mensaje emitido por el popup (postMessage)
     const handleMessage = (event) => {
       if (event.data?.type === 'GOOGLE_AUTH_TOKEN' && event.data.token) {
+        localStorage.removeItem('google_access_token_temp');
         window.dispatchEvent(new CustomEvent('sembriogan_google_token', { detail: event.data.token }));
       }
     };
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+
+    // Escuchar por evento storage (si window.opener fue bloqueado por políticas del navegador)
+    const handleStorage = (event) => {
+      if (event.key === 'google_access_token_temp' && event.newValue) {
+        const token = event.newValue;
+        localStorage.removeItem('google_access_token_temp');
+        window.dispatchEvent(new CustomEvent('sembriogan_google_token', { detail: token }));
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   return (

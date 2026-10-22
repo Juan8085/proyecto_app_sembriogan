@@ -347,35 +347,6 @@ export default function CatalogoTienda() {
       return;
     }
 
-    // 1. Intentar con Google Identity Services (GSI) si ya cargó en window.google
-    if (window.google?.accounts?.oauth2) {
-      try {
-        const tokenClient = window.google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: 'openid email profile',
-          callback: async (tokenResponse) => {
-            if (tokenResponse.error) {
-              console.error('Error Google OAuth:', tokenResponse);
-              alert('Error al autenticar con Google: ' + (tokenResponse.error_description || tokenResponse.error));
-              return;
-            }
-            if (tokenResponse.access_token) {
-              await procesarTokenGoogle(tokenResponse.access_token);
-            }
-          },
-          error_callback: (err) => {
-            console.warn('Google GSI error_callback, intentando popup directo:', err);
-            abrirGooglePopupDirecto();
-          }
-        });
-        tokenClient.requestAccessToken({ prompt: 'select_account' });
-        return;
-      } catch (e) {
-        console.warn('Fallo initTokenClient, usando fallback:', e);
-      }
-    }
-
-    // 2. Si GSI no está disponible o falló, abrir popup directo
     abrirGooglePopupDirecto();
   };
 
