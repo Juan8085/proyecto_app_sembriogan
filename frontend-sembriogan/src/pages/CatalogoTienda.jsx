@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
+import { API_BASE_URL, getApiUrl, getMediaUrl, GOOGLE_CLIENT_ID } from '../config/api';
 import { Link } from 'react-router-dom';
 import { GoogleLogin, useGoogleLogin } from '@react-oauth/google';
 import { 
@@ -277,47 +277,106 @@ export default function CatalogoTienda() {
     }
   };
 
-  const loginConGoogle = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        const resGoogle = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        });
-        const dataGoogle = await resGoogle.json();
-
-        const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userInfo: dataGoogle })
-        });
-        const data = await res.json();
-        if (data.success) {
-          setUserCliente(data.usuario);
-          if (data.token) localStorage.setItem('tokenSembriogan', data.token);
-          localStorage.setItem('clienteSembriogan', JSON.stringify(data.usuario));
-          localStorage.setItem('usuarioSembriogan', JSON.stringify(data.usuario));
-          setIsAuthOpen(false);
-          alert(`¡Bienvenido, ${data.usuario.nombre}!`);
-        } else {
-          alert('Error autenticando con Google: ' + data.mensaje);
-        }
-      } catch (error) {
-        console.error('Error Google:', error);
-        alert('Error de conexión con Google');
+  // Escuchar token emitido si se completó mediante popup directo
+  useEffect(() => {
+    const onToken = (e) => {
+      if (e.detail) {
+        procesarTokenGoogle(e.detail);
       }
-    },
-    onError: (error) => {
+    };
+    window.addEventListener('sembriogan_google_token', onToken);
+    return () => window.removeEventListener('sembriogan_google_token', onToken);
+  }, []);
+
+  const procesarTokenGoogle = async (accessToken) => {
+    try {
+      const resGoogle = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const dataGoogle = await resGoogle.json();
+
+      if (!dataGoogle || !dataGoogle.email) {
+        throw new Error('No se pudo obtener información de Google');
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userInfo: dataGoogle })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUserCliente(data.usuario);
+        if (data.token) localStorage.setItem('tokenSembriogan', data.token);
+        localStorage.setItem('clienteSembriogan', JSON.stringify(data.usuario));
+        localStorage.setItem('usuarioSembriogan', JSON.stringify(data.usuario));
+        setIsAuthOpen(false);
+        alert(`¡Bienvenido, ${data.usuario.nombre}!`);
+      } else {
+        alert('Error autenticando con Google: ' + data.mensaje);
+      }
+    } catch (error) {
       console.error('Error Google:', error);
-      alert('No se pudo abrir la ventana de Google. Si estás navegando por IP privada, usa https://sembriogan-app.loca.lt');
+      alert('Error de conexión con Google');
     }
-  });
+  };
+
+  const abrirGooglePopupDirecto = () => {
+    const redirectUri = window.location.origin;
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${encodeURIComponent(GOOGLE_CLIENT_ID)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=token&` +
+      `scope=${encodeURIComponent('openid email profile')}&` +
+      `prompt=select_account`;
+
+    const width = 500;
+    const height = 650;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    const popup = window.open(authUrl, 'GoogleLoginPopup', `width=${width},height=${height},left=${left},top=${top}`);
+
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      alert('⚠️ Tu navegador bloqueó la ventana emergente de Google.\n\nPor favor haz clic en el ícono de ventana bloqueada en tu barra de direcciones y selecciona "Permitir siempre ventanas emergentes".');
+    }
+  };
 
   const handleClickGoogle = () => {
     if (/^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname)) {
       alert(`💡 Por políticas de seguridad, Google no permite autenticación desde direcciones IP numéricas (${window.location.hostname}).\n\nPor favor:\n1. Inicia sesión con Correo y Contraseña aquí en el formulario, o\n2. Ingresa a la plataforma usando el enlace seguro: https://sembriogan-app.loca.lt`);
       return;
     }
-    loginConGoogle();
+
+    // 1. Intentar con Google Identity Services (GSI) si ya cargó en window.google
+    if (window.google?.accounts?.oauth2) {
+      try {
+        const tokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'openid email profile',
+          callback: async (tokenResponse) => {
+            if (tokenResponse.error) {
+              console.error('Error Google OAuth:', tokenResponse);
+              alert('Error al autenticar con Google: ' + (tokenResponse.error_description || tokenResponse.error));
+              return;
+            }
+            if (tokenResponse.access_token) {
+              await procesarTokenGoogle(tokenResponse.access_token);
+            }
+          },
+          error_callback: (err) => {
+            console.warn('Google GSI error_callback, intentando popup directo:', err);
+            abrirGooglePopupDirecto();
+          }
+        });
+        tokenClient.requestAccessToken({ prompt: 'select_account' });
+        return;
+      } catch (e) {
+        console.warn('Fallo initTokenClient, usando fallback:', e);
+      }
+    }
+
+    // 2. Si GSI no está disponible o falló, abrir popup directo
+    abrirGooglePopupDirecto();
   };
 
   // Filtrado de Productos

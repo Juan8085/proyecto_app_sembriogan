@@ -4,6 +4,8 @@
 
 const envApiUrl = import.meta.env.VITE_API_URL;
 
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '139804712217-bbb21in6u732p325tlib9n6nq4oui3lj.apps.googleusercontent.com';
+
 export const API_BASE_URL = (() => {
   if (envApiUrl) {
     return envApiUrl.replace(/\/$/, '');

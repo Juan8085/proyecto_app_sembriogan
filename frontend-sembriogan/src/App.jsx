@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { GOOGLE_CLIENT_ID } from './config/api';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import PublicHome from './pages/PublicHome';
@@ -13,10 +15,29 @@ function GlobalInactivityWatcher() {
 }
 
 function App() {
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "139804712217-bbb21in6u732p325tlib9n6nq4oui3lj.apps.googleusercontent.com";
+  useEffect(() => {
+    // Si la ventana actual es el popup de retorno de Google con el token en el hash
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      if (accessToken && window.opener) {
+        window.opener.postMessage({ type: 'GOOGLE_AUTH_TOKEN', token: accessToken }, '*');
+        window.close();
+      }
+    }
+
+    // Escuchar el mensaje emitido por el popup
+    const handleMessage = (event) => {
+      if (event.data?.type === 'GOOGLE_AUTH_TOKEN' && event.data.token) {
+        window.dispatchEvent(new CustomEvent('sembriogan_google_token', { detail: event.data.token }));
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   return (
-    <GoogleOAuthProvider clientId={googleClientId}>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <BrowserRouter>
         <GlobalInactivityWatcher />
         <Routes>
