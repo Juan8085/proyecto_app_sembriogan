@@ -25,7 +25,9 @@ import {
   Minus,
   ExternalLink,
   ShieldCheck,
-  Award
+  Award,
+  Printer,
+  CheckCircle2
 } from 'lucide-react';
 
 export default function CatalogoTienda() {
@@ -98,20 +100,33 @@ export default function CatalogoTienda() {
       const pendingCartRaw = localStorage.getItem('pendingWompiCart');
       const pendingCart = pendingCartRaw ? JSON.parse(pendingCartRaw) : null;
 
+      const verifyPayload = {
+        transactionId: wompiTxId,
+        reference: pendingCart?.reference,
+        items: pendingCart?.items,
+        cliente: pendingCart?.cliente,
+        total: pendingCart?.total
+      };
+
       fetch(`${API_BASE_URL}/api/pagos/verificar-transaccion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactionId: wompiTxId, pendingCart })
+        body: JSON.stringify(verifyPayload)
       })
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.status === 'APPROVED') {
-          alert('¡Pago completado con éxito! Tu pedido ha sido procesado.');
+        if (data.success) {
+          alert('✅ ¡Pago completado con éxito! Tu orden ha sido registrada en base de datos y el stock actualizado.');
           setCarrito([]);
           localStorage.removeItem('carritoSembriogan');
           localStorage.removeItem('pendingWompiCart');
           window.history.replaceState({}, document.title, window.location.pathname);
           cargarDatos();
+          if (pendingCart?.cliente?.email) {
+            fetch(`${API_BASE_URL}/api/ordenes?email=${pendingCart.cliente.email}`)
+              .then(r => r.json())
+              .then(d => { if (d.success) setMisOrdenesCliente(d.data); });
+          }
         }
       })
       .catch(console.error);
@@ -188,10 +203,9 @@ export default function CatalogoTienda() {
     const amountInCents = Math.round(totalCarrito * 100);
 
     let signature = '';
-    const apiBase = window.location.hostname === 'localhost' ? `${API_BASE_URL}` : `http://${window.location.hostname}:3000`;
     
     try {
-      const resSig = await fetch(`${apiBase}/api/configuracion/generar-firma`, {
+      const resSig = await fetch(`${API_BASE_URL}/api/configuracion/generar-firma`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reference: referenciaUnica, amountInCents, currency: 'COP' })
@@ -239,17 +253,47 @@ export default function CatalogoTienda() {
     };
 
     const checkout = new window.WidgetCheckout(checkoutConfig);
-    checkout.open((result) => {
-      const transaction = result.transaction;
-      if (transaction && transaction.status === 'APPROVED') {
-        alert('¡Transacción aprobada! Tu compra ha sido confirmada con éxito.');
-        setCarrito([]);
-        localStorage.removeItem('carritoSembriogan');
-        localStorage.removeItem('pendingWompiCart');
-        setIsCartOpen(false);
-        cargarDatos();
+    checkout.open(async (result) => {
+      const transaction = result?.transaction;
+      const status = transaction?.status;
+
+      if (transaction && (status === 'APPROVED' || status === 'PENDING')) {
+        try {
+          const verifyPayload = {
+            transactionId: transaction.id,
+            reference: transaction.reference || referenciaUnica,
+            cliente: { nombre: userCliente.nombre, email: userCliente.email },
+            items: carrito.map(item => ({ catalogoItem: item._id, tipo: item.tipo, costo: item.costo, cantidad: item.cantidad })),
+            total: totalCarrito
+          };
+          const res = await fetch(`${API_BASE_URL}/api/pagos/verificar-transaccion`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(verifyPayload)
+          });
+          const data = await res.json();
+          if (data.success) {
+            alert('✅ ¡Pago Exitoso!\nTu orden ha sido registrada en base de datos y el stock fue descontado.');
+            setCarrito([]);
+            setIsCartOpen(false);
+            localStorage.removeItem('pendingWompiCart');
+            localStorage.removeItem('carritoSembriogan');
+            cargarDatos();
+            // Refrescar órdenes de inmediato en el panel del cliente
+            fetch(`${API_BASE_URL}/api/ordenes?email=${userCliente.email}`)
+              .then(r => r.json())
+              .then(d => { if (d.success) setMisOrdenesCliente(d.data); });
+          } else {
+            alert('Aviso de pago: ' + (data.mensaje || 'Transacción procesada'));
+          }
+        } catch (err) {
+          console.error("Error al verificar orden:", err);
+          alert("Error de conexión al confirmar la orden.");
+        }
       } else if (transaction && transaction.status === 'DECLINED') {
         alert('La transacción fue rechazada por tu entidad bancaria. Por favor intenta con otro medio.');
+      } else if (transaction) {
+        alert('❌ La transacción no se completó. Estado: ' + transaction.status);
       }
     });
   };
@@ -959,6 +1003,149 @@ export default function CatalogoTienda() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* SECCIÓN: MIS PROCEDIMIENTOS GENÉTICOS */}
+              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mt-6">
+                <h4 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2"><Star size={18}/> Mis Procedimientos (Genética)</h4>
+                {misProcedimientosCliente.length === 0 ? (
+                  <p className="text-sm text-slate-500 py-4">No hay procedimientos genéticos vinculados a este correo.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {misProcedimientosCliente.map(proc => (
+                      <div key={proc._id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-2">
+                        <div className="flex justify-between items-start">
+                           <div>
+                             <p className="font-bold text-slate-800 text-sm">Chapeta: <span className="text-primary font-black">{proc.arete || proc.animalId}</span></p>
+                             <p className="text-slate-500 text-xs">Finca: {proc.finca || proc.productor}</p>
+                           </div>
+                           <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${proc.tipoProcedimiento === 'IATF' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                             {proc.tipoProcedimiento}
+                           </span>
+                        </div>
+                        <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-1">
+                           <span className="text-xs text-slate-400">Día 0: {new Date(proc.fechasProtocolo?.dia0_sincronizacion || proc.createdAt).toLocaleDateString()}</span>
+                           <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${(proc.estadoPrenez === 'Pendiente' || proc.estadoPrenez === 'Pendiente Evaluación') ? 'bg-yellow-100 text-yellow-700' : (proc.estadoPrenez === 'Preñada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}`}>
+                             {proc.estadoPrenez}
+                           </span>
+                        </div>
+                        <button 
+                          onClick={() => setCertificadoClienteModal(proc)}
+                          className="mt-1 text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition w-fit cursor-pointer"
+                        >
+                          <FileText size={13} /> Certificado Clínico (Imprimir / PDF)
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CERTIFICADO CLÍNICO DEL CLIENTE (IMPRIMIBLE / PDF) */}
+      {certificadoClienteModal && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl p-6 sm:p-8 relative my-8 border border-slate-200 flex flex-col">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100 print:hidden">
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                <Award size={16} className="text-blue-600" /> Certificado Clínico Reproductivo Oficial
+              </span>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => window.print()} 
+                  className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 transition flex items-center gap-2 shadow-sm cursor-pointer"
+                >
+                  <Printer size={16} /> Imprimir / Guardar PDF
+                </button>
+                <button 
+                  onClick={() => setCertificadoClienteModal(null)} 
+                  className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-6 print:m-0">
+              <div className="flex flex-col sm:flex-row justify-between items-center border-b-2 border-slate-900 pb-5 gap-4 text-center sm:text-left">
+                <img src="/logo.png" alt="Sembriogan" className="h-14 sm:h-16 object-contain" />
+                <div className="sm:text-right">
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight">SEMBRIOGAN - SOMOS EPSEA</h3>
+                  <p className="text-xs text-slate-600 font-semibold">Biotecnología Reproductiva y Mejoramiento Genético Bovino</p>
+                  <p className="text-[11px] text-slate-500">Certificación Oficial de Procedimientos de Campo</p>
+                </div>
+              </div>
+
+              <div className="text-center py-2">
+                <span className="text-[11px] font-mono uppercase tracking-widest text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                  Ficha No. {certificadoClienteModal._id.slice(-8).toUpperCase()}
+                </span>
+                <h4 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">CERTIFICADO CLÍNICO DE REPRODUCCIÓN</h4>
+                <p className="text-xs text-slate-500 mt-1">Expedido bajo estándares de buenas prácticas de manejo reproductivo y trazabilidad animal.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/70 p-4 rounded-2xl border border-slate-200 text-xs sm:text-sm">
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Identificación del Animal</p>
+                  <p className="font-black text-base text-slate-900 mt-1">Chapeta: <span className="text-blue-700">{certificadoClienteModal.animalId || certificadoClienteModal.arete}</span></p>
+                  <p className="text-slate-600 mt-0.5">Raza / Tipo: <span className="font-semibold text-slate-800">{certificadoClienteModal.raza || 'Bovino'}</span></p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Predio y Titular</p>
+                  <p className="font-black text-slate-900 mt-1">Finca: <span className="font-semibold text-slate-800">{certificadoClienteModal.finca || 'No especificada'}</span></p>
+                  <p className="text-slate-600 mt-0.5">Productor: <span className="font-semibold text-slate-800">{certificadoClienteModal.productor}</span></p>
+                </div>
+              </div>
+
+              <div className="border border-slate-200 rounded-2xl p-4 text-xs sm:text-sm space-y-3">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Protocolo Biotecnológico Aplicado</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div>
+                    <span className="text-xs text-slate-500 block">Técnica:</span>
+                    <span className="font-black text-slate-800 text-sm">{certificadoClienteModal.tipoProcedimiento}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-500 block">Genética / Pajilla:</span>
+                    <span className="font-bold text-slate-800 text-sm">{certificadoClienteModal.geneticaUtilizada || 'Convencional'}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-500 block">Fecha Inicio:</span>
+                    <span className="font-bold text-slate-800 text-sm">{new Date(certificadoClienteModal.fechasProtocolo?.dia0_sincronizacion || certificadoClienteModal.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
+                  <span className="text-xs text-slate-500 font-semibold">Estado Clínico Diagnosticado:</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-black uppercase ${certificadoClienteModal.estadoPrenez === 'Preñada' ? 'bg-green-100 text-green-700' : (certificadoClienteModal.estadoPrenez === 'Vacía' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700')}`}>
+                    {certificadoClienteModal.estadoPrenez}
+                  </span>
+                </div>
+              </div>
+
+              {certificadoClienteModal.observaciones && (
+                <div className="bg-amber-50/50 border border-amber-200/60 p-4 rounded-2xl text-xs sm:text-sm">
+                  <p className="text-[11px] font-bold text-amber-800 uppercase tracking-wider mb-1">Observaciones Clínicas / Novedades</p>
+                  <p className="text-slate-700 italic">"{certificadoClienteModal.observaciones}"</p>
+                </div>
+              )}
+
+              <div className="pt-6 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-6 items-end">
+                <div>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wider">Fecha de Emisión:</p>
+                  <p className="text-xs font-bold text-slate-700">{new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  <div className="mt-2 flex items-center gap-2 text-emerald-700 text-xs font-semibold">
+                    <CheckCircle2 size={16} /> Entidad Prestadora del Servicio de Extensión Agropecuaria
+                  </div>
+                </div>
+                <div className="text-center sm:text-right border-t sm:border-t-0 pt-4 sm:pt-0">
+                  <div className="inline-block border-b-2 border-slate-800 w-48 mb-2"></div>
+                  <p className="font-black text-slate-900 text-sm">{certificadoClienteModal.veterinarioAsignado || 'Médico Veterinario Especialista'}</p>
+                  <p className="text-xs text-slate-500 font-medium">Médico Veterinario Zootecnista (MVZ)</p>
+                  <p className="text-[11px] text-slate-400">Equipo Técnico Oficial Sembriogan</p>
+                </div>
               </div>
             </div>
           </div>
