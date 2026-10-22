@@ -1,11 +1,35 @@
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const https = require('https');
 const path = require('path');
 const os = require('os');
+const net = require('net');
+const localtunnel = require('localtunnel');
+
+// 0. Bloqueo de instancia única (Mutex en puerto 49152)
+// Evita que el usuario abra dos terminales con compartir y colisionen entre sí
+const lockServer = net.createServer();
+lockServer.once('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log('\n===========================================================');
+    console.log('⚠️ Sembriogan YA se está ejecutando en otra terminal.');
+    console.log('Solo necesitas UNA SOLA ventana con "npm run compartir".');
+    console.log('Esta ventana se cerrará automáticamente para evitar conflictos.');
+    console.log('===========================================================\n');
+    process.exit(0);
+  }
+});
+lockServer.listen(49152, '127.0.0.1');
 
 console.log('\n===========================================================');
 console.log('🚀 INICIANDO SEMBRIOGAN COMPLETO PARA COMPARTIR');
 console.log('===========================================================\n');
+
+// 0.1 Limpieza preventiva de puertos anteriores (3000, 5173, 5174)
+try {
+  if (process.platform === 'win32') {
+    execSync('powershell -Command "3000, 5173, 5174 | ForEach-Object { Get-NetTCPConnection -LocalPort $_ -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue } }"', { stdio: 'ignore' });
+  }
+} catch (e) {}
 
 // 1. Iniciar Backend (Puerto 3000)
 console.log('⏳ [1/3] Iniciando Backend API (puerto 3000)...');
@@ -37,91 +61,86 @@ function getLocalIP() {
 }
 
 const localIP = getLocalIP();
+let activeTunnel = null;
+let isShuttingDown = false;
 
 // 3. Esperar a que los servidores estén listos y abrir el túnel
 setTimeout(async () => {
-  console.log('\n⏳ [3/3] Creando túnel público seguro (compatible con Avast / Windows Defender)...');
+  if (isShuttingDown) return;
+  console.log('\n⏳ [3/3] Creando túnel público seguro y permanente...');
 
   // Obtener contraseña del túnel
   https.get('https://loca.lt/mytunnelpassword', (res) => {
     let password = '';
     res.on('data', chunk => password += chunk);
     res.on('end', () => {
-      iniciarTunel(password.trim());
+      iniciarTunelProgramatico(password.trim());
     });
   }).on('error', () => {
-    iniciarTunel('');
+    iniciarTunelProgramatico('');
   });
 
-}, 4000);
+}, 4500);
 
-function iniciarTunel(tunnelPassword) {
-  let isShuttingDown = false;
-  let currentTunnel = null;
-  let pingInterval = null;
+async function iniciarTunelProgramatico(tunnelPassword) {
+  if (isShuttingDown) return;
 
-  const start = () => {
-    if (isShuttingDown) return;
-    
-    // Subdominio fijo para que NUNCA cambie la URL ni toque reconfigurar Google Cloud
-    currentTunnel = spawn('npx', ['-y', 'localtunnel', '--port', '5173', '--local-host', '127.0.0.1', '--subdomain', 'sembriogan-app'], {
-      shell: true,
+  try {
+    if (activeTunnel) {
+      try { activeTunnel.close(); } catch (e) {}
+    }
+
+    activeTunnel = await localtunnel({
+      port: 5173,
+      local_host: '127.0.0.1',
+      subdomain: 'sembriogan-app'
     });
 
-    currentTunnel.stdout.on('data', (data) => {
-      const text = data.toString();
-      const match = text.match(/https:\/\/[^\s]+/);
-      if (match) {
-        const publicUrl = match[0];
-        console.log('\n===========================================================');
-        console.log('🎉 ¡PROYECTO LISTO Y COMPARTIDO CON ÉXITO!');
-        console.log('===========================================================');
-        console.log(`\n🌍 ENLACE PÚBLICO FIJO (Para abrir en cualquier celular o equipo):`);
-        console.log(`   👉 \x1b[32m\x1b[1m${publicUrl}\x1b[0m`);
-        if (tunnelPassword) {
-          console.log(`\n🔑 Contraseña del túnel (si la página te la pide al entrar):`);
-          console.log(`   👉 \x1b[33m\x1b[1m${tunnelPassword}\x1b[0m (y clic en "Click to Submit")`);
-        }
-        console.log(`\n📶 ENLACE DE RED LOCAL (Para la misma red Wi-Fi en el SENA / Casa):`);
-        console.log(`   👉 \x1b[36mhttp://${localIP}:5173\x1b[0m (Sin túnel ni contraseñas)`);
-        console.log('\n===========================================================');
-        console.log('💡 Presiona Ctrl + C en cualquier momento para detener todo.\n');
+    console.log('\n===========================================================');
+    console.log('🎉 ¡PROYECTO LISTO Y COMPARTIDO CON ÉXITO!');
+    console.log('===========================================================');
+    console.log(`\n🌍 ENLACE PÚBLICO FIJO (Para abrir en cualquier celular o equipo):`);
+    console.log(`   👉 \x1b[32m\x1b[1m${activeTunnel.url}\x1b[0m`);
+    if (tunnelPassword) {
+      console.log(`\n🔑 Contraseña del túnel (si la página te la pide al entrar):`);
+      console.log(`   👉 \x1b[33m\x1b[1m${tunnelPassword}\x1b[0m (y clic en "Click to Submit")`);
+    }
+    console.log(`\n📶 ENLACE DE RED LOCAL (Para la misma red Wi-Fi en el SENA / Casa):`);
+    console.log(`   👉 \x1b[36mhttp://${localIP}:5173\x1b[0m (Sin túnel ni contraseñas)`);
+    console.log('\n===========================================================');
+    console.log('💡 Presiona Ctrl + C en cualquier momento para detener todo.\n');
 
-        // Keep-alive: Pings regulares cada 30 segundos para evitar que loca.lt cierre el túnel por inactividad
-        if (pingInterval) clearInterval(pingInterval);
-        pingInterval = setInterval(() => {
-          https.get(publicUrl, () => {}).on('error', () => {});
-        }, 30000);
-      }
-    });
-
-    currentTunnel.on('close', (code) => {
+    activeTunnel.on('close', () => {
       if (!isShuttingDown) {
-        console.log('\n⚠️ Túnel desconectado temporalmente por inactividad. Reconectando automáticamente...');
-        setTimeout(start, 2000);
+        console.log('\n⚠️ Túnel desconectado por inactividad. Reconectando en 3s...');
+        setTimeout(() => iniciarTunelProgramatico(tunnelPassword), 3000);
       }
     });
 
-    currentTunnel.on('error', () => {
+    activeTunnel.on('error', (err) => {
       if (!isShuttingDown) {
-        setTimeout(start, 3000);
+        console.log('\n⚠️ Reconectando túnel...', err.message);
+        setTimeout(() => iniciarTunelProgramatico(tunnelPassword), 3000);
       }
     });
-  };
 
-  start();
-
-  process.on('SIGINT', () => {
-    isShuttingDown = true;
-    if (pingInterval) clearInterval(pingInterval);
-    if (currentTunnel) currentTunnel.kill();
-  });
+  } catch (err) {
+    if (!isShuttingDown) {
+      console.log('⚠️ Reintentando conexión con loca.lt en 4s...', err.message);
+      setTimeout(() => iniciarTunelProgramatico(tunnelPassword), 4000);
+    }
+  }
 }
 
 function cleanup() {
-  console.log('\nApagando servidores...');
+  isShuttingDown = true;
+  console.log('\nApagando servidores y túnel...');
+  if (activeTunnel) {
+    try { activeTunnel.close(); } catch (e) {}
+  }
   backend.kill();
   frontend.kill();
+  try { lockServer.close(); } catch (e) {}
   process.exit();
 }
 
