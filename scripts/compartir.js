@@ -39,9 +39,18 @@ const backend = spawn('npm', ['run', 'dev'], {
   stdio: 'inherit'
 });
 
-// 2. Iniciar Frontend (Puerto 5173)
-console.log('⏳ [2/3] Iniciando Frontend Vite (puerto 5173)...');
-const frontend = spawn('npm', ['run', 'dev'], {
+// 2. Compilar Frontend y Servir Bundle Optimizado (Puerto 5173)
+// El bundle optimizado reduce 120 peticiones sueltas a solo 1 archivo, eliminando el error 502 Bad Gateway
+console.log('⏳ [2/3] Preparando bundle optimizado de Frontend...');
+try {
+  execSync('npm run build', {
+    cwd: path.join(__dirname, '..', 'frontend-sembriogan'),
+    stdio: 'ignore'
+  });
+} catch (e) {}
+
+console.log('⏳ [2/3] Iniciando Frontend de alta velocidad (puerto 5173)...');
+const frontend = spawn('npx', ['vite', 'preview', '--port', '5173', '--host', '0.0.0.0'], {
   cwd: path.join(__dirname, '..', 'frontend-sembriogan'),
   shell: true,
   stdio: 'inherit'
