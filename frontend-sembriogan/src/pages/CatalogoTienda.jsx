@@ -52,10 +52,12 @@ export default function CatalogoTienda() {
   const [isClienteDashboardOpen, setIsClienteDashboardOpen] = useState(false);
   const [isPerfilOpen, setIsPerfilOpen] = useState(false);
   const [certificadoClienteModal, setCertificadoClienteModal] = useState(null);
+  const [informeConsolidadoModal, setInformeConsolidadoModal] = useState(false);
 
-  // Menú Desplegable (Dropdown)
+  // Menú Desplegable (Dropdown) y Navegación
   const [isDropdownMenuOpen, setIsDropdownMenuOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const dropdownRef = useRef(null);
 
   // Estados de Usuario
@@ -65,6 +67,26 @@ export default function CatalogoTienda() {
   const [configGlobal, setConfigGlobal] = useState(null);
   const [misOrdenesCliente, setMisOrdenesCliente] = useState([]);
   const [misProcedimientosCliente, setMisProcedimientosCliente] = useState([]);
+
+  // Detección de scroll para barra de navegación flotante homogénea con la página principal
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 35);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Estadísticas consolidadas de reproducción para el informe del cliente
+  const statsReproduccion = useMemo(() => {
+    const total = misProcedimientosCliente.length;
+    const preñadas = misProcedimientosCliente.filter(p => p.estadoPrenez === 'Preñada').length;
+    const vacias = misProcedimientosCliente.filter(p => p.estadoPrenez === 'Vacía').length;
+    const pendientes = misProcedimientosCliente.filter(p => p.estadoPrenez !== 'Preñada' && p.estadoPrenez !== 'Vacía').length;
+    const tasa = (preñadas + vacias) > 0 ? Math.round((preñadas / (preñadas + vacias)) * 100) : 0;
+    return { total, preñadas, vacias, pendientes, tasa };
+  }, [misProcedimientosCliente]);
 
   // Guardar carrito en localStorage cuando cambie
   useEffect(() => {
@@ -413,50 +435,76 @@ export default function CatalogoTienda() {
   }, [catalogo, busqueda, filtroTipo]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-600 selection:text-white flex flex-col justify-between">
+    <div className="min-h-screen bg-slate-50/50 text-slate-800 font-sans selection:bg-blue-600 selection:text-white flex flex-col justify-between relative scroll-smooth">
+      {/* Ambient Backgrounds for Softness (Idéntico a Página Principal) */}
+      <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-100/30 blur-[120px] -z-10 pointer-events-none"></div>
+      <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-100/30 blur-[120px] -z-10 pointer-events-none"></div>
       
       {/* ============================================================ */}
-      {/* BARRA DE NAVEGACIÓN SUPERIOR (FLOTANTE GLASS) */}
-      <header className="fixed top-3 md:top-5 inset-x-3 md:inset-x-8 z-50 transition-all duration-300">
-        <div className="bg-white/75 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-xl shadow-slate-900/5 px-4 md:px-6 py-2.5 md:py-3 flex items-center justify-between max-w-7xl mx-auto">
+      {/* BARRA DE NAVEGACIÓN SUPERIOR (FLOTANTE GLASSMORPHISM IDÉNTICA) */}
+      {/* ============================================================ */}
+      <header 
+        className={`fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-in-out w-[95%] max-w-7xl border ${
+          isMobileNavOpen ? 'rounded-3xl' : 'rounded-full'
+        } ${
+          isScrolled 
+            ? 'top-3 bg-white/70 backdrop-blur-2xl shadow-xl shadow-slate-900/10 py-2.5 px-5 md:px-7 border-white/60 ring-1 ring-slate-900/5' 
+            : 'top-6 bg-white/20 backdrop-blur-xl shadow-2xl shadow-black/15 py-3 px-6 md:px-8 border-white/35 ring-1 ring-white/20 hover:bg-white/25'
+        }`}
+      >
+        <div className="flex justify-between items-center w-full">
           
           {/* Logo y Enlace a Inicio */}
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link 
+            to="/" 
+            className="flex items-center gap-2 group transition-transform duration-200 hover:scale-[1.02] cursor-pointer"
+            title="Sembriogan - Biotecnología Reproductiva"
+          >
             <img 
               src="/logo.png" 
               alt="Logo Sembriogan" 
-              className="h-10 md:h-12 w-auto object-contain transition-transform group-hover:scale-105" 
+              className={`w-auto object-contain transition-all duration-300 filter drop-shadow-sm ${
+                isScrolled ? 'h-9 md:h-11' : 'h-11 md:h-14'
+              }`} 
             />
           </Link>
 
-          {/* Menú Desktop */}
-          <nav className="hidden lg:flex items-center bg-white/40 backdrop-blur-md p-1 rounded-full border border-white/50 text-sm gap-1">
+          {/* Menú Desktop Tipo Píldora / Glass Segmented */}
+          <nav className="hidden lg:flex items-center bg-white/30 backdrop-blur-md p-1 rounded-full border border-white/40 shadow-xs text-sm gap-1">
             <Link 
               to="/" 
-              className="px-4 py-1.5 rounded-full font-semibold text-slate-700 hover:text-blue-600 hover:bg-white/70 transition"
+              className="px-4 py-1.5 rounded-full font-semibold text-slate-800 hover:text-blue-600 hover:bg-white/60 transition"
             >
               Inicio
             </Link>
             <Link 
               to="/#nosotros" 
-              className="px-4 py-1.5 rounded-full font-semibold text-slate-700 hover:text-blue-600 hover:bg-white/70 transition"
+              className="px-4 py-1.5 rounded-full font-semibold text-slate-800 hover:text-blue-600 hover:bg-white/60 transition"
             >
               Nosotros
             </Link>
             <Link 
               to="/#historias" 
-              className="px-4 py-1.5 rounded-full font-semibold text-slate-700 hover:text-blue-600 hover:bg-white/70 transition"
+              className="px-4 py-1.5 rounded-full font-semibold text-slate-800 hover:text-blue-600 hover:bg-white/60 transition"
             >
               Historias
             </Link>
             <Link 
-              to="/tienda" 
-              className="px-4 py-1.5 rounded-full font-bold bg-blue-600 text-white shadow-md shadow-blue-500/30 transition"
+              to="/#destacados" 
+              className="px-4 py-1.5 rounded-full font-semibold text-slate-800 hover:text-blue-600 hover:bg-white/60 transition"
             >
-              Tienda Oficial
+              ⭐ Destacados
             </Link>
             
-            <div className="h-4 w-px bg-white/60 mx-1"></div>
+            <Link 
+              to="/tienda" 
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-xs bg-blue-600 text-white shadow-md shadow-blue-500/25 transition ml-1"
+            >
+              <ShoppingBag size={13} />
+              Tienda Oficial
+            </Link>
+
+            <div className="h-4 w-px bg-white/50 mx-1"></div>
 
             <Link 
               to="/admin" 
@@ -472,10 +520,10 @@ export default function CatalogoTienda() {
             {/* Botón Carrito */}
             <button 
               onClick={() => setIsCartOpen(true)} 
-              className="relative bg-white/50 hover:bg-white/80 backdrop-blur-md border border-white/60 p-2.5 rounded-2xl transition text-slate-800 flex items-center justify-center group shadow-xs"
+              className="relative bg-white/40 hover:bg-white/70 backdrop-blur-md border border-white/50 p-2.5 rounded-2xl transition text-slate-800 flex items-center justify-center group shadow-xs cursor-pointer"
               title="Ver Carrito de Compras"
             >
-              <ShoppingCart size={19} className="group-hover:scale-110 transition-transform text-slate-700" />
+              <ShoppingCart size={19} className="group-hover:scale-110 transition-transform text-slate-800" />
               {totalCantidadItems > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[10px] min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center font-bold shadow-md shadow-blue-500/30 ring-2 ring-white animate-bounce">
                   {totalCantidadItems}
@@ -488,7 +536,7 @@ export default function CatalogoTienda() {
               <div className="relative" ref={dropdownRef}>
                 <button 
                   onClick={() => setIsDropdownMenuOpen(!isDropdownMenuOpen)} 
-                  className="bg-blue-50/90 text-blue-700 hover:bg-blue-100/90 text-xs md:text-sm font-semibold px-3 md:px-4 py-2 rounded-2xl transition flex items-center gap-2 border border-blue-200/70 shadow-xs"
+                  className="bg-blue-50/90 text-blue-700 hover:bg-blue-100/90 text-xs md:text-sm font-semibold px-3 md:px-4 py-2 rounded-2xl transition flex items-center gap-2 border border-blue-200/70 shadow-xs cursor-pointer"
                 >
                   <User size={16} /> 
                   <span className="max-w-[90px] md:max-w-none truncate">{userCliente.nombre.split(' ')[0]}</span> 
@@ -501,17 +549,17 @@ export default function CatalogoTienda() {
                       <p className="text-sm font-bold text-slate-800 truncate">{userCliente.nombre}</p>
                       <p className="text-xs text-slate-500 truncate">{userCliente.email}</p>
                     </div>
-                    <button onClick={() => { setIsClienteDashboardOpen(true); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition font-medium">
-                      <Package size={16} className="text-blue-600" /> Historial de Compras
+                    <button onClick={() => { setIsClienteDashboardOpen(true); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition font-medium cursor-pointer">
+                      <Package size={16} className="text-blue-600" /> Historial y Certificados
                     </button>
-                    <button onClick={() => { setIsPerfilOpen(true); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition font-medium">
+                    <button onClick={() => { setIsPerfilOpen(true); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition font-medium cursor-pointer">
                       <Settings size={16} className="text-slate-500" /> Configurar Perfil
                     </button>
                     <Link to="/admin" className="flex items-center gap-3 px-5 py-3 text-sm text-blue-600 hover:bg-blue-50 text-left transition font-semibold">
                       ⚙️ Panel Administrador
                     </Link>
                     <div className="border-t border-slate-100 my-1"></div>
-                    <button onClick={() => { setUserCliente(null); localStorage.removeItem('clienteSembriogan'); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-5 py-3 text-sm text-red-600 hover:bg-red-50 text-left transition font-medium">
+                    <button onClick={() => { setUserCliente(null); localStorage.removeItem('clienteSembriogan'); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-5 py-3 text-sm text-red-600 hover:bg-red-50 text-left transition font-medium cursor-pointer">
                       <LogOut size={16} /> Cerrar Sesión
                     </button>
                   </div>
@@ -520,7 +568,7 @@ export default function CatalogoTienda() {
             ) : (
               <button 
                 onClick={() => setIsAuthOpen(true)} 
-                className="bg-slate-900 text-white px-4 md:px-5 py-2 md:py-2.5 rounded-2xl font-bold hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-600/20 transition-all duration-200 text-xs md:text-sm shadow-xs"
+                className="bg-slate-900 text-white px-4 md:px-5 py-2 md:py-2.5 rounded-2xl font-bold hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-600/20 transition-all duration-200 text-xs md:text-sm shadow-xs cursor-pointer"
               >
                 Ingresar
               </button>
@@ -541,6 +589,15 @@ export default function CatalogoTienda() {
           <div className="lg:hidden mt-2 p-4 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-3xl shadow-xl flex flex-col gap-2 max-w-7xl mx-auto">
             <Link to="/" onClick={() => setIsMobileNavOpen(false)} className="px-4 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-slate-100 text-sm">
               Inicio
+            </Link>
+            <Link to="/#nosotros" onClick={() => setIsMobileNavOpen(false)} className="px-4 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-slate-100 text-sm">
+              Nosotros
+            </Link>
+            <Link to="/#historias" onClick={() => setIsMobileNavOpen(false)} className="px-4 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-slate-100 text-sm">
+              Historias
+            </Link>
+            <Link to="/#destacados" onClick={() => setIsMobileNavOpen(false)} className="px-4 py-2.5 rounded-xl font-semibold text-slate-700 hover:bg-slate-100 text-sm">
+              ⭐ Destacados
             </Link>
             <Link to="/tienda" onClick={() => setIsMobileNavOpen(false)} className="px-4 py-2.5 rounded-xl font-bold bg-blue-600 text-white text-sm">
               Tienda Oficial
@@ -1007,7 +1064,44 @@ export default function CatalogoTienda() {
 
               {/* SECCIÓN: MIS PROCEDIMIENTOS GENÉTICOS */}
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mt-6">
-                <h4 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2"><Star size={18}/> Mis Procedimientos (Genética)</h4>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                      <Star size={18} className="text-amber-500 fill-amber-400" /> Mis Procedimientos (Genética)
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">Trazabilidad biotecnológica y diagnósticos de campo oficiales</p>
+                  </div>
+                  {misProcedimientosCliente.length > 0 && (
+                    <button 
+                      onClick={() => setInformeConsolidadoModal(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-2 shadow-sm shrink-0 cursor-pointer"
+                    >
+                      <Printer size={14} /> Descargar Informe Completo (PDF)
+                    </button>
+                  )}
+                </div>
+
+                {misProcedimientosCliente.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                    <div className="bg-white p-2.5 rounded-xl border border-slate-200 text-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Sincronizados</span>
+                      <span className="text-base font-black text-slate-800">{statsReproduccion.total}</span>
+                    </div>
+                    <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-100 text-center">
+                      <span className="text-[10px] uppercase font-bold text-emerald-700 block">Preñadas</span>
+                      <span className="text-base font-black text-emerald-700">{statsReproduccion.preñadas}</span>
+                    </div>
+                    <div className="bg-rose-50 p-2.5 rounded-xl border border-rose-100 text-center">
+                      <span className="text-[10px] uppercase font-bold text-rose-700 block">Vacías</span>
+                      <span className="text-base font-black text-rose-700">{statsReproduccion.vacias}</span>
+                    </div>
+                    <div className="bg-blue-50 p-2.5 rounded-xl border border-blue-100 text-center">
+                      <span className="text-[10px] uppercase font-bold text-blue-700 block">Tasa Éxito</span>
+                      <span className="text-base font-black text-blue-700">{statsReproduccion.tasa}%</span>
+                    </div>
+                  </div>
+                )}
+
                 {misProcedimientosCliente.length === 0 ? (
                   <p className="text-sm text-slate-500 py-4">No hay procedimientos genéticos vinculados a este correo.</p>
                 ) : (
@@ -1033,7 +1127,7 @@ export default function CatalogoTienda() {
                           onClick={() => setCertificadoClienteModal(proc)}
                           className="mt-1 text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition w-fit cursor-pointer"
                         >
-                          <FileText size={13} /> Certificado Clínico (Imprimir / PDF)
+                          <FileText size={13} /> Certificado Individual (Imprimir / PDF)
                         </button>
                       </div>
                     ))}
@@ -1145,6 +1239,184 @@ export default function CatalogoTienda() {
                   <p className="font-black text-slate-900 text-sm">{certificadoClienteModal.veterinarioAsignado || 'Médico Veterinario Especialista'}</p>
                   <p className="text-xs text-slate-500 font-medium">Médico Veterinario Zootecnista (MVZ)</p>
                   <p className="text-[11px] text-slate-400">Equipo Técnico Oficial Sembriogan</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: INFORME TÉCNICO CONSOLIDADO GANADERO (IMPRIMIBLE / PDF) */}
+      {informeConsolidadoModal && userCliente && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl p-6 sm:p-10 relative my-6 border border-slate-200 flex flex-col max-h-[92vh] overflow-y-auto print:max-h-none print:overflow-visible print:p-0 print:border-none print:shadow-none print:my-0">
+            {/* Barra de acciones (Oculta al Imprimir) */}
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-200 print:hidden">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Informe Técnico Oficial Consolidado EPSEA
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => window.print()} 
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 shadow-md hover:shadow-blue-600/30 cursor-pointer"
+                >
+                  <Printer size={16} /> Imprimir / Guardar en PDF
+                </button>
+                <button 
+                  onClick={() => setInformeConsolidadoModal(false)} 
+                  className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Documento Imprimible */}
+            <div className="space-y-6 print:m-0 text-slate-800">
+              {/* Encabezado Institucional */}
+              <div className="flex flex-col sm:flex-row justify-between items-center border-b-2 border-slate-900 pb-5 gap-4 text-center sm:text-left">
+                <div className="flex items-center gap-3">
+                  <img src="/logo.png" alt="Sembriogan" className="h-14 sm:h-16 object-contain" />
+                </div>
+                <div className="sm:text-right">
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">SEMBRIOGAN - SOMOS EPSEA</h3>
+                  <p className="text-xs text-slate-700 font-bold">Entidad Prestadora del Servicio de Extensión Agropecuaria</p>
+                  <p className="text-[11px] text-slate-500">Biotecnología Reproductiva, Mejoramiento Genético e IATF Bovina</p>
+                  <p className="text-[10px] text-blue-700 font-mono mt-0.5">Acreditación MinAgricultura / ADR - Departamento del Huila</p>
+                </div>
+              </div>
+
+              {/* Título del Informe */}
+              <div className="text-center py-1">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-blue-800 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                  INFORME GENERAL No. INF-{new Date().getFullYear()}-{userCliente.email.slice(0, 4).toUpperCase()}
+                </span>
+                <h4 className="text-xl sm:text-2xl font-black text-slate-900 mt-2">
+                  INFORME CONSOLIDADO DE PROCEDIMIENTOS REPRODUCTIVOS
+                </h4>
+                <p className="text-xs text-slate-500 max-w-xl mx-auto mt-1">
+                  Resumen de intervenciones biotecnológicas (IATF, TE, Inseminación), diagnósticos de preñez y trazabilidad genealógica del hato.
+                </p>
+              </div>
+
+              {/* Datos del Ganadero / Titular */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Productor Ganadero</span>
+                  <p className="font-black text-slate-900 text-sm mt-0.5">{userCliente.nombre}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Correo Electrónico</span>
+                  <p className="font-semibold text-slate-800 text-xs mt-0.5">{userCliente.email}</p>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Fecha de Emisión</span>
+                  <p className="font-semibold text-slate-800 text-xs mt-0.5">{new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+              </div>
+
+              {/* Indicadores Reproductivos Clave (KPIs) */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center">
+                  <p className="text-[10px] uppercase font-bold text-slate-500">Total Hembras Intervenidas</p>
+                  <p className="text-2xl font-black text-slate-900 mt-1">{statsReproduccion.total}</p>
+                </div>
+                <div className="bg-green-50/80 border border-green-200 rounded-2xl p-3.5 text-center">
+                  <p className="text-[10px] uppercase font-bold text-green-700">Confirmadas Preñadas</p>
+                  <p className="text-2xl font-black text-green-700 mt-1">{statsReproduccion.preñadas}</p>
+                </div>
+                <div className="bg-red-50/80 border border-red-200 rounded-2xl p-3.5 text-center">
+                  <p className="text-[10px] uppercase font-bold text-red-700">Vacías al Diagnóstico</p>
+                  <p className="text-2xl font-black text-red-700 mt-1">{statsReproduccion.vacias}</p>
+                </div>
+                <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-3.5 text-center">
+                  <p className="text-[10px] uppercase font-bold text-blue-700">Tasa de Preñez Lograda</p>
+                  <p className="text-2xl font-black text-blue-700 mt-1">{statsReproduccion.tasa}%</p>
+                </div>
+              </div>
+
+              {/* Tabla Detallada de Animales */}
+              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                <div className="bg-slate-100/80 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Detalle de Ejemplares y Procedimientos</span>
+                  <span className="text-[11px] font-semibold text-slate-500">{misProcedimientosCliente.length} registros</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold">
+                        <th className="py-2.5 px-3">#</th>
+                        <th className="py-2.5 px-3">Chapeta / Arete</th>
+                        <th className="py-2.5 px-3">Finca</th>
+                        <th className="py-2.5 px-3">Raza</th>
+                        <th className="py-2.5 px-3">Procedimiento</th>
+                        <th className="py-2.5 px-3">Genética / Toro</th>
+                        <th className="py-2.5 px-3">Fecha D0</th>
+                        <th className="py-2.5 px-3">Diagnóstico</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {misProcedimientosCliente.map((proc, idx) => (
+                        <tr key={proc._id} className="hover:bg-slate-50/80 transition">
+                          <td className="py-2.5 px-3 font-mono text-slate-400">{idx + 1}</td>
+                          <td className="py-2.5 px-3 font-black text-slate-900">{proc.arete || proc.animalId}</td>
+                          <td className="py-2.5 px-3 text-slate-600 font-medium">{proc.finca || proc.productor || 'Hato Principal'}</td>
+                          <td className="py-2.5 px-3 text-slate-700">{proc.raza || 'Bovino'}</td>
+                          <td className="py-2.5 px-3">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700">
+                              {proc.tipoProcedimiento}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-700 font-semibold">{proc.geneticaUtilizada || 'Convencional'}</td>
+                          <td className="py-2.5 px-3 text-slate-500 font-mono text-[11px]">
+                            {new Date(proc.fechasProtocolo?.dia0_sincronizacion || proc.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                              proc.estadoPrenez === 'Preñada' 
+                                ? 'bg-green-100 text-green-700' 
+                                : proc.estadoPrenez === 'Vacía' 
+                                  ? 'bg-red-100 text-red-700' 
+                                  : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              {proc.estadoPrenez}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Recomendaciones Técnicas */}
+              <div className="bg-amber-50/60 border border-amber-200/70 p-4 rounded-2xl text-xs space-y-1.5">
+                <p className="font-bold text-amber-900 uppercase tracking-wider text-[11px]">Recomendaciones Técnicas y Plan de Manejo EPSEA</p>
+                <p className="text-slate-700 leading-relaxed">
+                  1. Mantener protocolo nutricional reforzado con sales mineralizadas al 8% de fósforo para ejemplares confirmados preñadas.<br />
+                  2. Programar chequeo ecográfico confirmatorio de viabilidad fetal entre los días 60 y 90 post-inseminación.<br />
+                  3. Las hembras vacías quedan habilitadas para nuevo protocolo de resincronización bajo evaluación de condición corporal (≥ 2.75).
+                </p>
+              </div>
+
+              {/* Firmas Oficiales y Validación */}
+              <div className="pt-6 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-8 items-end">
+                <div>
+                  <div className="flex items-center gap-2 text-emerald-700 text-xs font-bold mb-1">
+                    <CheckCircle2 size={16} /> Certificado Oficial EPSEA Sembriogan
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Este documento consolida la trazabilidad reproductiva en campo realizada por profesionales certificados. Válido para registros de asociaciones ganaderas y seguimiento técnico predial.
+                  </p>
+                </div>
+                <div className="text-center sm:text-right border-t sm:border-t-0 pt-4 sm:pt-0">
+                  <div className="inline-block border-b-2 border-slate-800 w-52 mb-2"></div>
+                  <p className="font-black text-slate-900 text-sm">Equipo Médico Veterinario Zootecnista</p>
+                  <p className="text-xs text-slate-500 font-medium">Especialistas en Reproducción Bovina y Biotecnología</p>
+                  <p className="text-[11px] text-blue-700 font-semibold">Sembriogan - SOMOS EPSEA</p>
                 </div>
               </div>
             </div>
