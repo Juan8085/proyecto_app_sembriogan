@@ -5,14 +5,15 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Home, PlusCircle, ShoppingBag, Bot } from 'lucide-react-native';
+import { Home, PlusCircle, ShoppingBag, Bot, User } from 'lucide-react-native';
 
 // Pantallas
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
-import RegistroScreen from './src/screens/RegistroScreen';
 import CatalogoScreen from './src/screens/CatalogoScreen';
+import RegistroScreen from './src/screens/RegistroScreen';
 import AsistenteScreen from './src/screens/AsistenteScreen';
+import PerfilScreen from './src/screens/PerfilScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -29,8 +30,8 @@ function MainTabs() {
         tabBarStyle: {
           position: 'absolute',
           bottom: Platform.OS === 'android' ? 20 : 30,
-          left: 20,
-          right: 20,
+          left: 16,
+          right: 16,
           elevation: 10,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 10 },
@@ -43,66 +44,86 @@ function MainTabs() {
         }
       }}
     >
+      {/* 1. INICIO (DASHBOARD) */}
       <Tab.Screen 
         name="Inicio" 
         component={DashboardScreen} 
         options={{
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconActive]}>
-              <Home color={focused ? '#fff' : color} size={24} />
+              <Home color={focused ? '#fff' : color} size={22} />
             </View>
           ),
         }}
       />
+
+      {/* 2. CATÁLOGO / PRODUCTOS */}
       <Tab.Screen 
         name="Catálogo" 
         component={CatalogoScreen} 
         options={{
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconActive]}>
-              <ShoppingBag color={focused ? '#fff' : color} size={24} />
+              <ShoppingBag color={focused ? '#fff' : color} size={22} />
             </View>
           ),
         }}
       />
+
+      {/* 3. REGISTRAR PROCEDIMIENTO (BOTÓN CENTRADO RESALTADO EN LA MITAD EXACTA) */}
       <Tab.Screen 
         name="Registrar" 
         component={RegistroScreen} 
         options={{
           tabBarIcon: ({ focused }) => (
             <View style={{
-              top: -20,
+              top: -18,
               justifyContent: 'center',
               alignItems: 'center',
             }}>
               <View style={{
-                width: 60,
-                height: 60,
-                borderRadius: 30,
-                backgroundColor: '#10b981', // Verde resaltado
+                width: 58,
+                height: 58,
+                borderRadius: 29,
+                backgroundColor: '#10b981', // Verde resaltado Sembriogan
                 justifyContent: 'center',
                 alignItems: 'center',
                 shadowColor: '#10b981',
-                shadowOffset: { width: 0, height: 5 },
-                shadowOpacity: 0.5,
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.45,
                 shadowRadius: 10,
-                elevation: 5,
+                elevation: 6,
                 borderWidth: 4,
-                borderColor: '#f1f5f9'
+                borderColor: '#ffffff'
               }}>
-                <PlusCircle color="#ffffff" size={32} />
+                <PlusCircle color="#ffffff" size={30} />
               </View>
             </View>
           ),
         }}
       />
+
+      {/* 4. ASISTENTE CLÍNICO IA */}
       <Tab.Screen 
         name="Asistente" 
         component={AsistenteScreen} 
         options={{
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconActive]}>
-              <Bot color={focused ? '#fff' : color} size={24} />
+              <Bot color={focused ? '#fff' : color} size={22} />
+            </View>
+          ),
+        }}
+      />
+
+      {/* 5. PERFIL DE USUARIO VETERINARIO */}
+      <Tab.Screen 
+        name="Perfil" 
+        component={PerfilScreen} 
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && styles.iconActive]}>
+              <User color={focused ? '#fff' : color} size={22} />
             </View>
           ),
         }}
@@ -127,11 +148,11 @@ export default function App() {
 
 const styles = StyleSheet.create({
   iconContainer: {
-    padding: 12,
-    borderRadius: 16,
+    padding: 10,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 15,
+    marginTop: 12,
   },
   iconActive: {
     backgroundColor: '#0ea5e9',

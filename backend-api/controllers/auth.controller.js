@@ -164,25 +164,57 @@ const obtenerUsuarios = async (req, res) => {
     }
 };
 
-// 5. ACTUALIZAR / DESACTIVAR / CAMBIAR CLAVE DE USUARIO
+// 5. ACTUALIZAR INFORMACIÓN / CAMBIAR CLAVE DE USUARIO
 const actualizarUsuarioAdmin = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre, rol, estado, password } = req.body;
+        const { nombre, email, rol, estado, password } = req.body;
         
         let datosActualizar = {};
-        if (nombre !== undefined) datosActualizar.nombre = nombre;
+        if (nombre !== undefined && nombre.trim() !== "") {
+            datosActualizar.nombre = nombre.trim();
+        }
+        
+        if (email !== undefined && email.trim() !== "") {
+            const emailLimpio = email.toLowerCase().trim();
+            // Comprobar que el correo no esté ocupado por otra cuenta
+            const correoExistente = await Usuario.findOne({ email: emailLimpio, _id: { $ne: id } });
+            if (correoExistente) {
+                return res.status(400).json({ success: false, mensaje: "Este correo electrónico ya está registrado por otro usuario" });
+            }
+            datosActualizar.email = emailLimpio;
+        }
+
         if (rol !== undefined) datosActualizar.rol = rol;
         if (estado !== undefined) datosActualizar.estado = estado;
 
         if (password && password.trim() !== "") {
+            if (password.length < 6) {
+                return res.status(400).json({ success: false, mensaje: "La nueva contraseña debe tener al menos 6 caracteres" });
+            }
             const salt = await bcrypt.genSalt(10);
             datosActualizar.password = await bcrypt.hash(password, salt);
         }
 
         const usuarioActualizado = await Usuario.findByIdAndUpdate(id, datosActualizar, { new: true }).select('-password');
         
-        res.status(200).json({ success: true, mensaje: "Usuario actualizado correctamente", data: usuarioActualizado });
+        if (!usuarioActualizado) {
+            return res.status(404).json({ success: false, mensaje: "Usuario no encontrado" });
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            mensaje: "Información de usuario actualizada correctamente", 
+            usuario: {
+                id: usuarioActualizado._id,
+                _id: usuarioActualizado._id,
+                nombre: usuarioActualizado.nombre,
+                email: usuarioActualizado.email,
+                rol: usuarioActualizado.rol,
+                estado: usuarioActualizado.estado
+            },
+            data: usuarioActualizado 
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
