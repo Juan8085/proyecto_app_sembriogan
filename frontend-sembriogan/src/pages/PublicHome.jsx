@@ -78,6 +78,7 @@ export default function PublicHome() {
 
   // Estados interactivos de la barra de navegación flotante
   const [isScrolled, setIsScrolled] = useState(false);
+  const [capsuleProgress, setCapsuleProgress] = useState(0); // 0 = transparente total en carrusel, 1 = cápsula consolidada
   const [activeSection, setActiveSection] = useState('inicio');
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -86,7 +87,26 @@ export default function PublicHome() {
   useEffect(() => {
     const handleScroll = () => {
       const scrollPos = window.scrollY;
-      setIsScrolled(scrollPos > 35);
+
+      // Obtener el final de la imagen del carrusel de inicio (#inicio)
+      const heroEl = document.getElementById('inicio');
+      const heroHeight = heroEl ? heroEl.offsetHeight : (window.innerHeight * 0.95);
+
+      // La cápsula debe permanecer transparente durante el carrusel y aparecer de forma paulatina hacia el final de este
+      const startAppear = Math.max(120, heroHeight - 320);
+      const fullAppear = Math.max(startAppear + 80, heroHeight - 40);
+
+      let progress = 0;
+      if (scrollPos <= startAppear) {
+        progress = 0;
+      } else if (scrollPos >= fullAppear) {
+        progress = 1;
+      } else {
+        progress = (scrollPos - startAppear) / (fullAppear - startAppear);
+      }
+
+      setCapsuleProgress(progress);
+      setIsScrolled(progress > 0.5);
 
       // Progreso de lectura a lo largo del documento (0 a 100%)
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -110,8 +130,12 @@ export default function PublicHome() {
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
     handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
   }, []);
 
   // Filtrar ÚNICAMENTE productos y servicios marcados como estrella para la página principal
@@ -499,13 +523,23 @@ export default function PublicHome() {
       
       {/* HEADER FLOTANTE INTERACTIVO Y PROFESIONAL CON VIDRIO ESMERILADO (GLASSMORPHISM) */}
       <header 
-        className={`fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-in-out w-[95%] max-w-7xl ${
+        className={`fixed left-1/2 -translate-x-1/2 z-50 transition-[top,padding,border-radius] duration-300 ease-out w-[95%] max-w-7xl ${
           isMobileNavOpen 
             ? 'rounded-3xl bg-white/95 backdrop-blur-2xl shadow-2xl border border-slate-200/80 top-3 py-3 px-5' 
-            : isScrolled 
-              ? 'rounded-full top-3 bg-white/80 backdrop-blur-2xl shadow-xl shadow-slate-900/10 py-2.5 px-5 md:px-7 border border-white/60 ring-1 ring-slate-900/5' 
-              : 'rounded-full top-6 bg-transparent border border-transparent shadow-none ring-0 py-3 px-6 md:px-8'
+            : `rounded-full ${capsuleProgress > 0.5 ? 'top-3 py-2.5 px-5 md:px-7' : 'top-6 py-3 px-6 md:px-8'}`
         }`}
+        style={!isMobileNavOpen ? {
+          backgroundColor: `rgba(255, 255, 255, ${0.82 * capsuleProgress})`,
+          backdropFilter: capsuleProgress > 0.03 ? `blur(${capsuleProgress * 24}px)` : 'none',
+          WebkitBackdropFilter: capsuleProgress > 0.03 ? `blur(${capsuleProgress * 24}px)` : 'none',
+          borderColor: `rgba(255, 255, 255, ${0.65 * capsuleProgress})`,
+          borderWidth: '1px',
+          borderStyle: 'solid',
+          boxShadow: capsuleProgress > 0.03 
+            ? `0 ${10 * capsuleProgress}px ${25 * capsuleProgress}px -5px rgba(15, 23, 42, ${0.1 * capsuleProgress}), 0 0 0 ${1 * capsuleProgress}px rgba(15, 23, 42, ${0.05 * capsuleProgress})` 
+            : 'none',
+          transition: 'background-color 0.25s ease-out, border-color 0.25s ease-out, box-shadow 0.25s ease-out, backdrop-filter 0.25s ease-out'
+        } : undefined}
       >
         <div className="flex justify-between items-center w-full">
           {/* Logo Sembriogan interactivo con tamaño profesional y nítido */}
@@ -519,7 +553,7 @@ export default function PublicHome() {
               src="/logo.png" 
               alt="Logo Sembriogan" 
               className={`w-auto object-contain transition-all duration-300 filter drop-shadow-sm ${
-                isScrolled ? 'h-9 md:h-11' : 'h-11 md:h-14'
+                capsuleProgress > 0.5 ? 'h-9 md:h-11' : 'h-11 md:h-14'
               }`} 
             />
           </a>
