@@ -11,9 +11,14 @@ const registrarUsuario = async (req, res) => {
     try {
         const { nombre, email, password, rol } = req.body;
 
-        const existeUsuario = await Usuario.findOne({ email });
+        if (!nombre || !email || !password) {
+            return res.status(400).json({ success: false, mensaje: "Nombre, correo y contraseña son obligatorios" });
+        }
+
+        const emailLimpio = (email || '').toLowerCase().trim();
+        const existeUsuario = await Usuario.findOne({ email: emailLimpio });
         if (existeUsuario) {
-            return res.status(400).json({ success: false, mensaje: "El correo ya está registrado" });
+            return res.status(400).json({ success: false, mensaje: "El correo ya está registrado por otro usuario" });
         }
 
         const totalUsuarios = await Usuario.countDocuments();
@@ -27,15 +32,26 @@ const registrarUsuario = async (req, res) => {
         const passwordEncriptado = await bcrypt.hash(password, salt);
 
         const nuevoUsuario = new Usuario({
-            nombre,
-            email,
+            nombre: (nombre || '').trim(),
+            email: emailLimpio,
             password: passwordEncriptado,
             rol: rolAsignado,
             estado: true
         });
 
         await nuevoUsuario.save();
-        res.status(201).json({ success: true, mensaje: `Usuario registrado con éxito como ${rolAsignado}` });
+        res.status(201).json({ 
+            success: true, 
+            mensaje: `Usuario registrado con éxito como ${rolAsignado}`,
+            data: {
+                id: nuevoUsuario._id,
+                _id: nuevoUsuario._id,
+                nombre: nuevoUsuario.nombre,
+                email: nuevoUsuario.email,
+                rol: nuevoUsuario.rol,
+                estado: nuevoUsuario.estado
+            }
+        });
 
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
