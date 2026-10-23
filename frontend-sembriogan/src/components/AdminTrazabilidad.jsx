@@ -552,11 +552,13 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
                   <div className="pt-2 border-t border-slate-100 space-y-2">
                     <button
                       onClick={() => setReporteProductorModal(prod)}
-                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm shadow-blue-500/20"
+                      className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-between shadow-sm shadow-blue-500/20 group cursor-pointer"
                     >
-                      <FileText size={15} />
-                      <span>Generar Reporte Oficial</span>
-                      <ChevronRight size={14} className="ml-auto" />
+                      <div className="flex items-center gap-2">
+                        <FileText size={15} className="text-blue-100" />
+                        <span>Generar Reporte Oficial</span>
+                      </div>
+                      <ChevronRight size={15} className="text-blue-200 group-hover:translate-x-0.5 transition-transform" />
                     </button>
 
                     <div className="grid grid-cols-2 gap-2">

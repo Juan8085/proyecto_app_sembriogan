@@ -2,8 +2,8 @@ import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import { useState, useRef, useEffect } from 'react';
 import { X, Send } from 'lucide-react'; 
 
-// Ícono exclusivo de Biotecnología y Genética Bovina para Sembriogan
-const BovineGeneticsIcon = ({ className = "w-6 h-6", size = 26 }) => (
+// Ícono de Médico / Enfermero Veterinario Especialista para el Asistente IA
+const DoctorNurseIcon = ({ className = "w-6 h-6", size = 26 }) => (
     <svg 
         width={size} 
         height={size} 
@@ -12,26 +12,23 @@ const BovineGeneticsIcon = ({ className = "w-6 h-6", size = 26 }) => (
         xmlns="http://www.w3.org/2000/svg"
         className={className}
     >
-        {/* Cuerno Izquierdo Curvado */}
-        <path d="M4 6.5C4 6.5 6.8 4 10.5 6.5C11.8 7.5 12.5 9.5 12.8 11" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-        {/* Cuerno Derecho Curvado */}
-        <path d="M28 6.5C28 6.5 25.2 4 21.5 6.5C20.2 7.5 19.5 9.5 19.2 11" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-        {/* Oreja Izquierda */}
-        <path d="M5.5 12.5C3.5 12.5 2.5 14.5 3.5 15.5C5 16.5 7.5 15.2 8.5 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        {/* Oreja Derecha */}
-        <path d="M26.5 12.5C28.5 12.5 29.5 14.5 28.5 15.5C27 16.5 24.5 15.2 23.5 14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        {/* Cabeza Bovina con Relleno Sutil */}
-        <path d="M11 10.5C11 9.2 13 8.5 16 8.5C19 8.5 21 9.2 21 10.5C21 13 22 17.5 20.5 22C19.2 25.5 17.5 27.5 16 27.5C14.5 27.5 12.8 25.5 11.5 22C10 17.5 11 13 11 10.5Z" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-        {/* Ojos */}
-        <circle cx="13.5" cy="14.5" r="1.2" fill="currentColor" />
-        <circle cx="18.5" cy="14.5" r="1.2" fill="currentColor" />
-        {/* Hocico */}
-        <path d="M13 20.5C13 19.8 14.2 19.2 16 19.2C17.8 19.2 19 19.8 19 20.5C19 22.5 17.8 24 16 24C14.2 24 13 22.5 13 20.5Z" stroke="currentColor" strokeWidth="1.6" />
-        <circle cx="14.6" cy="21.3" r="0.6" fill="currentColor" />
-        <circle cx="17.4" cy="21.3" r="0.6" fill="currentColor" />
-        {/* Chispa / Estrella de Biotecnología e Inteligencia Artificial */}
-        <path d="M25 18L25.8 20.2L28 21L25.8 21.8L25 24L24.2 21.8L22 21L24.2 20.2L25 18Z" fill="#38BDF8" stroke="#0284C7" strokeWidth="0.5" />
-        <circle cx="7" cy="21.5" r="1" fill="#38BDF8" />
+        {/* Cabeza / Rostro */}
+        <circle cx="16" cy="10.5" r="4.8" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="1.8" />
+        
+        {/* Cofia / Gorro Médico con Cruz de Salud */}
+        <path d="M11 9C11 6.2 13 4.5 16 4.5C19 4.5 21 6.2 21 9H11Z" fill="#0284C7" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M16 5.8V7.8M15 6.8H17" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+        
+        {/* Bata Médica / Uniforme */}
+        <path d="M7.5 27.5C7.5 22.8 11 19 16 19C21 19 24.5 22.8 24.5 27.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        
+        {/* Cuello en V de la bata */}
+        <path d="M12.5 19L16 23.5L19.5 19" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        
+        {/* Estetoscopio Profesional en el Cuello */}
+        <path d="M11 20.5C11 23.8 13 25.5 16 25.5C19 25.5 21 23.8 21 20.5" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round" />
+        <path d="M16 25.5V27.8" stroke="#38BDF8" strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="16" cy="28.5" r="1.5" fill="#38BDF8" stroke="currentColor" strokeWidth="0.8" />
     </svg>
 );
 
@@ -40,7 +37,7 @@ const ChatWidget = () => {
     const [mensaje, setMensaje] = useState('');
     const [historial, setHistorial] = useState([
         { 
-            texto: '¡Hola amigo ganadero! Soy el Asesor Genético IA de Sembriogan. ¿En qué le puedo orientar hoy sobre pajillas, protocolos de IATF, razas o insumos para su hato?', 
+            texto: '¡Hola amigo ganadero! Soy el Médico Asistente IA de Sembriogan. ¿En qué le puedo orientar hoy sobre salud animal, protocolos de IATF, pajillas o insumos para su hato?', 
             isUser: false 
         }
     ]);
@@ -123,34 +120,34 @@ const ChatWidget = () => {
                 </svg>
             </a>
 
-            {/* BOTÓN FLOTANTE ASESOR GENÉTICO IA (Ícono Bovino Biotecnológico) */}
+            {/* BOTÓN FLOTANTE MÉDICO / ENFERMERO VETERINARIO IA */}
             <button 
                 onClick={() => setIsOpen(!isOpen)} 
-                title="Consultar Asesor Genético Bovino IA"
-                className="fixed bottom-24 right-6 bg-gradient-to-tr from-slate-900 via-blue-900 to-indigo-900 hover:from-slate-800 hover:to-blue-800 text-white p-3.5 sm:p-4 rounded-full shadow-2xl z-[70] flex items-center justify-center transition transform hover:scale-110 group border border-blue-400/30"
+                title="Consultar Médico Veterinario IA"
+                className="fixed bottom-24 right-6 bg-gradient-to-tr from-blue-700 via-indigo-700 to-sky-600 hover:from-blue-600 hover:to-sky-500 text-white p-3.5 sm:p-4 rounded-full shadow-2xl z-[70] flex items-center justify-center transition transform hover:scale-110 group border-2 border-white/40 cursor-pointer"
             >
-                <BovineGeneticsIcon size={28} className="text-white drop-shadow group-hover:scale-105 transition-transform" />
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-sky-400 border-2 border-slate-900 rounded-full animate-ping"></span>
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-sky-400 border-2 border-slate-900 rounded-full"></span>
+                <DoctorNurseIcon size={28} className="text-white drop-shadow group-hover:scale-105 transition-transform" />
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 border-2 border-slate-900 rounded-full animate-ping"></span>
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 border-2 border-slate-900 rounded-full"></span>
             </button>
 
             {/* VENTANA DEL CHAT IA */}
             {isOpen && (
                 <div className="fixed bottom-40 right-6 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl z-[80] flex flex-col overflow-hidden border border-slate-200">
-                    <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 p-4 flex justify-between items-center text-white border-b border-blue-500/20">
+                    <div className="bg-gradient-to-r from-blue-800 via-indigo-900 to-slate-900 p-4 flex justify-between items-center text-white border-b border-blue-400/20">
                         <div className="flex items-center gap-3">
-                            <div className="bg-blue-600/30 border border-blue-400/40 p-2 rounded-2xl text-sky-300">
-                                <BovineGeneticsIcon size={24} className="text-sky-300" />
+                            <div className="bg-white/20 border border-white/30 p-2 rounded-2xl text-white">
+                                <DoctorNurseIcon size={24} className="text-white" />
                             </div>
                             <div>
                                 <h3 className="font-bold text-sm tracking-tight flex items-center gap-1.5">
-                                    Asesor Genético IA
-                                    <span className="bg-sky-400/20 text-sky-300 text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase">EPSEA</span>
+                                    Médico Asistente IA
+                                    <span className="bg-emerald-400/20 text-emerald-300 text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase">EPSEA</span>
                                 </h3>
-                                <p className="text-slate-300 text-[10px]">Biotecnología & Reproducción Bovina 24/7</p>
+                                <p className="text-blue-200 text-[10px]">Orientación Clínica & Reproductiva 24/7</p>
                             </div>
                         </div>
-                        <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white transition p-1 rounded-lg hover:bg-white/10">
+                        <button onClick={() => setIsOpen(false)} className="text-slate-300 hover:text-white transition p-1 rounded-lg hover:bg-white/10 cursor-pointer">
                             <X size={20} />
                         </button>
                     </div>
@@ -172,8 +169,8 @@ const ChatWidget = () => {
                         ))}
                         {isLoading && (
                             <div className="bg-white border border-slate-200 text-slate-500 text-[11px] p-3 rounded-2xl rounded-tl-none shadow-xs self-start flex items-center gap-2">
-                                <BovineGeneticsIcon size={14} className="animate-spin text-blue-600" /> 
-                                <span className="italic">Analizando genética y recomendaciones...</span>
+                                <DoctorNurseIcon size={15} className="animate-pulse text-blue-600" /> 
+                                <span className="italic">El médico veterinario está evaluando su consulta...</span>
                             </div>
                         )}
                     </div>
@@ -183,10 +180,10 @@ const ChatWidget = () => {
                             type="text" 
                             value={mensaje}
                             onChange={(e) => setMensaje(e.target.value)}
-                            placeholder="Pregunta sobre razas, IATF, pajillas..." 
+                            placeholder="Consulte sobre síntomas, IATF, pajillas..." 
                             className="flex-1 bg-slate-50 text-xs px-3.5 py-2.5 rounded-xl outline-none focus:border-blue-500 focus:bg-white border border-slate-200 transition"
                         />
-                        <button type="submit" disabled={isLoading} className="bg-blue-600 text-white p-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 disabled:opacity-50 transition flex items-center justify-center shadow-sm">
+                        <button type="submit" disabled={isLoading} className="bg-blue-600 text-white p-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 disabled:opacity-50 transition flex items-center justify-center shadow-sm cursor-pointer">
                             <Send size={16} />
                         </button>
                     </form>

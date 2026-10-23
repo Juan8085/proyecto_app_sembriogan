@@ -1447,15 +1447,47 @@ export default function CatalogoTienda() {
       )}
 
       {/* ============================================================ */}
-      {/* FOOTER                                                       */}
+      {/* ============================================================ */}
+      {/* FOOTER INSTITUCIONAL                                         */}
       {/* ============================================================ */}
       <footer className="bg-slate-900 text-slate-400 py-12 px-6 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Sembriogan" className="h-9 w-auto brightness-0 invert" />
-            <p className="text-slate-500">Somos EPSEA • Biotecnología Reproductiva y Extensión Agropecuaria.</p>
+        <div className="max-w-6xl mx-auto flex flex-col items-center justify-center text-center space-y-6">
+          
+          {/* Fila de Logos Oficiales */}
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 opacity-90 transition-opacity hover:opacity-100">
+            <Link to="/" className="transition hover:scale-105" title="Sembriogan - SOMOS EPSEA">
+              <img src="/logo.png" alt="Sembriogan" className="h-10 md:h-12 w-auto object-contain brightness-0 invert filter drop-shadow-xs" />
+            </Link>
+            
+            <div className="h-8 w-px bg-slate-800 hidden sm:block"></div>
+
+            <div className="flex items-center gap-3 bg-white/95 px-3 py-1.5 rounded-xl shadow-xs" title="Servicio Nacional de Aprendizaje - SENA">
+              <img src="/SENA.png" alt="SENA" className="h-8 md:h-9 w-auto object-contain" />
+            </div>
+
+            <div className="h-8 w-px bg-slate-800 hidden sm:block"></div>
+
+            <div className="flex items-center gap-3" title="Desarrollo e Innovación por JUNEX SAS">
+              <img src="/junex-wordmark-blanco.png" alt="JUNEX S.A.S." className="h-7 md:h-8 w-auto object-contain filter drop-shadow-xs" />
+            </div>
           </div>
-          <p>© {new Date().getFullYear()} Sembriogan. Todos los derechos reservados.</p>
+
+          {/* Textos Institucionales y Reconocimiento */}
+          <div className="space-y-1.5 max-w-2xl text-xs md:text-sm text-slate-400">
+            <p className="font-semibold text-slate-300">
+              Proyecto biotecnológico desarrollado en articulación con el <span className="font-bold text-emerald-400">SENA</span> (Servicio Nacional de Aprendizaje).
+            </p>
+            <p className="font-medium text-slate-400">
+              Arquitectura, ingeniería de software y desarrollo tecnológico por <span className="font-bold text-white">JUNEX S.A.S.</span>
+            </p>
+          </div>
+
+          <div className="w-16 h-0.5 bg-slate-800 rounded-full"></div>
+
+          {/* Derechos de Autor */}
+          <p className="text-xs text-slate-500 font-medium">
+            © {new Date().getFullYear()} Sembriogan - SOMOS EPSEA. Todos los derechos reservados.
+          </p>
         </div>
       </footer>
 

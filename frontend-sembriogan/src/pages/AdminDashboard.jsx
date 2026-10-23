@@ -75,7 +75,7 @@ export default function AdminDashboard() {
   const getSectionTitle = () => {
     switch (activeTab) {
       case 'inicio': return { title: 'Panel de Control General', subtitle: 'Métricas financieras, tasa de preñez e inventario en tiempo real' };
-      case 'veterinarios': return { title: 'Gestión de Personal', subtitle: 'Administración de accesos, roles y cuentas del equipo' };
+      case 'veterinarios': return { title: 'Gestión de Personal y Clientes', subtitle: 'Directorio de clientes ganaderos registrados, veterinarios y administradores' };
       case 'historial': return { title: 'Trazabilidad Genética y Protocolos', subtitle: 'Seguimiento de biotecnología reproductiva (IATF, IA, TE) y alertas clínicas' };
       case 'catalogo': return { title: 'Gestión de Tienda y Servicios', subtitle: 'Control de productos, stock en bodega y servicios biotecnológicos' };
       case 'testimonios': return { title: 'Gestión de Testimonios', subtitle: 'Moderación de experiencias y opiniones de ganaderos' };

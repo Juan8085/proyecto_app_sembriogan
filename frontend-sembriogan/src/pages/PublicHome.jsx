@@ -499,12 +499,12 @@ export default function PublicHome() {
       
       {/* HEADER FLOTANTE INTERACTIVO Y PROFESIONAL CON VIDRIO ESMERILADO (GLASSMORPHISM) */}
       <header 
-        className={`fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-in-out w-[95%] max-w-7xl border ${
-          isMobileNavOpen ? 'rounded-3xl' : 'rounded-full'
-        } ${
-          isScrolled 
-            ? 'top-3 bg-white/70 backdrop-blur-2xl shadow-xl shadow-slate-900/10 py-2.5 px-5 md:px-7 border-white/60 ring-1 ring-slate-900/5' 
-            : 'top-6 bg-white/20 backdrop-blur-xl shadow-2xl shadow-black/15 py-3 px-6 md:px-8 border-white/35 ring-1 ring-white/20 hover:bg-white/25'
+        className={`fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-in-out w-[95%] max-w-7xl ${
+          isMobileNavOpen 
+            ? 'rounded-3xl bg-white/95 backdrop-blur-2xl shadow-2xl border border-slate-200/80 top-3 py-3 px-5' 
+            : isScrolled 
+              ? 'rounded-full top-3 bg-white/80 backdrop-blur-2xl shadow-xl shadow-slate-900/10 py-2.5 px-5 md:px-7 border border-white/60 ring-1 ring-slate-900/5' 
+              : 'rounded-full top-6 bg-transparent border border-transparent shadow-none ring-0 py-3 px-6 md:px-8'
         }`}
       >
         <div className="flex justify-between items-center w-full">
@@ -550,10 +550,10 @@ export default function PublicHome() {
             
             <Link 
               to="/tienda" 
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/25 transition ml-1"
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-full font-semibold text-xs text-slate-800 hover:text-blue-600 hover:bg-white/60 transition ml-1"
             >
               <ShoppingBag size={13} />
-              Tienda Completa
+              Tienda Oficial
             </Link>
 
             <div className="h-4 w-px bg-white/50 mx-1"></div>
@@ -670,10 +670,13 @@ export default function PublicHome() {
             <Link 
               to="/tienda" 
               onClick={() => setIsMobileNavOpen(false)}
-              className="flex items-center justify-between px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white shadow-sm"
+              className="flex items-center justify-between px-4 py-2.5 rounded-xl font-semibold text-sm text-slate-800 hover:bg-white/40 transition"
             >
-              <span>🛍️ Tienda y Catálogo Completo</span>
-              <ArrowRight size={16} />
+              <span className="flex items-center gap-2">
+                <ShoppingBag size={16} className="text-blue-600" />
+                Tienda Oficial
+              </span>
+              <ArrowRight size={16} className="text-slate-400" />
             </Link>
             <Link 
               to="/admin" 
@@ -1384,9 +1387,46 @@ export default function PublicHome() {
         </div>
       )}
 
-      <footer className="bg-transparent border-t border-slate-200/50 py-12 px-6 text-center text-sm mt-auto relative z-40">
-        <img src="/logo.png" alt="Sembriogan" className="h-8 mx-auto opacity-50 mb-4 grayscale" />
-        <p className="text-slate-400 font-medium">© 2026 Sembriogan. Todos los derechos reservados.</p>
+      {/* FOOTER INSTITUCIONAL CON LOGOS OFICIALES */}
+      <footer className="bg-white/70 backdrop-blur-md border-t border-slate-200/70 py-12 px-6 mt-auto relative z-40">
+        <div className="max-w-6xl mx-auto flex flex-col items-center justify-center text-center space-y-6">
+          
+          {/* Fila de Logos Oficiales */}
+          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 opacity-90 transition-opacity hover:opacity-100">
+            <a href="#inicio" onClick={(e) => scrollToSection(e, 'inicio')} className="transition hover:scale-105" title="Sembriogan - SOMOS EPSEA">
+              <img src="/logo.png" alt="Sembriogan" className="h-10 md:h-12 w-auto object-contain filter drop-shadow-xs" />
+            </a>
+            
+            <div className="h-8 w-px bg-slate-300/80 hidden sm:block"></div>
+
+            <div className="flex items-center gap-3" title="Servicio Nacional de Aprendizaje - SENA">
+              <img src="/SENA.png" alt="SENA" className="h-11 md:h-13 w-auto object-contain filter drop-shadow-xs" />
+            </div>
+
+            <div className="h-8 w-px bg-slate-300/80 hidden sm:block"></div>
+
+            <div className="flex items-center gap-3" title="Desarrollo e Innovación por JUNEX SAS">
+              <img src="/junex-wordmark-negro.png" alt="JUNEX S.A.S." className="h-7 md:h-8 w-auto object-contain filter drop-shadow-xs" />
+            </div>
+          </div>
+
+          {/* Textos Institucionales y Reconocimiento */}
+          <div className="space-y-1.5 max-w-2xl text-xs md:text-sm text-slate-500">
+            <p className="font-semibold text-slate-700">
+              Proyecto biotecnológico desarrollado en articulación con el <span className="font-black text-emerald-700">SENA</span> (Servicio Nacional de Aprendizaje).
+            </p>
+            <p className="font-medium text-slate-600">
+              Arquitectura, ingeniería de software y desarrollo tecnológico por <span className="font-black text-slate-800">JUNEX S.A.S.</span>
+            </p>
+          </div>
+
+          <div className="w-16 h-0.5 bg-slate-200 rounded-full"></div>
+
+          {/* Derechos de Autor */}
+          <p className="text-xs text-slate-400 font-medium">
+            © {new Date().getFullYear()} Sembriogan - SOMOS EPSEA. Todos los derechos reservados.
+          </p>
+        </div>
       </footer>
     </div>
   );
