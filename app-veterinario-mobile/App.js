@@ -5,7 +5,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Home, PlusCircle, ShoppingBag, Bot, User } from 'lucide-react-native';
+import { Home, PlusCircle, ShoppingBag, User } from 'lucide-react-native';
+
+// Componente Especializado de Ícono Médico / Enfermero IA
+import DoctorNurseIcon from './src/components/DoctorNurseIcon';
 
 // Pantallas
 import LoginScreen from './src/screens/LoginScreen';
@@ -24,22 +27,22 @@ function MainTabs() {
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarHideOnKeyboard: true, // ESENCIAL para que en Android no flote sobre el teclado
-        tabBarActiveTintColor: '#0ea5e9',
+        tabBarHideOnKeyboard: true, // Para que en Android no flote sobre el teclado
+        tabBarActiveTintColor: '#0284c7',
         tabBarInactiveTintColor: '#94a3b8',
         tabBarStyle: {
           position: 'absolute',
-          bottom: Platform.OS === 'android' ? 20 : 30,
+          bottom: Platform.OS === 'android' ? 16 : 28,
           left: 16,
           right: 16,
           elevation: 10,
-          shadowColor: '#000',
+          shadowColor: '#0f172a',
           shadowOffset: { width: 0, height: 10 },
-          shadowOpacity: 0.1,
+          shadowOpacity: 0.12,
           shadowRadius: 20,
           backgroundColor: '#ffffff',
-          borderRadius: 24,
-          height: 70,
+          borderRadius: 26,
+          height: 72,
           borderTopWidth: 0,
         }
       }}
@@ -51,26 +54,26 @@ function MainTabs() {
         options={{
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconActive]}>
-              <Home color={focused ? '#fff' : color} size={22} />
+              <Home color={focused ? '#fff' : color} size={22} strokeWidth={focused ? 2.4 : 2} />
             </View>
           ),
         }}
       />
 
-      {/* 2. CATÁLOGO / PRODUCTOS */}
+      {/* 2. CATÁLOGO / TIENDA */}
       <Tab.Screen 
         name="Catálogo" 
         component={CatalogoScreen} 
         options={{
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconActive]}>
-              <ShoppingBag color={focused ? '#fff' : color} size={22} />
+              <ShoppingBag color={focused ? '#fff' : color} size={22} strokeWidth={focused ? 2.4 : 2} />
             </View>
           ),
         }}
       />
 
-      {/* 3. REGISTRAR PROCEDIMIENTO (BOTÓN CENTRADO RESALTADO EN LA MITAD EXACTA) */}
+      {/* 3. REGISTRAR (BOTÓN PRINCIPAL RESALTADO EN EL CENTRO EXACTO) */}
       <Tab.Screen 
         name="Registrar" 
         component={RegistroScreen} 
@@ -82,10 +85,10 @@ function MainTabs() {
               alignItems: 'center',
             }}>
               <View style={{
-                width: 58,
-                height: 58,
-                borderRadius: 29,
-                backgroundColor: '#10b981', // Verde resaltado Sembriogan
+                width: 60,
+                height: 60,
+                borderRadius: 30,
+                backgroundColor: '#10b981', // Verde esmeralda Sembriogan
                 justifyContent: 'center',
                 alignItems: 'center',
                 shadowColor: '#10b981',
@@ -96,21 +99,25 @@ function MainTabs() {
                 borderWidth: 4,
                 borderColor: '#ffffff'
               }}>
-                <PlusCircle color="#ffffff" size={30} />
+                <PlusCircle color="#ffffff" size={32} strokeWidth={2.4} />
               </View>
             </View>
           ),
         }}
       />
 
-      {/* 4. ASISTENTE CLÍNICO IA */}
+      {/* 4. ASISTENTE CLÍNICO IA (CON EL NUEVO ÍCONO MÉDICO/ENFERMERO VETERINARIO) */}
       <Tab.Screen 
         name="Asistente" 
         component={AsistenteScreen} 
         options={{
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconActive]}>
-              <Bot color={focused ? '#fff' : color} size={22} />
+              <DoctorNurseIcon 
+                size={24} 
+                color={focused ? '#ffffff' : color} 
+                secondaryColor={focused ? '#bae6fd' : '#0284c7'} 
+              />
             </View>
           ),
         }}
@@ -123,7 +130,7 @@ function MainTabs() {
         options={{
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.iconActive]}>
-              <User color={focused ? '#fff' : color} size={22} />
+              <User color={focused ? '#fff' : color} size={22} strokeWidth={focused ? 2.4 : 2} />
             </View>
           ),
         }}
@@ -155,10 +162,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   iconActive: {
-    backgroundColor: '#0ea5e9',
-    shadowColor: '#0ea5e9',
+    backgroundColor: '#0284c7',
+    shadowColor: '#0284c7',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 5,
   }
