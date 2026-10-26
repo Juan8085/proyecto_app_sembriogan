@@ -27,7 +27,10 @@ import {
   ShieldCheck,
   Award,
   Printer,
-  CheckCircle2
+  CheckCircle2,
+  MapPin,
+  Compass,
+  Navigation
 } from 'lucide-react';
 
 export default function CatalogoTienda() {
@@ -67,6 +70,21 @@ export default function CatalogoTienda() {
   const [configGlobal, setConfigGlobal] = useState(null);
   const [misOrdenesCliente, setMisOrdenesCliente] = useState([]);
   const [misProcedimientosCliente, setMisProcedimientosCliente] = useState([]);
+  const [misFincasCliente, setMisFincasCliente] = useState([]);
+  const [tabCliente, setTabCliente] = useState('fincas'); // 'fincas' | 'compras' | 'reproduccion'
+  const [isRegistrarFincaOpen, setIsRegistrarFincaOpen] = useState(false);
+  const [capturandoGpsCliente, setCapturandoGpsCliente] = useState(false);
+  const [guardandoFincaCliente, setGuardandoFincaCliente] = useState(false);
+  const [nuevaFincaCliente, setNuevaFincaCliente] = useState({
+    nombreFinca: '',
+    municipio: 'Neiva',
+    vereda: '',
+    lat: '',
+    lng: '',
+    numeroAnimales: '',
+    hectareas: '',
+    tipoProduccion: 'Doble Propósito'
+  });
 
   // Detección de scroll para barra de navegación flotante homogénea con la página principal
   useEffect(() => {
@@ -170,8 +188,112 @@ export default function CatalogoTienda() {
       .then(res => res.json())
       .then(data => { if (data.success) setMisProcedimientosCliente(data.data); })
       .catch(console.error);
+      fetch(`${API_BASE_URL}/api/fincas?email=${userCliente.email}`)
+        .then(res => res.json())
+        .then(data => { if (data.success && Array.isArray(data.data)) setMisFincasCliente(data.data); })
+        .catch(console.error);
     }
   }, [userCliente, isClienteDashboardOpen]);
+
+  // Capturar coordenadas GPS del navegador para el cliente
+  const capturarGpsCliente = () => {
+    if (!navigator.geolocation) {
+      alert('Tu navegador no soporta geolocalización GPS.');
+      return;
+    }
+    setCapturandoGpsCliente(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setNuevaFincaCliente(prev => ({
+          ...prev,
+          lat: pos.coords.latitude.toFixed(6),
+          lng: pos.coords.longitude.toFixed(6)
+        }));
+        setCapturandoGpsCliente(false);
+      },
+      (err) => {
+        alert('No se pudo obtener la señal GPS: ' + err.message);
+        setCapturandoGpsCliente(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  // Registrar nueva finca del cliente
+  const handleGuardarFincaCliente = async (e) => {
+    e.preventDefault();
+    if (!nuevaFincaCliente.nombreFinca.trim()) {
+      alert('Por favor escribe el nombre de tu finca.');
+      return;
+    }
+    if (!nuevaFincaCliente.lat || !nuevaFincaCliente.lng) {
+      alert('Las coordenadas GPS (latitud y longitud) son obligatorias.');
+      return;
+    }
+
+    setGuardandoFincaCliente(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/fincas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombreFinca: nuevaFincaCliente.nombreFinca.trim(),
+          propietarioNombre: userCliente.nombre,
+          propietarioEmail: userCliente.email,
+          municipio: nuevaFincaCliente.municipio,
+          vereda: nuevaFincaCliente.vereda,
+          coordenadas: {
+            lat: parseFloat(nuevaFincaCliente.lat),
+            lng: parseFloat(nuevaFincaCliente.lng)
+          },
+          numeroAnimales: Number(nuevaFincaCliente.numeroAnimales) || 0,
+          hectareas: Number(nuevaFincaCliente.hectareas) || 0,
+          tipoProduccion: nuevaFincaCliente.tipoProduccion,
+          registradoPor: 'Cliente'
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setNuevaFincaCliente({
+          nombreFinca: '',
+          municipio: 'Neiva',
+          vereda: '',
+          lat: '',
+          lng: '',
+          numeroAnimales: '',
+          hectareas: '',
+          tipoProduccion: 'Doble Propósito'
+        });
+        setIsRegistrarFincaOpen(false);
+        // Recargar fincas
+        fetch(`${API_BASE_URL}/api/fincas?email=${userCliente.email}`)
+          .then(r => r.json())
+          .then(d => { if (d.success) setMisFincasCliente(d.data); });
+      } else {
+        alert(data.mensaje || 'Error al guardar finca.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión al guardar el predio.');
+    } finally {
+      setGuardandoFincaCliente(false);
+    }
+  };
+
+  // Eliminar finca del cliente
+  const handleEliminarFincaCliente = async (idFinca) => {
+    if (!window.confirm('¿Deseas eliminar esta finca de tus predios georreferenciados?')) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/fincas/${idFinca}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setMisFincasCliente(prev => prev.filter(f => f._id !== idFinca));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Cerrar el dropdown al hacer clic fuera
   useEffect(() => {
@@ -560,8 +682,11 @@ export default function CatalogoTienda() {
                       <p className="text-sm font-bold text-slate-800 truncate">{userCliente.nombre}</p>
                       <p className="text-xs text-slate-500 truncate">{userCliente.email}</p>
                     </div>
-                    <button onClick={() => { setIsClienteDashboardOpen(true); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition font-medium cursor-pointer">
-                      <Package size={16} className="text-blue-600" /> Historial y Certificados
+                    <button onClick={() => { setIsClienteDashboardOpen(true); setIsDropdownMenuOpen(false); setTabCliente('fincas'); }} className="flex items-center gap-3 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition font-medium cursor-pointer">
+                      <MapPin size={16} className="text-emerald-600" /> Mis Fincas (GPS)
+                    </button>
+                    <button onClick={() => { setIsClienteDashboardOpen(true); setIsDropdownMenuOpen(false); setTabCliente('compras'); }} className="flex items-center gap-3 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition font-medium cursor-pointer">
+                      <Package size={16} className="text-blue-600" /> Historial de Compras
                     </button>
                     <button onClick={() => { setIsPerfilOpen(true); setIsDropdownMenuOpen(false); }} className="flex items-center gap-3 px-5 py-3 text-sm text-slate-600 hover:bg-slate-50 text-left transition font-medium cursor-pointer">
                       <Settings size={16} className="text-slate-500" /> Configurar Perfil
@@ -1046,116 +1171,398 @@ export default function CatalogoTienda() {
       )}
 
       {/* ============================================================ */}
-      {/* MODAL: DASHBOARD DEL CLIENTE (HISTORIAL DE COMPRAS)           */}
+      {/* MODAL: DASHBOARD DEL CLIENTE (HISTORIAL DE COMPRAS Y FINCAS) */}
       {/* ============================================================ */}
       {isClienteDashboardOpen && userCliente && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl p-8 relative overflow-hidden max-h-[90vh] flex flex-col">
-            <button onClick={() => setIsClienteDashboardOpen(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700"><X size={24}/></button>
-            <div className="flex items-center gap-4 mb-6 border-b border-slate-100 pb-6">
-              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-black">
+          <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl p-6 sm:p-8 relative overflow-hidden max-h-[92vh] flex flex-col">
+            <button onClick={() => setIsClienteDashboardOpen(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 transition">
+              <X size={24}/>
+            </button>
+
+            {/* Encabezado del Perfil */}
+            <div className="flex items-center gap-4 mb-4 border-b border-slate-100 pb-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl font-black shadow-md shadow-blue-500/20">
                 {userCliente.nombre.charAt(0).toUpperCase()}
               </div>
               <div>
-                <h3 className="text-2xl font-black text-slate-800">{userCliente.nombre}</h3>
-                <p className="text-sm text-slate-500 font-medium">{userCliente.email}</p>
+                <h3 className="text-xl font-black text-slate-900">{userCliente.nombre}</h3>
+                <p className="text-xs text-slate-500 font-medium">{userCliente.email}</p>
+                <span className="inline-block mt-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                  Productor Ganadero Verificado
+                </span>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-6">
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                <h4 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2"><Package size={18}/> Mis Compras</h4>
-                {misOrdenesCliente.length === 0 ? (
-                  <p className="text-sm text-slate-500 py-4">No hay compras registradas bajo el correo: {userCliente.email}</p>
-                ) : (
-                  <div className="space-y-3">
-                    {misOrdenesCliente.map(orden => (
-                      <div key={orden._id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+
+            {/* PESTAÑAS DEL DASHBOARD */}
+            <div className="flex gap-2 border-b border-slate-100 pb-3 mb-4 overflow-x-auto">
+              <button
+                onClick={() => setTabCliente('fincas')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition shrink-0 cursor-pointer ${
+                  tabCliente === 'fincas'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <MapPin size={15} />
+                <span>Mis Fincas (GPS)</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${tabCliente === 'fincas' ? 'bg-emerald-700 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                  {misFincasCliente.length}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setTabCliente('reproduccion')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition shrink-0 cursor-pointer ${
+                  tabCliente === 'reproduccion'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Star size={15} />
+                <span>Historial Genético</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${tabCliente === 'reproduccion' ? 'bg-blue-700 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                  {misProcedimientosCliente.length}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setTabCliente('compras')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition shrink-0 cursor-pointer ${
+                  tabCliente === 'compras'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Package size={15} />
+                <span>Mis Compras</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${tabCliente === 'compras' ? 'bg-indigo-700 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                  {misOrdenesCliente.length}
+                </span>
+              </button>
+            </div>
+
+            {/* CONTENIDO DE PESTAÑAS */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+
+              {/* 1. PESTAÑA: MIS FINCAS (GPS) */}
+              {tabCliente === 'fincas' && (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-gradient-to-r from-emerald-50 via-teal-50 to-white p-4 rounded-2xl border border-emerald-100">
+                    <div>
+                      <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                        <MapPin size={17} className="text-emerald-600" />
+                        Geolocalización de tus Predios Ganaderos
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Registra la ubicación satelital de tus fincas para soporte veterinario y trazabilidad.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => setIsRegistrarFincaOpen(!isRegistrarFincaOpen)}
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm shadow-emerald-600/30 shrink-0 cursor-pointer"
+                    >
+                      <Plus size={15} />
+                      <span>{isRegistrarFincaOpen ? 'Cerrar Formulario' : 'Georreferenciar Finca'}</span>
+                    </button>
+                  </div>
+
+                  {/* Formulario para registrar nueva finca */}
+                  {isRegistrarFincaOpen && (
+                    <form onSubmit={handleGuardarFincaCliente} className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3 animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <Compass size={15} className="text-emerald-600" />
+                          Nuevo Predio Georreferenciado
+                        </span>
+                        <span className="text-[11px] text-slate-400">Coordenadas por GPS</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <p className="font-bold text-slate-800 text-sm">Ref: <span className="font-mono text-xs text-slate-500">{orden.referenciaWompi}</span></p>
-                          <p className="text-slate-400 text-xs mt-1">{new Date(orden.createdAt).toLocaleDateString()}</p>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Nombre de la Finca *</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Ej. Hacienda La Esperanza"
+                            value={nuevaFincaCliente.nombreFinca}
+                            onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, nombreFinca: e.target.value })}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
                         </div>
-                        <div className="text-right">
-                          <p className="font-black text-slate-800">${orden.total?.toLocaleString()} COP</p>
-                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md">Aprobado</span>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Municipio *</label>
+                          <select
+                            value={nuevaFincaCliente.municipio}
+                            onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, municipio: e.target.value })}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          >
+                            {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'Aipe', 'Algeciras', 'Baraya', 'Tarqui', 'Hobo', 'Villavieja', 'Yaguará', 'Tello', 'La Plata', 'San Agustín', 'Timaná', 'Otro'].map(m => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
 
-              {/* SECCIÓN: MIS PROCEDIMIENTOS GENÉTICOS */}
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mt-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-                  <div>
-                    <h4 className="font-bold text-slate-800 text-base flex items-center gap-2">
-                      <Star size={18} className="text-amber-500 fill-amber-400" /> Mis Procedimientos (Genética)
-                    </h4>
-                    <p className="text-xs text-slate-500 mt-0.5">Trazabilidad biotecnológica y diagnósticos de campo oficiales</p>
-                  </div>
-                  {misProcedimientosCliente.length > 0 && (
-                    <button 
-                      onClick={() => setInformeConsolidadoModal(true)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-2 shadow-sm shrink-0 cursor-pointer"
-                    >
-                      <Printer size={14} /> Descargar Informe Completo (PDF)
-                    </button>
-                  )}
-                </div>
-
-                {misProcedimientosCliente.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                    <div className="bg-white p-2.5 rounded-xl border border-slate-200 text-center">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Sincronizados</span>
-                      <span className="text-base font-black text-slate-800">{statsReproduccion.total}</span>
-                    </div>
-                    <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-100 text-center">
-                      <span className="text-[10px] uppercase font-bold text-emerald-700 block">Preñadas</span>
-                      <span className="text-base font-black text-emerald-700">{statsReproduccion.preñadas}</span>
-                    </div>
-                    <div className="bg-rose-50 p-2.5 rounded-xl border border-rose-100 text-center">
-                      <span className="text-[10px] uppercase font-bold text-rose-700 block">Vacías</span>
-                      <span className="text-base font-black text-rose-700">{statsReproduccion.vacias}</span>
-                    </div>
-                    <div className="bg-blue-50 p-2.5 rounded-xl border border-blue-100 text-center">
-                      <span className="text-[10px] uppercase font-bold text-blue-700 block">Tasa Éxito</span>
-                      <span className="text-base font-black text-blue-700">{statsReproduccion.tasa}%</span>
-                    </div>
-                  </div>
-                )}
-
-                {misProcedimientosCliente.length === 0 ? (
-                  <p className="text-sm text-slate-500 py-4">No hay procedimientos genéticos vinculados a este correo.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {misProcedimientosCliente.map(proc => (
-                      <div key={proc._id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-2">
-                        <div className="flex justify-between items-start">
-                           <div>
-                             <p className="font-bold text-slate-800 text-sm">Chapeta: <span className="text-primary font-black">{proc.arete || proc.animalId}</span></p>
-                             <p className="text-slate-500 text-xs">Finca: {proc.finca || proc.productor}</p>
-                           </div>
-                           <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${proc.tipoProcedimiento === 'IATF' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}`}>
-                             {proc.tipoProcedimiento}
-                           </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Vereda / Sector</label>
+                          <input
+                            type="text"
+                            placeholder="Ej. El Caguán"
+                            value={nuevaFincaCliente.vereda}
+                            onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, vereda: e.target.value })}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
                         </div>
-                        <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-1">
-                           <span className="text-xs text-slate-400">Día 0: {new Date(proc.fechasProtocolo?.dia0_sincronizacion || proc.createdAt).toLocaleDateString()}</span>
-                           <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${(proc.estadoPrenez === 'Pendiente' || proc.estadoPrenez === 'Pendiente Evaluación') ? 'bg-yellow-100 text-yellow-700' : (proc.estadoPrenez === 'Preñada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}`}>
-                             {proc.estadoPrenez}
-                           </span>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">N° de Animales</label>
+                          <input
+                            type="number"
+                            placeholder="Ej. 80"
+                            value={nuevaFincaCliente.numeroAnimales}
+                            onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, numeroAnimales: e.target.value })}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
                         </div>
-                        <button 
-                          onClick={() => setCertificadoClienteModal(proc)}
-                          className="mt-1 text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition w-fit cursor-pointer"
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Hectáreas</label>
+                          <input
+                            type="number"
+                            placeholder="Ej. 45"
+                            value={nuevaFincaCliente.hectareas}
+                            onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, hectareas: e.target.value })}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Captura GPS */}
+                      <div className="p-3 bg-white rounded-xl border border-slate-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[11px] font-bold text-slate-700">Coordenadas Satelitales *</span>
+                          <button
+                            type="button"
+                            onClick={capturarGpsCliente}
+                            disabled={capturandoGpsCliente}
+                            className="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center gap-1 transition cursor-pointer"
+                          >
+                            <Compass size={13} className={capturandoGpsCliente ? 'animate-spin' : ''} />
+                            {capturandoGpsCliente ? 'Detectando satélite...' : 'Detectar mi ubicación GPS actual'}
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <input
+                            type="number"
+                            step="any"
+                            required
+                            placeholder="Latitud (Ej. 2.9273)"
+                            value={nuevaFincaCliente.lat}
+                            onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, lat: e.target.value })}
+                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono"
+                          />
+                          <input
+                            type="number"
+                            step="any"
+                            required
+                            placeholder="Longitud (Ej. -75.2819)"
+                            value={nuevaFincaCliente.lng}
+                            onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, lng: e.target.value })}
+                            className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsRegistrarFincaOpen(false)}
+                          className="px-3.5 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition cursor-pointer"
                         >
-                          <FileText size={13} /> Certificado Individual (Imprimir / PDF)
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={guardandoFincaCliente}
+                          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm disabled:opacity-50 cursor-pointer"
+                        >
+                          {guardandoFincaCliente ? 'Guardando...' : 'Guardar Predio'}
                         </button>
                       </div>
-                    ))}
+                    </form>
+                  )}
+
+                  {/* Listado de fincas registradas del cliente */}
+                  {misFincasCliente.length === 0 ? (
+                    <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                      <MapPin size={32} className="mx-auto text-slate-300 mb-2" />
+                      <p className="text-sm font-bold text-slate-700">Aún no tienes fincas georreferenciadas</p>
+                      <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                        Haz clic en "Georreferenciar Finca" para agregar tu predio ganadero usando el GPS de tu celular o computador.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {misFincasCliente.map((finca) => (
+                        <div key={finca._id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h5 className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                                  <span>🏡</span> {finca.nombreFinca}
+                                </h5>
+                                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                  {finca.municipio} {finca.vereda ? `• ${finca.vereda}` : ''}
+                                </p>
+                              </div>
+                              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                                {finca.numeroAnimales || 0} reses
+                              </span>
+                            </div>
+
+                            <div className="mt-3 text-[11px] text-slate-500 space-y-1">
+                              <p className="font-mono text-emerald-700 font-semibold">
+                                📍 Lat: {finca.coordenadas?.lat?.toFixed(5)}, Lng: {finca.coordenadas?.lng?.toFixed(5)}
+                              </p>
+                              {finca.hectareas > 0 && (
+                                <p>🌱 Área: {finca.hectareas} hectáreas ({finca.tipoProduccion || 'Doble Propósito'})</p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                            <a
+                              href={`https://www.google.com/maps/dir/?api=1&destination=${finca.coordenadas?.lat},${finca.coordenadas?.lng}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition"
+                            >
+                              <Navigation size={13} />
+                              <span>Cómo llegar (GPS)</span>
+                            </a>
+
+                            <button
+                              onClick={() => handleEliminarFincaCliente(finca._id)}
+                              className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition cursor-pointer"
+                              title="Eliminar predio"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 2. PESTAÑA: MIS COMPRAS */}
+              {tabCliente === 'compras' && (
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                  <h4 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
+                    <Package size={18}/> Mis Compras
+                  </h4>
+                  {misOrdenesCliente.length === 0 ? (
+                    <p className="text-sm text-slate-500 py-4">No hay compras registradas bajo el correo: {userCliente.email}</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {misOrdenesCliente.map(orden => (
+                        <div key={orden._id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+                          <div>
+                            <p className="font-bold text-slate-800 text-sm">Ref: <span className="font-mono text-xs text-slate-500">{orden.referenciaWompi}</span></p>
+                            <p className="text-slate-400 text-xs mt-1">{new Date(orden.createdAt).toLocaleDateString()}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-black text-slate-800">${orden.total?.toLocaleString()} COP</p>
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md">Aprobado</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 3. PESTAÑA: MIS PROCEDIMIENTOS (GENÉTICA) */}
+              {tabCliente === 'reproduccion' && (
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                        <Star size={18} className="text-amber-500 fill-amber-400" /> Mis Procedimientos (Genética)
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-0.5">Trazabilidad biotecnológica y diagnósticos de campo oficiales</p>
+                    </div>
+                    {misProcedimientosCliente.length > 0 && (
+                      <button 
+                        onClick={() => setInformeConsolidadoModal(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-2 shadow-sm shrink-0 cursor-pointer"
+                      >
+                        <Printer size={14} /> Descargar Informe Completo (PDF)
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
+
+                  {misProcedimientosCliente.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                      <div className="bg-white p-2.5 rounded-xl border border-slate-200 text-center">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Sincronizados</span>
+                        <span className="text-base font-black text-slate-800">{statsReproduccion.total}</span>
+                      </div>
+                      <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-100 text-center">
+                        <span className="text-[10px] uppercase font-bold text-emerald-700 block">Preñadas</span>
+                        <span className="text-base font-black text-emerald-700">{statsReproduccion.preñadas}</span>
+                      </div>
+                      <div className="bg-rose-50 p-2.5 rounded-xl border border-rose-100 text-center">
+                        <span className="text-[10px] uppercase font-bold text-rose-700 block">Vacías</span>
+                        <span className="text-base font-black text-rose-700">{statsReproduccion.vacias}</span>
+                      </div>
+                      <div className="bg-blue-50 p-2.5 rounded-xl border border-blue-100 text-center">
+                        <span className="text-[10px] uppercase font-bold text-blue-700 block">Tasa Éxito</span>
+                        <span className="text-base font-black text-blue-700">{statsReproduccion.tasa}%</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {misProcedimientosCliente.length === 0 ? (
+                    <p className="text-sm text-slate-500 py-4">No hay procedimientos genéticos vinculados a este correo.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {misProcedimientosCliente.map(proc => (
+                        <div key={proc._id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-2">
+                          <div className="flex justify-between items-start">
+                             <div>
+                               <p className="font-bold text-slate-800 text-sm">Chapeta: <span className="text-primary font-black">{proc.arete || proc.animalId}</span></p>
+                               <p className="text-slate-500 text-xs">Finca: {proc.finca || proc.productor}</p>
+                             </div>
+                             <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${proc.tipoProcedimiento === 'IATF' ? 'bg-purple-100 text-purple-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                               {proc.tipoProcedimiento}
+                             </span>
+                          </div>
+                          <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-1">
+                             <span className="text-xs text-slate-400">Día 0: {new Date(proc.fechasProtocolo?.dia0_sincronizacion || proc.createdAt).toLocaleDateString()}</span>
+                             <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${(proc.estadoPrenez === 'Pendiente' || proc.estadoPrenez === 'Pendiente Evaluación') ? 'bg-yellow-100 text-yellow-700' : (proc.estadoPrenez === 'Preñada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}`}>
+                               {proc.estadoPrenez}
+                             </span>
+                          </div>
+                          <button 
+                            onClick={() => setCertificadoClienteModal(proc)}
+                            className="mt-1 text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition w-fit cursor-pointer"
+                          >
+                            <FileText size={13} /> Certificado Individual (Imprimir / PDF)
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
           </div>
         </div>

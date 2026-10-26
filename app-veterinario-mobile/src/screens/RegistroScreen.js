@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as Location from 'expo-location';
 import { API_URL, getApiUrl } from '../config/api';
-import { ArrowLeft, Save } from 'lucide-react-native';
+import { ArrowLeft, Save, MapPin, Compass, CheckCircle } from 'lucide-react-native';
 
 export default function RegistroScreen({ navigation }) {
   const [form, setForm] = useState({
@@ -18,6 +19,32 @@ export default function RegistroScreen({ navigation }) {
     estadoPrenez: 'Pendiente Evaluación'
   });
   const [loading, setLoading] = useState(false);
+  const [coordenadas, setCoordenadas] = useState(null);
+  const [capturandoGps, setCapturandoGps] = useState(false);
+
+  // Capturar coordenadas GPS del predio ganadero en campo
+  const capturarGps = async () => {
+    try {
+      setCapturandoGps(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso Requerido', 'Se necesita autorización de GPS para geolocalizar la finca en campo.');
+        setCapturandoGps(false);
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const coords = {
+        lat: parseFloat(loc.coords.latitude.toFixed(6)),
+        lng: parseFloat(loc.coords.longitude.toFixed(6))
+      };
+      setCoordenadas(coords);
+      Alert.alert('📍 Coordenadas Obtenidas', `Ubicación satelital del predio capturada:\nLatitud: ${coords.lat}\nLongitud: ${coords.lng}`);
+    } catch (err) {
+      Alert.alert('Error GPS', 'No se pudo obtener la posición satelital: ' + err.message);
+    } finally {
+      setCapturandoGps(false);
+    }
+  };
 
   const handleGuardar = async () => {
     if (!form.arete || !form.tipoProcedimiento || !form.productor) {
@@ -32,7 +59,8 @@ export default function RegistroScreen({ navigation }) {
       const payload = {
         ...form,
         geneticaUtilizada: form.semenToro || 'N/A',
-        fechasProtocolo: { dia0_sincronizacion: form.fechaProcedimiento }
+        fechasProtocolo: { dia0_sincronizacion: form.fechaProcedimiento },
+        coordenadas: coordenadas || undefined
       };
 
       try {
@@ -143,6 +171,29 @@ export default function RegistroScreen({ navigation }) {
 
           <Text style={styles.label}>Correo del Cliente (Para la App)</Text>
           <TextInput style={styles.input} value={form.productorEmail} onChangeText={(v) => setField('productorEmail', v)} keyboardType="email-address" autoCapitalize="none" placeholder="correo@ejemplo.com" />
+
+          {/* BOTÓN CAPTURAR GPS EN CAMPO */}
+          <Text style={styles.label}>Georreferenciación Satelital (GPS)</Text>
+          <TouchableOpacity 
+            style={[styles.btnGps, coordenadas && styles.btnGpsActivo]} 
+            onPress={capturarGps}
+            disabled={capturandoGps}
+          >
+            {capturandoGps ? (
+              <Compass color="#0284c7" size={18} />
+            ) : coordenadas ? (
+              <CheckCircle color="#10b981" size={18} />
+            ) : (
+              <MapPin color="#0284c7" size={18} />
+            )}
+            <Text style={[styles.btnGpsText, coordenadas && styles.btnGpsTextActivo]}>
+              {capturandoGps 
+                ? 'Obteniendo señal GPS...' 
+                : coordenadas 
+                  ? `📍 GPS: ${coordenadas.lat}, ${coordenadas.lng}` 
+                  : '📍 Capturar Ubicación GPS de la Finca'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.submitBtn} onPress={handleGuardar} disabled={loading}>
@@ -247,5 +298,29 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  btnGps: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1.5,
+    borderColor: '#bae6fd',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  btnGpsActivo: {
+    backgroundColor: '#ecfdf5',
+    borderColor: '#6ee7b7',
+  },
+  btnGpsText: {
+    color: '#0284c7',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  btnGpsTextActivo: {
+    color: '#059669',
   }
 });

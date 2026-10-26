@@ -2,8 +2,29 @@ import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, FlatList, Alert, Modal, RefreshControl, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView, Linking } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as Location from 'expo-location';
 import { API_URL, getApiUrl, setCustomApiUrl, getDefaultApiUrl, initApiUrl } from '../config/api';
-import { LogOut, Bell, CloudOff, RefreshCw, CheckCircle, Edit3, X, Save, MessageCircle, Share2, Server, Globe, RotateCcw } from 'lucide-react-native';
+import { 
+  LogOut, 
+  Bell, 
+  CloudOff, 
+  RefreshCw, 
+  CheckCircle, 
+  Edit3, 
+  X, 
+  Save, 
+  MessageCircle, 
+  Share2, 
+  Server, 
+  Globe, 
+  RotateCcw,
+  MapPin,
+  Compass,
+  Navigation,
+  Phone,
+  Plus,
+  Search
+} from 'lucide-react-native';
 
 export default function DashboardScreen({ navigation }) {
   const [procedimientos, setProcedimientos] = useState([]);
@@ -26,8 +47,140 @@ export default function DashboardScreen({ navigation }) {
   const [probandoConexion, setProbandoConexion] = useState(false);
   const [servidorConectado, setServidorConectado] = useState(true);
 
+  // Estados para Módulo de Fincas y Geolocalización GPS
+  const [modalFincasVisible, setModalFincasVisible] = useState(false);
+  const [fincas, setFincas] = useState([]);
+  const [fincasLoading, setFincasLoading] = useState(false);
+  const [busquedaFinca, setBusquedaFinca] = useState('');
+  const [modalNuevaFincaVisible, setModalNuevaFincaVisible] = useState(false);
+  const [capturandoGpsFinca, setCapturandoGpsFinca] = useState(false);
+  const [guardandoFinca, setGuardandoFinca] = useState(false);
+  const [nuevaFinca, setNuevaFinca] = useState({
+    nombreFinca: '',
+    propietarioNombre: '',
+    propietarioTelefono: '',
+    municipio: 'Neiva',
+    vereda: '',
+    numeroAnimales: '',
+    lat: '',
+    lng: ''
+  });
+
+  // Cargar fincas desde el backend
+  const cargarFincas = async () => {
+    setFincasLoading(true);
+    try {
+      const currentUrl = getApiUrl() || API_URL;
+      const res = await fetch(`${currentUrl}/api/fincas`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setFincas(data.data);
+      }
+    } catch (err) {
+      console.error('Error cargando fincas:', err);
+    } finally {
+      setFincasLoading(false);
+    }
+  };
+
+  // Capturar coordenadas GPS del veterinario en campo
+  const capturarGpsFinca = async () => {
+    try {
+      setCapturandoGpsFinca(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso Denegado', 'Se requiere acceso al GPS para capturar la posición de la finca.');
+        setCapturandoGpsFinca(false);
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setNuevaFinca(prev => ({
+        ...prev,
+        lat: loc.coords.latitude.toFixed(6),
+        lng: loc.coords.longitude.toFixed(6)
+      }));
+      Alert.alert('📍 Ubicación Capturada', `Coordenadas satelitales:\nLat: ${loc.coords.latitude.toFixed(5)}\nLng: ${loc.coords.longitude.toFixed(5)}`);
+    } catch (err) {
+      Alert.alert('Error GPS', 'No se pudo obtener la posición satelital: ' + err.message);
+    } finally {
+      setCapturandoGpsFinca(false);
+    }
+  };
+
+  // Guardar nueva finca desde la App del Veterinario
+  const guardarNuevaFinca = async () => {
+    if (!nuevaFinca.nombreFinca.trim() || !nuevaFinca.propietarioNombre.trim()) {
+      Alert.alert('Error', 'El nombre de la finca y del cliente propietario son obligatorios.');
+      return;
+    }
+    if (!nuevaFinca.lat || !nuevaFinca.lng) {
+      Alert.alert('Error', 'Debes capturar las coordenadas GPS del predio.');
+      return;
+    }
+
+    setGuardandoFinca(true);
+    try {
+      const currentUrl = getApiUrl() || API_URL;
+      const res = await fetch(`${currentUrl}/api/fincas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombreFinca: nuevaFinca.nombreFinca.trim(),
+          propietarioNombre: nuevaFinca.propietarioNombre.trim(),
+          propietarioTelefono: nuevaFinca.propietarioTelefono.trim(),
+          municipio: nuevaFinca.municipio,
+          vereda: nuevaFinca.vereda,
+          coordenadas: {
+            lat: parseFloat(nuevaFinca.lat),
+            lng: parseFloat(nuevaFinca.lng)
+          },
+          numeroAnimales: Number(nuevaFinca.numeroAnimales) || 0,
+          registradoPor: 'Veterinario'
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert('✅ Finca Registrada', 'El predio ha sido georreferenciado en el sistema satelital.');
+        setModalNuevaFincaVisible(false);
+        setNuevaFinca({
+          nombreFinca: '',
+          propietarioNombre: '',
+          propietarioTelefono: '',
+          municipio: 'Neiva',
+          vereda: '',
+          numeroAnimales: '',
+          lat: '',
+          lng: ''
+        });
+        cargarFincas();
+      } else {
+        Alert.alert('Error', data.mensaje || 'No se pudo guardar la finca.');
+      }
+    } catch (err) {
+      Alert.alert('Error de Red', 'Error al sincronizar con el servidor.');
+    } finally {
+      setGuardandoFinca(false);
+    }
+  };
+
+  // Abrir ruta satelital en Google Maps / Waze
+  const abrirRutaEnMaps = (lat, lng) => {
+    if (!lat || !lng) {
+      Alert.alert('Aviso', 'Este predio no cuenta con coordenadas satelitales válidas.');
+      return;
+    }
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'No se pudo abrir la app de navegación.');
+    });
+  };
+
   useEffect(() => {
-    initApiUrl().then(url => setServidorActual(url));
+    initApiUrl().then(url => {
+      setServidorActual(url);
+      cargarFincas();
+    });
   }, []);
 
   const probarYGuardarServidor = async (urlAProbar) => {
@@ -497,6 +650,30 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
         </TouchableOpacity>
       </View>
 
+      {/* ACCESO AL DIRECTORIO DE FINCAS Y MAPA GPS */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 6 }}>
+        <TouchableOpacity 
+          style={styles.fincasGpsBanner}
+          onPress={() => {
+            cargarFincas();
+            setModalFincasVisible(true);
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 }}>
+            <View style={styles.fincasGpsIcon}>
+              <MapPin color="#ffffff" size={20} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fincasGpsTitle}>Directorio de Fincas (GPS)</Text>
+              <Text style={styles.fincasGpsSubtitle}>Predios georreferenciados y rutas Waze / Maps</Text>
+            </View>
+          </View>
+          <View style={styles.fincasGpsBadge}>
+            <Text style={styles.fincasGpsBadgeText}>{fincas.length} Predios</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         data={procedimientos}
         keyExtractor={(item) => item._id}
@@ -695,6 +872,266 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
               <RotateCcw size={16} color="#475569" style={{ marginRight: 6 }} />
               <Text style={styles.resetBtnText}>Restaurar Detección Automática</Text>
             </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* MODAL: DIRECTORIO DE FINCAS GEORREFERENCIADAS */}
+      <Modal visible={modalFincasVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: '92%', height: '92%' }]}>
+            {/* Header del Modal */}
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={[styles.fincasGpsIcon, { width: 36, height: 36 }]}>
+                  <MapPin color="#fff" size={20} />
+                </View>
+                <View>
+                  <Text style={styles.modalTitle}>Directorio de Fincas</Text>
+                  <Text style={styles.modalSubTitle}>Geolocalización satelital y rutas GPS</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setModalFincasVisible(false)}>
+                <X color="#64748b" size={24} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Buscador y Botón Crear */}
+            <View style={{ marginBottom: 12, gap: 8 }}>
+              <View style={styles.searchBoxFinca}>
+                <Search size={18} color="#94a3b8" />
+                <TextInput
+                  style={styles.searchInputFinca}
+                  placeholder="Buscar finca, productor o municipio..."
+                  placeholderTextColor="#94a3b8"
+                  value={busquedaFinca}
+                  onChangeText={setBusquedaFinca}
+                />
+                {busquedaFinca ? (
+                  <TouchableOpacity onPress={() => setBusquedaFinca('')}>
+                    <X size={16} color="#94a3b8" />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+
+              <TouchableOpacity
+                style={styles.btnCrearFincaMobile}
+                onPress={() => {
+                  capturarGpsFinca();
+                  setModalNuevaFincaVisible(true);
+                }}
+              >
+                <Plus color="#ffffff" size={18} />
+                <Text style={styles.btnCrearFincaMobileText}>+ Georreferenciar Finca en Campo</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Listado de Fincas */}
+            <FlatList
+              data={fincas.filter(f => {
+                if (!busquedaFinca.trim()) return true;
+                const q = busquedaFinca.toLowerCase();
+                return (
+                  f.nombreFinca?.toLowerCase().includes(q) ||
+                  f.propietarioNombre?.toLowerCase().includes(q) ||
+                  f.municipio?.toLowerCase().includes(q) ||
+                  f.vereda?.toLowerCase().includes(q)
+                );
+              })}
+              keyExtractor={(item) => item._id}
+              refreshControl={<RefreshControl refreshing={fincasLoading} onRefresh={cargarFincas} />}
+              ListEmptyComponent={
+                <View style={{ padding: 30, alignItems: 'center' }}>
+                  <MapPin size={36} color="#cbd5e1" />
+                  <Text style={{ fontWeight: 'bold', color: '#64748b', marginTop: 8 }}>No se encontraron predios</Text>
+                  <Text style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', marginTop: 4 }}>
+                    Usa el botón superior para capturar las coordenadas de una finca con el GPS del celular.
+                  </Text>
+                </View>
+              }
+              renderItem={({ item }) => (
+                <View style={styles.fincaCardMobile}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={styles.fincaCardNombre}>🏡 {item.nombreFinca}</Text>
+                      <Text style={styles.fincaCardPropietario}>👤 {item.propietarioNombre}</Text>
+                      <Text style={styles.fincaCardUbicacion}>
+                        📍 {item.municipio} {item.vereda ? `• ${item.vereda}` : ''}
+                      </Text>
+                    </View>
+                    <View style={styles.fincaCardBadgeAnimales}>
+                      <Text style={styles.fincaCardBadgeAnimalesText}>{item.numeroAnimales || 0} reses</Text>
+                    </View>
+                  </View>
+
+                  {/* Coordenadas GPS */}
+                  <View style={styles.fincaCoordsBox}>
+                    <Text style={styles.fincaCoordsText}>
+                      🌐 GPS: {item.coordenadas?.lat?.toFixed(5)}, {item.coordenadas?.lng?.toFixed(5)}
+                    </Text>
+                  </View>
+
+                  {/* Acciones de la finca */}
+                  <View style={styles.fincaCardAcciones}>
+                    <TouchableOpacity
+                      style={styles.fincaBtnNavegar}
+                      onPress={() => abrirRutaEnMaps(item.coordenadas?.lat, item.coordenadas?.lng)}
+                    >
+                      <Navigation size={15} color="#ffffff" />
+                      <Text style={styles.fincaBtnNavegarText}>Cómo llegar (GPS)</Text>
+                    </TouchableOpacity>
+
+                    {item.propietarioTelefono ? (
+                      <TouchableOpacity
+                        style={styles.fincaBtnWhatsApp}
+                        onPress={() => {
+                          const cleanTel = item.propietarioTelefono.replace(/\D/g, '');
+                          const url = `whatsapp://send?phone=57${cleanTel}&text=${encodeURIComponent(`Hola ${item.propietarioNombre}, te saluda el equipo veterinario de Sembriogan.`)}`;
+                          Linking.openURL(url).catch(() => {
+                            Linking.openURL(`https://wa.me/57${cleanTel}`);
+                          });
+                        }}
+                      >
+                        <MessageCircle size={15} color="#16a34a" />
+                        <Text style={styles.fincaBtnWhatsAppText}>WhatsApp</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                </View>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL: GEORREFERENCIAR NUEVA FINCA DESDE LA APP */}
+      <Modal visible={modalNuevaFincaVisible} animationType="slide" transparent={true}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <MapPin color="#10b981" size={22} />
+                <Text style={styles.modalTitle}>Georreferenciar Predio</Text>
+              </View>
+              <TouchableOpacity onPress={() => setModalNuevaFincaVisible(false)}>
+                <X color="#64748b" size={22} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.labelFormFinca}>Nombre de la Finca *</Text>
+              <TextInput
+                style={styles.inputFormFinca}
+                placeholder="Ej. Hacienda El Progreso"
+                value={nuevaFinca.nombreFinca}
+                onChangeText={(v) => setNuevaFinca({ ...nuevaFinca, nombreFinca: v })}
+              />
+
+              <Text style={styles.labelFormFinca}>Nombre del Cliente / Productor *</Text>
+              <TextInput
+                style={styles.inputFormFinca}
+                placeholder="Ej. Pedro Gómez"
+                value={nuevaFinca.propietarioNombre}
+                onChangeText={(v) => setNuevaFinca({ ...nuevaFinca, propietarioNombre: v })}
+              />
+
+              <Text style={styles.labelFormFinca}>Teléfono / WhatsApp de Contacto</Text>
+              <TextInput
+                style={styles.inputFormFinca}
+                placeholder="Ej. 3123456789"
+                keyboardType="phone-pad"
+                value={nuevaFinca.propietarioTelefono}
+                onChangeText={(v) => setNuevaFinca({ ...nuevaFinca, propietarioTelefono: v })}
+              />
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.labelFormFinca}>Municipio</Text>
+                  <TextInput
+                    style={styles.inputFormFinca}
+                    placeholder="Ej. Neiva"
+                    value={nuevaFinca.municipio}
+                    onChangeText={(v) => setNuevaFinca({ ...nuevaFinca, municipio: v })}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.labelFormFinca}>Vereda</Text>
+                  <TextInput
+                    style={styles.inputFormFinca}
+                    placeholder="Ej. El Caguán"
+                    value={nuevaFinca.vereda}
+                    onChangeText={(v) => setNuevaFinca({ ...nuevaFinca, vereda: v })}
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.labelFormFinca}>Número de Animales / Cabezas</Text>
+              <TextInput
+                style={styles.inputFormFinca}
+                placeholder="Ej. 120"
+                keyboardType="numeric"
+                value={nuevaFinca.numeroAnimales}
+                onChangeText={(v) => setNuevaFinca({ ...nuevaFinca, numeroAnimales: v })}
+              />
+
+              {/* Botón de Captura Satelital GPS */}
+              <View style={styles.boxGpsCapturaForm}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <Text style={{ fontWeight: 'bold', fontSize: 13, color: '#0f172a' }}>Coordenadas Satelitales GPS</Text>
+                  <TouchableOpacity
+                    style={styles.btnCapturaGpsAccion}
+                    onPress={capturarGpsFinca}
+                    disabled={capturandoGpsFinca}
+                  >
+                    <Compass size={14} color="#047857" />
+                    <Text style={styles.btnCapturaGpsAccionText}>
+                      {capturandoGpsFinca ? 'Detectando...' : 'Actualizar GPS'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, color: '#64748b', marginBottom: 2 }}>Latitud</Text>
+                    <TextInput
+                      style={styles.inputCoordsMini}
+                      placeholder="Latitud"
+                      keyboardType="numeric"
+                      value={nuevaFinca.lat ? String(nuevaFinca.lat) : ''}
+                      onChangeText={(v) => setNuevaFinca({ ...nuevaFinca, lat: v })}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, color: '#64748b', marginBottom: 2 }}>Longitud</Text>
+                    <TextInput
+                      style={styles.inputCoordsMini}
+                      placeholder="Longitud"
+                      keyboardType="numeric"
+                      value={nuevaFinca.lng ? String(nuevaFinca.lng) : ''}
+                      onChangeText={(v) => setNuevaFinca({ ...nuevaFinca, lng: v })}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.btnGuardarFincaMobile, guardandoFinca && { opacity: 0.6 }]}
+                onPress={guardarNuevaFinca}
+                disabled={guardandoFinca}
+              >
+                {guardandoFinca ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Save color="#fff" size={18} style={{ marginRight: 6 }} />
+                    <Text style={styles.btnGuardarFincaMobileText}>Guardar Predio en Mapa</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -1112,4 +1549,255 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 13,
   },
+  // Estilos de Geolocalización de Fincas GPS
+  fincasGpsBanner: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: '#a7f3d0',
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  fincasGpsIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#10b981',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fincasGpsTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  fincasGpsSubtitle: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 1,
+  },
+  fincasGpsBadge: {
+    backgroundColor: '#ecfdf5',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#6ee7b7',
+  },
+  fincasGpsBadgeText: {
+    color: '#047857',
+    fontWeight: '800',
+    fontSize: 11,
+  },
+  searchBoxFinca: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    height: 44,
+  },
+  searchInputFinca: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 13,
+    color: '#0f172a',
+  },
+  btnCrearFincaMobile: {
+    backgroundColor: '#10b981',
+    borderRadius: 12,
+    height: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  btnCrearFincaMobileText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  fincaCardMobile: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  fincaCardNombre: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  fincaCardPropietario: {
+    fontSize: 12,
+    color: '#475569',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  fincaCardUbicacion: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  fincaCardBadgeAnimales: {
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  fincaCardBadgeAnimalesText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#16a34a',
+  },
+  fincaCoordsBox: {
+    backgroundColor: '#f8fafc',
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  fincaCoordsText: {
+    fontSize: 11,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    color: '#047857',
+    fontWeight: '600',
+  },
+  fincaCardAcciones: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  fincaBtnNavegar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#0284c7',
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  fincaBtnNavegarText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  fincaBtnWhatsApp: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  fincaBtnWhatsAppText: {
+    color: '#16a34a',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  labelFormFinca: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#475569',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  inputFormFinca: {
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 42,
+    fontSize: 13,
+    color: '#0f172a',
+  },
+  boxGpsCapturaForm: {
+    backgroundColor: '#ecfdf5',
+    borderWidth: 1,
+    borderColor: '#a7f3d0',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  btnCapturaGpsAccion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#6ee7b7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  btnCapturaGpsAccionText: {
+    color: '#047857',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  inputCoordsMini: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    height: 38,
+    fontSize: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    color: '#0f172a',
+  },
+  btnGuardarFincaMobile: {
+    backgroundColor: '#10b981',
+    borderRadius: 12,
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    marginBottom: 40,
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  btnGuardarFincaMobileText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  }
 });

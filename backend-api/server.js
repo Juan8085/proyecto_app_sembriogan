@@ -19,6 +19,7 @@ const registroGeneticoRoutes = require('./routes/registro_genetico.routes');
 const ordenesRoutes = require('./routes/orden.routes');
 const nosotrosRoutes = require('./routes/nosotros.routes');
 const notificacionRoutes = require('./routes/notificacion.routes');
+const fincasRoutes = require('./routes/fincas.routes');
 const { iniciarCron } = require('./services/cron.service');
 
 const app = express();
@@ -55,6 +56,7 @@ app.use('/api/contacto', contactoRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/registro-genetico', registroGeneticoRoutes);
 app.use('/api/ordenes', ordenesRoutes);
+app.use('/api/fincas', fincasRoutes);
 app.use('/api/configuracion', require('./routes/configuracion.routes'));
 app.use('/api/pagos', require('./routes/pagos.routes'));
 

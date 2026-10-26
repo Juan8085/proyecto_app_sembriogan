@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   ChevronRight,
   Activity,
-  Sparkles
+  Sparkles,
+  MapPin
 } from 'lucide-react';
 import AdminUsuarios from '../components/AdminUsuarios';
 import AdminTrazabilidad from '../components/AdminTrazabilidad';
@@ -24,6 +25,7 @@ import AdminResumen from '../components/AdminResumen';
 import AdminTestimonios from '../components/AdminTestimonios';
 import GestorCarrusel from '../components/GestorCarrusel';
 import AdminConfiguracion from '../components/AdminConfiguracion';
+import AdminFincasMapa from '../components/AdminFincasMapa';
 
 export default function AdminDashboard() {
   const [adminData, setAdminData] = useState(null);
@@ -65,6 +67,7 @@ export default function AdminDashboard() {
   const navItems = [
     { id: 'inicio', label: 'Inicio / Resumen', icon: LayoutDashboard, badge: 'KPIs' },
     { id: 'veterinarios', label: 'Gestión de Personal', icon: Users },
+    { id: 'fincas', label: 'Geolocalización Fincas', icon: MapPin, badge: 'GPS' },
     { id: 'historial', label: 'Historial Genético', icon: Dna, badge: 'Alertas' },
     { id: 'catalogo', label: 'Catálogo y Servicios', icon: ShoppingBag },
     { id: 'testimonios', label: 'Testimonios', icon: MessageSquareQuote },
@@ -76,6 +79,7 @@ export default function AdminDashboard() {
     switch (activeTab) {
       case 'inicio': return { title: 'Panel de Control General', subtitle: 'Métricas financieras, tasa de preñez e inventario en tiempo real' };
       case 'veterinarios': return { title: 'Gestión de Personal y Clientes', subtitle: 'Directorio de clientes ganaderos registrados, veterinarios y administradores' };
+      case 'fincas': return { title: 'Geolocalización de Fincas y Clientes', subtitle: 'Mapa interactivo y georreferenciación satelital de predios ganaderos' };
       case 'historial': return { title: 'Trazabilidad Genética y Protocolos', subtitle: 'Seguimiento de biotecnología reproductiva (IATF, IA, TE) y alertas clínicas' };
       case 'catalogo': return { title: 'Gestión de Tienda y Servicios', subtitle: 'Control de productos, stock en bodega y servicios biotecnológicos' };
       case 'testimonios': return { title: 'Gestión de Testimonios', subtitle: 'Moderación de experiencias y opiniones de ganaderos' };
@@ -89,6 +93,7 @@ export default function AdminDashboard() {
     switch (activeTab) {
       case 'inicio': return <AdminResumen />;
       case 'veterinarios': return <AdminUsuarios />;
+      case 'fincas': return <AdminFincasMapa />;
       case 'historial': return <AdminTrazabilidad />;
       case 'catalogo': return <AdminCatalogo />;
       case 'testimonios': return <AdminTestimonios />;

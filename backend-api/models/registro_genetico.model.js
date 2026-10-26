@@ -27,6 +27,10 @@ const RegistroGeneticoSchema = new Schema({
         dia10_inseminacion: { type: Boolean, default: false },
         dia17_transferencia: { type: Boolean, default: false },
         dia45_confirmacion: { type: Boolean, default: false }
+    },
+    coordenadas: {
+        lat: { type: Number },
+        lng: { type: Number }
     }
 }, { timestamps: true });
 

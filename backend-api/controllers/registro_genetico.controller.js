@@ -45,6 +45,33 @@ const crearRegistro = async (req, res) => {
 
         await nuevoRegistro.save();
 
+        // Auto-georreferenciar la finca si se envían coordenadas y nombre de finca
+        if (req.body.coordenadas && req.body.coordenadas.lat && req.body.coordenadas.lng && req.body.finca) {
+            try {
+                const Finca = require('../models/finca.model');
+                const nombreF = req.body.finca.trim();
+                const propietarioN = (req.body.productor || '').trim();
+                const existente = await Finca.findOne({
+                    nombreFinca: new RegExp('^' + nombreF + '$', 'i')
+                });
+                if (!existente) {
+                    await Finca.create({
+                        nombreFinca: nombreF,
+                        propietarioNombre: propietarioN || 'Productor Ganadero',
+                        propietarioEmail: req.body.productorEmail || '',
+                        municipio: req.body.municipio || 'Neiva',
+                        coordenadas: {
+                            lat: parseFloat(req.body.coordenadas.lat),
+                            lng: parseFloat(req.body.coordenadas.lng)
+                        },
+                        registradoPor: 'Veterinario'
+                    });
+                }
+            } catch (fErr) {
+                console.error("Aviso: no se pudo auto-vincular finca:", fErr.message);
+            }
+        }
+
         // Notificar al admin en tiempo real
         if(req.io) {
             req.io.emit('nuevo-registro-genetico');
