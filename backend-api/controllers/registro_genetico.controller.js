@@ -19,11 +19,19 @@ const obtenerRegistros = async (req, res) => {
 // Crear un nuevo registro en campo (Para la App del Veterinario)
 const crearRegistro = async (req, res) => {
     try {
-        // req.body ya trae la estructura exacta desde la PWA (arete, productor, fechasProtocolo...)
+        // req.body ya trae la estructura exacta desde la App Móvil o Web
         if (!req.body.fechasProtocolo) {
             req.body.fechasProtocolo = { dia0_sincronizacion: new Date() };
         } else if (!req.body.fechasProtocolo.dia0_sincronizacion) {
             req.body.fechasProtocolo.dia0_sincronizacion = new Date();
+        }
+
+        // Asegurar que las coordenadas GPS sean numéricas válidas si se enviaron
+        if (req.body.coordenadas && req.body.coordenadas.lat && req.body.coordenadas.lng) {
+            req.body.coordenadas = {
+                lat: parseFloat(req.body.coordenadas.lat),
+                lng: parseFloat(req.body.coordenadas.lng)
+            };
         }
 
         const nuevoRegistro = new RegistroGenetico(req.body);
@@ -39,11 +47,9 @@ const crearRegistro = async (req, res) => {
             }
         }
 
-        // NOTA: No necesitamos sumar los 45 días aquí manualmente. 
-        // El middleware pre('save') que pusimos en registro_genetico.model.js 
-        // se encarga de calcular exactamente los días 8, 10, 17, 45 y 90.
-
+        // El middleware pre('save') en registro_genetico.model.js calcula automáticamente días 8, 10, 17, 45 y 90
         await nuevoRegistro.save();
+        console.log(`✅ [RegistroGenetico] Guardado con éxito: Animal ${nuevoRegistro.arete} (${nuevoRegistro.tipoProcedimiento}) - Productor: ${nuevoRegistro.productor}`);
 
         // Auto-georreferenciar la finca si se envían coordenadas y nombre de finca
         if (req.body.coordenadas && req.body.coordenadas.lat && req.body.coordenadas.lng && req.body.finca) {
@@ -66,13 +72,15 @@ const crearRegistro = async (req, res) => {
                         },
                         registradoPor: 'Veterinario'
                     });
+                    console.log(`📍 [Finca] Finca "${nombreF}" auto-registrada con GPS en campo.`);
+                    if (req.io) req.io.emit('nueva-finca');
                 }
             } catch (fErr) {
                 console.error("Aviso: no se pudo auto-vincular finca:", fErr.message);
             }
         }
 
-        // Notificar al admin en tiempo real
+        // Notificar al admin y dashboards en tiempo real
         if(req.io) {
             req.io.emit('nuevo-registro-genetico');
         }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal, ActivityIndicator } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import { API_URL, setCustomApiUrl, getDefaultApiUrl, initApiUrl, getApiUrl } from '../config/api';
+import { getToken, setSession, clearSession, isTokenExpired } from '../utils/auth';
 import { User, Lock, Globe, RotateCcw, X, CheckCircle2, Server } from 'lucide-react-native';
 
 export default function LoginScreen({ navigation }) {
@@ -20,9 +20,14 @@ export default function LoginScreen({ navigation }) {
     const checkLogin = async () => {
       const url = await initApiUrl();
       setServidorActual(url);
-      const token = await SecureStore.getItemAsync('token');
+      const token = await getToken();
       if (token) {
-        navigation.replace('Dashboard');
+        if (isTokenExpired(token)) {
+          console.log('⚠️ [Login] Token de sesión expirado. Limpiando para reingreso.');
+          await clearSession();
+        } else {
+          navigation.replace('Dashboard');
+        }
       }
     };
     checkLogin();
@@ -49,8 +54,7 @@ export default function LoginScreen({ navigation }) {
           Alert.alert('Acceso Denegado', 'Esta aplicación móvil es exclusiva para médicos veterinarios.');
           return;
         }
-        await SecureStore.setItemAsync('token', data.token);
-        await SecureStore.setItemAsync('usuario', JSON.stringify(data.usuario));
+        await setSession(data.token, data.usuario);
         navigation.replace('Dashboard');
       } else {
         Alert.alert('Error', data.mensaje || 'Credenciales incorrectas');

@@ -78,9 +78,9 @@ const loginUsuario = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: usuario._id, rol: usuario.rol, nombre: usuario.nombre }, 
+            { id: usuario._id, rol: usuario.rol, nombre: usuario.nombre, email: usuario.email }, 
             process.env.JWT_SECRET || 'FirmaSecretaSembriogan2026', 
-            { expiresIn: '8h' }
+            { expiresIn: '30d' }
         );
 
         res.status(200).json({
@@ -146,11 +146,11 @@ const googleLogin = async (req, res) => {
             return res.status(401).json({ success: false, mensaje: "Usuario inactivo. Contacte al administrador." });
         }
 
-        // Generar el Token JWT propio de la plataforma
+        // Generar el Token JWT propio de la plataforma (30 días de vigencia)
         const jwtToken = jwt.sign(
-            { id: usuario._id, rol: usuario.rol, nombre: usuario.nombre }, 
+            { id: usuario._id, rol: usuario.rol, nombre: usuario.nombre, email: usuario.email }, 
             process.env.JWT_SECRET || 'FirmaSecretaSembriogan2026', 
-            { expiresIn: '8h' }
+            { expiresIn: '30d' }
         );
 
         res.status(200).json({
@@ -236,10 +236,24 @@ const actualizarUsuarioAdmin = async (req, res) => {
     }
 };
 
+// 6. VERIFICAR SESIÓN ACTIVA (Para App Móvil y Frontend)
+const verificarSesion = async (req, res) => {
+    try {
+        res.status(200).json({ 
+            success: true, 
+            mensaje: "Sesión activa y válida",
+            usuario: req.usuario 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 module.exports = { 
     registrarUsuario, 
     loginUsuario, 
     googleLogin, 
     obtenerUsuarios, 
-    actualizarUsuarioAdmin 
+    actualizarUsuarioAdmin,
+    verificarSesion 
 };

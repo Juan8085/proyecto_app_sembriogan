@@ -20,7 +20,7 @@ const devHost = getDevServerHost();
 // IP por defecto de la computadora en la red Wi-Fi
 export const getDefaultApiUrl = () => {
   if (devHost) return `http://${devHost}:3000`;
-  return 'http://192.168.1.105:3000';
+  return 'http://192.168.1.107:3000';
 };
 
 export let API_URL = getDefaultApiUrl();

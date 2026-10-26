@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, FlatList, Alert, Modal, RefreshControl, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView, Linking } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import { getToken, clearSession, isTokenExpired } from '../utils/auth';
 import * as Location from 'expo-location';
 import { API_URL, getApiUrl, setCustomApiUrl, getDefaultApiUrl, initApiUrl } from '../config/api';
 import { 
@@ -225,9 +225,9 @@ export default function DashboardScreen({ navigation }) {
       await sincronizarOffline();
 
       const currentUrl = getApiUrl() || API_URL;
-      const token = await SecureStore.getItemAsync('token');
+      const token = await getToken();
       const res = await fetch(`${currentUrl}/api/registro-genetico`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await res.json();
       if (data.success) {
@@ -269,7 +269,11 @@ export default function DashboardScreen({ navigation }) {
       
       if (offlineData.length === 0) return;
 
-      const token = await SecureStore.getItemAsync('token');
+      const token = await getToken();
+      if (!token || isTokenExpired(token)) {
+        console.log('⚠️ [Dashboard] Sesión vencida para sincronización offline.');
+        return;
+      }
       let subidos = 0;
       let fallidos = [];
 
@@ -312,8 +316,7 @@ export default function DashboardScreen({ navigation }) {
   }, [navigation]);
 
   const handleLogout = async () => {
-    await SecureStore.deleteItemAsync('token');
-    await SecureStore.deleteItemAsync('usuario');
+    await clearSession();
     navigation.replace('Login');
   };
 
@@ -406,7 +409,7 @@ export default function DashboardScreen({ navigation }) {
           onPress: async () => {
             try {
               const currentUrl = getApiUrl() || API_URL;
-              const token = await SecureStore.getItemAsync('token');
+              const token = await getToken();
               const res = await fetch(`${currentUrl}/api/registro-genetico/${idProcedimiento}/paso`, {
                 method: 'PUT',
                 headers: {
@@ -445,7 +448,7 @@ export default function DashboardScreen({ navigation }) {
     setGuardandoGestion(true);
 
     try {
-      const token = await SecureStore.getItemAsync('token');
+      const token = await getToken();
       let sincronizado = false;
 
       // Si no es un id offline, intentamos guardar en el servidor

@@ -2,16 +2,34 @@ const jwt = require('jsonwebtoken');
 
 const verificarToken = (req, res, next) => {
     // 1. Pedir el "gafete" (Token) que viene en los headers de la petición
-    const tokenHeader = req.header('Authorization');
+    const tokenHeader = req.header('Authorization') || req.header('authorization');
 
     // 2. Si no trae gafete, le negamos la entrada inmediatamente
     if (!tokenHeader) {
-        return res.status(401).json({ success: false, mensaje: "Acceso denegado. Se requiere iniciar sesión." });
+        return res.status(401).json({ 
+            success: false, 
+            sesionExpirada: true,
+            mensaje: "Acceso denegado. Se requiere iniciar sesión." 
+        });
     }
 
     try {
         // 3. El token suele enviarse como "Bearer abcde123...", extraemos solo el código
-        const token = tokenHeader.split(' ')[1] || tokenHeader;
+        let token = tokenHeader;
+        if (tokenHeader.startsWith('Bearer ') || tokenHeader.startsWith('bearer ')) {
+            token = tokenHeader.slice(7).trim();
+        }
+
+        // Limpiar comillas si vienen en el string
+        token = token.replace(/^["']|["']$/g, '').trim();
+
+        if (!token || token === 'null' || token === 'undefined') {
+            return res.status(401).json({ 
+                success: false, 
+                sesionExpirada: true,
+                mensaje: "Token no proporcionado o sesión cerrada." 
+            });
+        }
 
         // 4. Verificamos que el token sea auténtico y haya sido firmado por nosotros
         const decodificado = jwt.verify(token, process.env.JWT_SECRET || 'FirmaSecretaSembriogan2026');
@@ -22,7 +40,13 @@ const verificarToken = (req, res, next) => {
         // 6. ¡Le abrimos la puerta! Pasa al siguiente controlador
         next();
     } catch (error) {
-        res.status(401).json({ success: false, mensaje: "Token inválido o sesión expirada." });
+        console.warn(`⚠️ [Auth Middleware] Error al verificar token (${req.method} ${req.originalUrl}):`, error.name, error.message);
+        const esExpirado = error.name === 'TokenExpiredError';
+        res.status(401).json({ 
+            success: false, 
+            sesionExpirada: true,
+            mensaje: esExpirado ? "Sesión expirada. Por favor vuelve a iniciar sesión." : "Token inválido o sesión expirada." 
+        });
     }
 };
 
@@ -35,4 +59,4 @@ const esAdmin = (req, res, next) => {
     }
 };
 
-module.exports = { verificarToken, esAdmin };
+module.exports = { verificarToken, esAdmin };

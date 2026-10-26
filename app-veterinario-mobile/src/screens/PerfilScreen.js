@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
   Modal
 } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import { getToken, getUsuario, setSession, clearSession } from '../utils/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL, getApiUrl, setCustomApiUrl, initApiUrl } from '../config/api';
 import {
@@ -56,9 +56,8 @@ export default function PerfilScreen({ navigation }) {
       const url = await initApiUrl();
       setServidorActual(url);
 
-      const userRaw = await SecureStore.getItemAsync('usuario');
-      if (userRaw) {
-        const u = JSON.parse(userRaw);
+      const u = await getUsuario();
+      if (u) {
         setUsuario(u);
         setNombre(u.nombre || '');
         setEmail(u.email || '');
@@ -104,7 +103,7 @@ export default function PerfilScreen({ navigation }) {
 
     setGuardando(true);
     const currentUrl = getApiUrl() || API_URL;
-    const token = await SecureStore.getItemAsync('token');
+    const token = await getToken();
     const userId = usuario?.id || usuario?._id;
 
     if (!userId) {
@@ -135,13 +134,13 @@ export default function PerfilScreen({ navigation }) {
       const data = await res.json();
 
       if (data.success) {
-        // Actualizar datos locales en SecureStore
+        // Actualizar datos locales
         const nuevoUsuario = {
           ...usuario,
           nombre: nombre.trim(),
           email: email.trim().toLowerCase()
         };
-        await SecureStore.setItemAsync('usuario', JSON.stringify(nuevoUsuario));
+        await setSession(token, nuevoUsuario);
         setUsuario(nuevoUsuario);
         setPassword('');
         setConfirmPassword('');
@@ -209,8 +208,7 @@ export default function PerfilScreen({ navigation }) {
           text: 'Sí, Salir',
           style: 'destructive',
           onPress: async () => {
-            await SecureStore.deleteItemAsync('token');
-            await SecureStore.deleteItemAsync('usuario');
+            await clearSession();
             navigation.replace('Login');
           }
         }

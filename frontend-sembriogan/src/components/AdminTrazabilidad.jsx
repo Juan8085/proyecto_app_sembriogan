@@ -53,6 +53,9 @@ export default function AdminTrazabilidad() {
 
   useEffect(() => {
     cargarRegistros();
+    // Auto-actualizar cada 20 segundos para reflejar registros de campo en vivo
+    const timer = setInterval(cargarRegistros, 20000);
+    return () => clearInterval(timer);
   }, []);
 
   const formatearFecha = (fecha) => {

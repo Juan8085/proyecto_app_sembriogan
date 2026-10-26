@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Platform, KeyboardAvoidingView } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import * as Location from 'expo-location';
 import { API_URL, getApiUrl } from '../config/api';
+import { getToken, clearSession, isTokenExpired } from '../utils/auth';
 import { ArrowLeft, Save, MapPin, Compass, CheckCircle } from 'lucide-react-native';
 
 export default function RegistroScreen({ navigation }) {
@@ -46,6 +46,33 @@ export default function RegistroScreen({ navigation }) {
     }
   };
 
+  // Guardar en la memoria del celular cuando no hay red o venció la sesión
+  const guardarEnModoOffline = async (payload) => {
+    try {
+      const guardados = await AsyncStorage.getItem('offlineRegistros');
+      const offlineData = guardados ? JSON.parse(guardados) : [];
+      
+      const registroLocal = {
+        ...payload,
+        _id: 'offline-' + Date.now(),
+        isOffline: true,
+        createdAt: new Date().toISOString()
+      };
+      
+      offlineData.push(registroLocal);
+      await AsyncStorage.setItem('offlineRegistros', JSON.stringify(offlineData));
+      
+      Alert.alert(
+        'Modo Offline Activo 📡', 
+        'El procedimiento se guardó de forma 100% segura en la memoria de tu celular. Se sincronizará automáticamente con el servidor cuando vuelvas a tener señal y sesión activa.',
+        [{ text: 'Entendido', onPress: () => navigation.goBack() }]
+      );
+    } catch (e) {
+      console.error('Error guardando offline:', e);
+      Alert.alert('Error', 'No se pudo almacenar el registro en la memoria local.');
+    }
+  };
+
   const handleGuardar = async () => {
     if (!form.arete || !form.tipoProcedimiento || !form.productor) {
       Alert.alert('Error', 'Por favor llena los campos obligatorios (Chapeta, Tipo, Productor)');
@@ -53,15 +80,40 @@ export default function RegistroScreen({ navigation }) {
     }
 
     setLoading(true);
+    const payload = {
+      ...form,
+      geneticaUtilizada: form.semenToro || 'N/A',
+      fechasProtocolo: { dia0_sincronizacion: form.fechaProcedimiento },
+      coordenadas: coordenadas || undefined
+    };
+
     try {
-      const token = await SecureStore.getItemAsync('token');
-      // Asegurar estructura
-      const payload = {
-        ...form,
-        geneticaUtilizada: form.semenToro || 'N/A',
-        fechasProtocolo: { dia0_sincronizacion: form.fechaProcedimiento },
-        coordenadas: coordenadas || undefined
-      };
+      const token = await getToken();
+
+      // Verificar si hay token y si aún está vigente
+      if (!token || isTokenExpired(token)) {
+        Alert.alert(
+          'Sesión Vencida 🔒',
+          'Tu sesión de usuario ha expirado. Puedes guardar el procedimiento localmente en tu celular o iniciar sesión para sincronizarlo de inmediato.',
+          [
+            {
+              text: 'Guardar en Celular (Offline)',
+              onPress: async () => {
+                await guardarEnModoOffline(payload);
+              }
+            },
+            {
+              text: 'Iniciar Sesión',
+              onPress: async () => {
+                await clearSession();
+                navigation.navigate('Login');
+              }
+            }
+          ]
+        );
+        setLoading(false);
+        return;
+      }
 
       try {
         const currentUrl = getApiUrl() || API_URL;
@@ -73,34 +125,50 @@ export default function RegistroScreen({ navigation }) {
           },
           body: JSON.stringify(payload)
         });
+
+        // Si el servidor indica 401 Unauthorized (Sesión inválida o expirada)
+        if (res.status === 401) {
+          Alert.alert(
+            'Sesión No Autorizada 🔒',
+            'El servidor rechazó la solicitud por sesión expirada. ¿Deseas guardar el registro en el celular mientras inicias sesión?',
+            [
+              {
+                text: 'Guardar en Celular',
+                onPress: async () => {
+                  await guardarEnModoOffline(payload);
+                }
+              },
+              {
+                text: 'Reingresar',
+                onPress: async () => {
+                  await clearSession();
+                  navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+                }
+              }
+            ]
+          );
+          setLoading(false);
+          return;
+        }
+
         const data = await res.json();
         
         if (data.success) {
-          Alert.alert('Éxito', 'Procedimiento registrado correctamente en el servidor.');
-          navigation.goBack();
+          Alert.alert(
+            '✅ ¡Registro Exitoso!', 
+            `El procedimiento del animal "${form.arete}" se guardó correctamente en el servidor y en la base de datos central.`,
+            [{ text: 'Aceptar', onPress: () => navigation.goBack() }]
+          );
         } else {
-          Alert.alert('Error', data.mensaje || 'Hubo un error al registrar.');
+          Alert.alert('Error', data.mensaje || 'Hubo un error al registrar en el servidor.');
         }
       } catch (networkError) {
-        // MODO OFFLINE
-        console.log('Guardando en modo offline debido a error de red:', networkError);
-        const guardados = await AsyncStorage.getItem('offlineRegistros');
-        const offlineData = guardados ? JSON.parse(guardados) : [];
-        
-        // Asignar ID temporal y marcar como offline
-        payload._id = 'offline-' + Date.now();
-        payload.isOffline = true;
-        payload.createdAt = new Date().toISOString();
-        
-        offlineData.push(payload);
-        await AsyncStorage.setItem('offlineRegistros', JSON.stringify(offlineData));
-        
-        Alert.alert('Modo Offline Activo 📡', 'No hay conexión. El registro se ha guardado localmente en tu celular y podrás sincronizarlo luego.');
-        navigation.goBack();
+        console.log('Error de red al guardar en la nube. Activando guardado offline:', networkError);
+        await guardarEnModoOffline(payload);
       }
     } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Error crítico procesando el registro.');
+      console.error('Error crítico procesando registro:', error);
+      Alert.alert('Error', 'Ocurrió un error al procesar el formulario.');
     } finally {
       setLoading(false);
     }
