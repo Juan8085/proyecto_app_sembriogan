@@ -1,12 +1,20 @@
 const Suscripcion = require('../models/suscripcion.model');
 const webpush = require('web-push');
 
-// Configuramos web-push con las llaves de tu archivo .env
-webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT,
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
+// Configuramos web-push con las llaves de tu archivo .env (con protección contra variables faltantes)
+if (process.env.VAPID_SUBJECT && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    try {
+        webpush.setVapidDetails(
+            process.env.VAPID_SUBJECT,
+            process.env.VAPID_PUBLIC_KEY,
+            process.env.VAPID_PRIVATE_KEY
+        );
+    } catch (e) {
+        console.warn('⚠️ [VAPID] Advertencia al configurar webpush:', e.message);
+    }
+} else {
+    console.warn('ℹ️ [VAPID] Claves VAPID incompletas en variables de entorno. Notificaciones push desactivadas temporalmente.');
+}
 
 // 1. Enviar la llave pública al frontend (para no quemarla en el código HTML)
 const obtenerClavePublica = (req, res) => {

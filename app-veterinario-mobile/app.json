@@ -1,15 +1,21 @@
 {
   "expo": {
-    "name": "app-veterinario-mobile",
-    "slug": "app-veterinario-mobile",
+    "name": "Sembriogan Veterinario",
+    "slug": "sembriogan-veterinario",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sembriogan.veterinario"
     },
     "android": {
+      "package": "com.sembriogan.veterinario",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -23,7 +29,12 @@
     "plugins": [
       "expo-secure-store",
       "expo-status-bar",
-      "expo-location"
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Sembriogan requiere acceso al GPS para georreferenciar las fincas ganaderas en campo."
+        }
+      ]
     ]
   }
 }

@@ -73,7 +73,10 @@ const crearRegistro = async (req, res) => {
                         registradoPor: 'Veterinario'
                     });
                     console.log(`📍 [Finca] Finca "${nombreF}" auto-registrada con GPS en campo.`);
-                    if (req.io) req.io.emit('nueva-finca');
+                    if (req.io) {
+                        req.io.emit('nueva-finca');
+                        req.io.emit('nueva_finca');
+                    }
                 }
             } catch (fErr) {
                 console.error("Aviso: no se pudo auto-vincular finca:", fErr.message);

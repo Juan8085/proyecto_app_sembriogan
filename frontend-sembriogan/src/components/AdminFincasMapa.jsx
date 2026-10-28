@@ -109,6 +109,8 @@ export default function AdminFincasMapa() {
 
   useEffect(() => {
     cargarFincas();
+    const interval = setInterval(cargarFincas, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Inicializar mapa de Leaflet

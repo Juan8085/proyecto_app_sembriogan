@@ -62,8 +62,9 @@ const registrarUsuario = async (req, res) => {
 const loginUsuario = async (req, res) => {
     try {
         const { email, password } = req.body;
+        const emailLimpio = (email || '').toLowerCase().trim();
 
-        const usuario = await Usuario.findOne({ email });
+        const usuario = await Usuario.findOne({ email: emailLimpio });
         if (!usuario) {
             return res.status(404).json({ success: false, mensaje: "Usuario no encontrado" });
         }
@@ -123,8 +124,10 @@ const googleLogin = async (req, res) => {
             return res.status(400).json({ success: false, mensaje: "Datos de Google no proporcionados" });
         }
 
+        const emailLimpio = (email || '').toLowerCase().trim();
+
         // Comprobar si el usuario ya se encuentra registrado
-        let usuario = await Usuario.findOne({ email });
+        let usuario = await Usuario.findOne({ email: emailLimpio });
 
         if (!usuario) {
             // Si no existe, lo registramos automáticamente como 'Cliente'
@@ -133,8 +136,8 @@ const googleLogin = async (req, res) => {
             const passwordAleatorio = await bcrypt.hash(Math.random().toString() + Date.now(), salt);
 
             usuario = new Usuario({
-                nombre: name,
-                email,
+                nombre: (name || 'Usuario Google').trim(),
+                email: emailLimpio,
                 password: passwordAleatorio,
                 rol: 'Cliente',
                 estado: true

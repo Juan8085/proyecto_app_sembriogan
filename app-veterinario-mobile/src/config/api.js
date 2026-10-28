@@ -17,8 +17,11 @@ const getDevServerHost = () => {
 
 const devHost = getDevServerHost();
 
-// IP por defecto de la computadora en la red Wi-Fi
+// IP por defecto o URL pública de producción
 export const getDefaultApiUrl = () => {
+  if (process.env.EXPO_PUBLIC_API_URL && process.env.EXPO_PUBLIC_API_URL.trim()) {
+    return process.env.EXPO_PUBLIC_API_URL.trim().replace(/\/$/, '');
+  }
   if (devHost) return `http://${devHost}:3000`;
   return 'http://192.168.1.107:3000';
 };

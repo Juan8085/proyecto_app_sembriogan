@@ -5,7 +5,14 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const morgan = require('morgan');
 const conectarDB = require('./database/db');
+const fs = require('fs');
 const path = require('path');
+
+// Asegurar existencia de carpeta uploads en cualquier servidor o contenedor
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Importar rutas
 const solicitudesRoutes = require('./routes/solicitudes.routes');
@@ -67,6 +74,18 @@ app.get('/api', (req, res) => {
 io.on('connection', (socket) => {
     console.log('⚡ Cliente conectado por WebSocket:', socket.id);
 });
+
+// Servir frontend compilado en producción (despliegue fullstack unificado en nube)
+const frontendDist = path.join(__dirname, '../frontend-sembriogan/dist');
+if (fs.existsSync(frontendDist)) {
+    app.use(express.static(frontendDist));
+    app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/app-veterinario')) {
+            return next();
+        }
+        res.sendFile(path.join(frontendDist, 'index.html'));
+    });
+}
 
 // Iniciar tareas programadas (Reloj de Notificaciones)
 iniciarCron();

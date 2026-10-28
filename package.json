@@ -9,8 +9,10 @@
     "app-veterinario"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
+    "start": "node backend-api/server.js",
     "build": "npm run build --workspaces --if-present",
+    "build:frontend": "npm run build --workspace=frontend-sembriogan",
+    "dev": "npm run dev --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",

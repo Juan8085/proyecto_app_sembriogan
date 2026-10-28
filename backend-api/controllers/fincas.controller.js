@@ -108,6 +108,7 @@ const crearFinca = async (req, res) => {
 
         if (req.io) {
             req.io.emit('nueva_finca', nuevaFinca);
+            req.io.emit('nueva-finca', nuevaFinca);
         }
 
         res.status(201).json({

@@ -389,10 +389,9 @@ export default function PublicHome() {
 
     // Obtener firma de integridad del backend con fallback local SHA-256
     let signature = '';
-    const apiBase = window.location.hostname === 'localhost' ? `${API_BASE_URL}` : `http://${window.location.hostname}:3000`;
     
     try {
-      const resSig = await fetch(`${apiBase}/api/configuracion/generar-firma`, {
+      const resSig = await fetch(`${API_BASE_URL}/api/configuracion/generar-firma`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reference: referenciaUnica, amountInCents, currency: 'COP' })
