@@ -16,6 +16,7 @@ export default function RegistroScreen({ navigation }) {
     finca: '',
     productor: '',
     productorEmail: '',
+    tipoProduccion: 'Doble Propósito',
     estadoPrenez: 'Pendiente Evaluación'
   });
   const [loading, setLoading] = useState(false);
@@ -236,6 +237,31 @@ export default function RegistroScreen({ navigation }) {
 
           <Text style={styles.label}>Nombre de la Finca</Text>
           <TextInput style={styles.input} value={form.finca} onChangeText={(v) => setField('finca', v)} placeholder="Ej: La Esperanza" />
+
+          <Text style={styles.label}>Tipo de Producción Ganadera</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+            {['Doble Propósito', 'Leche', 'Carne', 'Genética/Biotecnología', 'Cría y Levante', 'Otro'].map((tipo) => {
+              const activo = (form.tipoProduccion || 'Doble Propósito') === tipo;
+              return (
+                <TouchableOpacity
+                  key={tipo}
+                  onPress={() => setField('tipoProduccion', tipo)}
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 12,
+                    backgroundColor: activo ? '#0284c7' : '#f8fafc',
+                    borderWidth: 1,
+                    borderColor: activo ? '#0284c7' : '#cbd5e1'
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: 'bold', color: activo ? '#ffffff' : '#334155' }}>
+                    {tipo}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
           <Text style={styles.label}>Correo del Cliente (Para la App)</Text>
           <TextInput style={styles.input} value={form.productorEmail} onChangeText={(v) => setField('productorEmail', v)} keyboardType="email-address" autoCapitalize="none" placeholder="correo@ejemplo.com" />

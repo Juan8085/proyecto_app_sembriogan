@@ -9,7 +9,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // 1. REGISTRAR UN NUEVO USUARIO (Tradicional)
 const registrarUsuario = async (req, res) => {
     try {
-        const { nombre, email, password, rol } = req.body;
+        const { nombre, email, password, rol, tipoProduccion, fincaPrincipal, municipio, telefono } = req.body;
 
         if (!nombre || !email || !password) {
             return res.status(400).json({ success: false, mensaje: "Nombre, correo y contraseña son obligatorios" });
@@ -36,10 +36,44 @@ const registrarUsuario = async (req, res) => {
             email: emailLimpio,
             password: passwordEncriptado,
             rol: rolAsignado,
+            tipoProduccion: tipoProduccion || 'Doble Propósito',
+            fincaPrincipal: (fincaPrincipal || '').trim(),
+            municipio: (municipio || 'Neiva').trim(),
+            telefono: (telefono || '').trim(),
             estado: true
         });
 
         await nuevoUsuario.save();
+
+        // Si es un productor y colocó el nombre de su finca, vincularla o crearla en Fincas
+        if (fincaPrincipal && fincaPrincipal.trim() !== '') {
+            try {
+                const Finca = require('../models/finca.model');
+                const nombreF = fincaPrincipal.trim();
+                const existenteF = await Finca.findOne({
+                    nombreFinca: new RegExp('^' + nombreF + '$', 'i')
+                });
+                if (!existenteF) {
+                    await Finca.create({
+                        nombreFinca: nombreF,
+                        propietarioNombre: nuevoUsuario.nombre,
+                        propietarioEmail: emailLimpio,
+                        propietarioTelefono: (telefono || '').trim(),
+                        municipio: (municipio || 'Neiva').trim(),
+                        tipoProduccion: tipoProduccion || 'Doble Propósito',
+                        coordenadas: { lat: 2.9273, lng: -75.2819 }, // Coordenadas referencia Huila
+                        registradoPor: 'Cliente'
+                    });
+                    if (req.io) {
+                        req.io.emit('nueva_finca');
+                        req.io.emit('nueva-finca');
+                    }
+                }
+            } catch (fErr) {
+                console.error("Aviso: no se pudo auto-registrar finca en registro de cliente:", fErr.message);
+            }
+        }
+
         res.status(201).json({ 
             success: true, 
             mensaje: `Usuario registrado con éxito como ${rolAsignado}`,
@@ -49,6 +83,9 @@ const registrarUsuario = async (req, res) => {
                 nombre: nuevoUsuario.nombre,
                 email: nuevoUsuario.email,
                 rol: nuevoUsuario.rol,
+                tipoProduccion: nuevoUsuario.tipoProduccion,
+                fincaPrincipal: nuevoUsuario.fincaPrincipal,
+                municipio: nuevoUsuario.municipio,
                 estado: nuevoUsuario.estado
             }
         });
@@ -206,6 +243,10 @@ const actualizarUsuarioAdmin = async (req, res) => {
 
         if (rol !== undefined) datosActualizar.rol = rol;
         if (estado !== undefined) datosActualizar.estado = estado;
+        if (req.body.tipoProduccion !== undefined) datosActualizar.tipoProduccion = req.body.tipoProduccion;
+        if (req.body.fincaPrincipal !== undefined) datosActualizar.fincaPrincipal = req.body.fincaPrincipal.trim();
+        if (req.body.municipio !== undefined) datosActualizar.municipio = req.body.municipio.trim();
+        if (req.body.telefono !== undefined) datosActualizar.telefono = req.body.telefono.trim();
 
         if (password && password.trim() !== "") {
             if (password.length < 6) {

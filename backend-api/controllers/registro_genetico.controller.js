@@ -66,6 +66,7 @@ const crearRegistro = async (req, res) => {
                         propietarioNombre: propietarioN || 'Productor Ganadero',
                         propietarioEmail: req.body.productorEmail || '',
                         municipio: req.body.municipio || 'Neiva',
+                        tipoProduccion: req.body.tipoProduccion || req.body.tipoProduccionFinca || 'Doble Propósito',
                         coordenadas: {
                             lat: parseFloat(req.body.coordenadas.lat),
                             lng: parseFloat(req.body.coordenadas.lng)

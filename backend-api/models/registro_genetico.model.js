@@ -7,6 +7,11 @@ const RegistroGeneticoSchema = new Schema({
     arete: { type: String, required: true },
     raza: { type: String, required: false },
     tipoProcedimiento: { type: String, enum: ['IATF', 'TE', 'Diagnostico', 'IA'], required: true },
+    tipoProduccion: { 
+        type: String, 
+        enum: ['Doble Propósito', 'Leche', 'Carne', 'Genética/Biotecnología', 'Cría y Levante', 'Otro'],
+        default: 'Doble Propósito' 
+    },
     geneticaUtilizada: { type: String, required: true }, // Toro o Pajilla
     estadoPrenez: { type: String, enum: ['Preñada', 'Vacía', 'Pendiente Evaluación'], default: 'Pendiente Evaluación' },
     observaciones: { type: String },

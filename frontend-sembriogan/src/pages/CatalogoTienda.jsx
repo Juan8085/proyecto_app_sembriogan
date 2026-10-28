@@ -66,7 +66,15 @@ export default function CatalogoTienda() {
   // Estados de Usuario
   const [userCliente, setUserCliente] = useState(null);
   const [authMode, setAuthMode] = useState('login');
-  const [authData, setAuthData] = useState({ email: '', password: '', nombre: '' });
+  const [authData, setAuthData] = useState({ 
+    email: '', 
+    password: '', 
+    nombre: '', 
+    telefono: '',
+    fincaPrincipal: '',
+    municipio: 'Neiva',
+    tipoProduccion: 'Doble Propósito'
+  });
   const [configGlobal, setConfigGlobal] = useState(null);
   const [misOrdenesCliente, setMisOrdenesCliente] = useState([]);
   const [misProcedimientosCliente, setMisProcedimientosCliente] = useState([]);
@@ -1063,7 +1071,7 @@ export default function CatalogoTienda() {
       {/* ============================================================ */}
       {isAuthOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 relative border border-slate-200">
+          <div className="bg-white w-full max-w-md max-h-[92vh] overflow-y-auto rounded-3xl shadow-2xl p-7 relative border border-slate-200">
             <button 
               onClick={() => setIsAuthOpen(false)} 
               className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 p-1"
@@ -1091,50 +1099,104 @@ export default function CatalogoTienda() {
               </div>
             )}
 
-            <form onSubmit={handleAuthSubmit} className="space-y-4">
+            <form onSubmit={handleAuthSubmit} className="space-y-3">
               {authMode === 'registro' && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre Completo</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre Completo *</label>
                   <input 
                     type="text" 
                     value={authData.nombre} 
                     onChange={e => setAuthData({...authData, nombre: e.target.value})} 
                     required 
                     placeholder="Ej: Juan Pérez" 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Correo Electrónico</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Correo Electrónico *</label>
                 <input 
                   type="email" 
                   value={authData.email} 
                   onChange={e => setAuthData({...authData, email: e.target.value})} 
                   required 
                   placeholder="ganadero@ejemplo.com" 
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Contraseña</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Contraseña *</label>
                 <input 
                   type="password" 
                   value={authData.password} 
                   onChange={e => setAuthData({...authData, password: e.target.value})} 
                   required 
                   placeholder="••••••••" 
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>
 
+              {authMode === 'registro' && (
+                <>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Finca o Predio</label>
+                      <input 
+                        type="text" 
+                        value={authData.fincaPrincipal} 
+                        onChange={e => setAuthData({...authData, fincaPrincipal: e.target.value})} 
+                        placeholder="Ej: La Esperanza" 
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio *</label>
+                      <select 
+                        value={authData.municipio} 
+                        onChange={e => setAuthData({...authData, municipio: e.target.value})} 
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      >
+                        {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'Aipe', 'Algeciras', 'Baraya', 'Tarqui', 'Hobo', 'Villavieja', 'Yaguará', 'Tello', 'La Plata', 'San Agustín', 'Timaná', 'Otro'].map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tipo Producción *</label>
+                      <select 
+                        value={authData.tipoProduccion} 
+                        onChange={e => setAuthData({...authData, tipoProduccion: e.target.value})} 
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      >
+                        {['Doble Propósito', 'Leche', 'Carne', 'Genética/Biotecnología', 'Cría y Levante', 'Otro'].map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Teléfono / WhatsApp</label>
+                      <input 
+                        type="tel" 
+                        value={authData.telefono} 
+                        onChange={e => setAuthData({...authData, telefono: e.target.value})} 
+                        placeholder="Ej: 3123456789" 
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
               <button 
                 type="submit" 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-2xl transition shadow-md shadow-blue-500/20 text-sm"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-2xl transition shadow-md shadow-blue-500/20 text-sm mt-2"
               >
-                {authMode === 'login' ? 'Entrar a mi Cuenta' : 'Completar Registro'}
+                {authMode === 'login' ? 'Entrar a mi Cuenta' : 'Completar Registro Ganadero'}
               </button>
             </form>
 
@@ -1306,7 +1368,7 @@ export default function CatalogoTienda() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                         <div>
                           <label className="block text-[11px] font-bold text-slate-600 mb-1">Vereda / Sector</label>
                           <input
@@ -1319,7 +1381,20 @@ export default function CatalogoTienda() {
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">N° de Animales</label>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Tipo de Producción *</label>
+                          <select
+                            value={nuevaFincaCliente.tipoProduccion}
+                            onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, tipoProduccion: e.target.value })}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          >
+                            {['Doble Propósito', 'Leche', 'Carne', 'Genética/Biotecnología', 'Cría y Levante', 'Otro'].map(t => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">N° Animales</label>
                           <input
                             type="number"
                             placeholder="Ej. 80"
@@ -1420,9 +1495,14 @@ export default function CatalogoTienda() {
                                   {finca.municipio} {finca.vereda ? `• ${finca.vereda}` : ''}
                                 </p>
                               </div>
-                              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                                {finca.numeroAnimales || 0} reses
-                              </span>
+                              <div className="flex flex-col items-end gap-1">
+                                <span className="text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60 px-2 py-0.5 rounded-full">
+                                  🐄 {finca.tipoProduccion || 'Doble Propósito'}
+                                </span>
+                                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                                  {finca.numeroAnimales || 0} reses
+                                </span>
+                              </div>
                             </div>
 
                             <div className="mt-3 text-[11px] text-slate-500 space-y-1">

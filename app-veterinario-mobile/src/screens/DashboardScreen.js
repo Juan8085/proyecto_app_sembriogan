@@ -62,6 +62,7 @@ export default function DashboardScreen({ navigation }) {
     municipio: 'Neiva',
     vereda: '',
     numeroAnimales: '',
+    tipoProduccion: 'Doble Propósito',
     lat: '',
     lng: ''
   });
@@ -135,6 +136,7 @@ export default function DashboardScreen({ navigation }) {
             lng: parseFloat(nuevaFinca.lng)
           },
           numeroAnimales: Number(nuevaFinca.numeroAnimales) || 0,
+          tipoProduccion: nuevaFinca.tipoProduccion || 'Doble Propósito',
           registradoPor: 'Veterinario'
         })
       });
@@ -150,6 +152,7 @@ export default function DashboardScreen({ navigation }) {
           municipio: 'Neiva',
           vereda: '',
           numeroAnimales: '',
+          tipoProduccion: 'Doble Propósito',
           lat: '',
           lng: ''
         });
@@ -962,8 +965,15 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
                         📍 {item.municipio} {item.vereda ? `• ${item.vereda}` : ''}
                       </Text>
                     </View>
-                    <View style={styles.fincaCardBadgeAnimales}>
-                      <Text style={styles.fincaCardBadgeAnimalesText}>{item.numeroAnimales || 0} reses</Text>
+                    <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                      <View style={{ backgroundColor: '#e0f2fe', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, borderWidth: 1, borderColor: '#bae6fd' }}>
+                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#0369a1' }}>
+                          🐄 {item.tipoProduccion || 'Doble Propósito'}
+                        </Text>
+                      </View>
+                      <View style={styles.fincaCardBadgeAnimales}>
+                        <Text style={styles.fincaCardBadgeAnimalesText}>{item.numeroAnimales || 0} reses</Text>
+                      </View>
                     </View>
                   </View>
 
@@ -1079,6 +1089,31 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
                 value={nuevaFinca.numeroAnimales}
                 onChangeText={(v) => setNuevaFinca({ ...nuevaFinca, numeroAnimales: v })}
               />
+
+              <Text style={styles.labelFormFinca}>Tipo de Producción Ganadera</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                {['Doble Propósito', 'Leche', 'Carne', 'Genética/Biotecnología', 'Cría y Levante', 'Otro'].map((tipo) => {
+                  const activo = (nuevaFinca.tipoProduccion || 'Doble Propósito') === tipo;
+                  return (
+                    <TouchableOpacity
+                      key={tipo}
+                      onPress={() => setNuevaFinca({ ...nuevaFinca, tipoProduccion: tipo })}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 6,
+                        borderRadius: 12,
+                        backgroundColor: activo ? '#047857' : '#f8fafc',
+                        borderWidth: 1,
+                        borderColor: activo ? '#047857' : '#cbd5e1'
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: 'bold', color: activo ? '#ffffff' : '#334155' }}>
+                        {tipo}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
               {/* Botón de Captura Satelital GPS */}
               <View style={styles.boxGpsCapturaForm}>

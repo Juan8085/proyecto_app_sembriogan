@@ -63,7 +63,15 @@ export default function PublicHome() {
   // Estados de Usuario
   const [userCliente, setUserCliente] = useState(null);
   const [authMode, setAuthMode] = useState('login');
-  const [authData, setAuthData] = useState({ email: '', password: '', nombre: '' });
+  const [authData, setAuthData] = useState({ 
+    email: '', 
+    password: '', 
+    nombre: '', 
+    telefono: '',
+    fincaPrincipal: '',
+    municipio: 'Neiva',
+    tipoProduccion: 'Doble Propósito'
+  });
   const [nuevoTestimonio, setNuevoTestimonio] = useState({ nombre: '', rol: '', mensaje: '' });
   const [mensajeTestimonioExito, setMensajeTestimonioExito] = useState('');
   const [infoNosotros, setInfoNosotros] = useState(null);
@@ -1155,7 +1163,7 @@ export default function PublicHome() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                         <div>
                           <label className="block text-[11px] font-bold text-slate-600 mb-1">Vereda / Sector</label>
                           <input
@@ -1168,7 +1176,20 @@ export default function PublicHome() {
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">N° de Animales</label>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Tipo de Producción *</label>
+                          <select
+                            value={nuevaFincaCliente.tipoProduccion}
+                            onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, tipoProduccion: e.target.value })}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          >
+                            {['Doble Propósito', 'Leche', 'Carne', 'Genética/Biotecnología', 'Cría y Levante', 'Otro'].map(t => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">N° Animales</label>
                           <input
                             type="number"
                             placeholder="Ej. 80"
@@ -1269,9 +1290,14 @@ export default function PublicHome() {
                                   {finca.municipio} {finca.vereda ? `• ${finca.vereda}` : ''}
                                 </p>
                               </div>
-                              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                                {finca.numeroAnimales || 0} reses
-                              </span>
+                              <div className="flex flex-col items-end gap-1">
+                                <span className="text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60 px-2 py-0.5 rounded-full">
+                                  🐄 {finca.tipoProduccion || 'Doble Propósito'}
+                                </span>
+                                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                                  {finca.numeroAnimales || 0} reses
+                                </span>
+                              </div>
                             </div>
 
                             <div className="mt-3 text-[11px] text-slate-500 space-y-1">
@@ -1730,9 +1756,14 @@ export default function PublicHome() {
       {/* MODAL: AUTENTICACIÓN */}
       {isAuthOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 relative">
+          <div className={`bg-white w-full ${authMode === 'registro' ? 'max-w-md max-h-[92vh] overflow-y-auto' : 'max-w-sm'} rounded-3xl shadow-2xl p-7 relative transition-all`}>
             <button onClick={() => setIsAuthOpen(false)} className="absolute top-5 right-5 text-slate-400 hover:text-slate-700"><X size={20}/></button>
-            <div className="text-center mb-6"><h3 className="text-2xl font-black text-slate-800">{authMode === 'login' ? 'Bienvenido' : 'Crear Cuenta'}</h3></div>
+            <div className="text-center mb-5">
+              <h3 className="text-2xl font-black text-slate-800">{authMode === 'login' ? 'Bienvenido' : 'Crear Cuenta Ganadera'}</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                {authMode === 'login' ? 'Accede a tus certificados y trazabilidad en línea.' : 'Regístrate como productor ganadero o cliente de Sembriogan.'}
+              </p>
+            </div>
 
             {(!['localhost', '127.0.0.1', 'sembriogan-app.loca.lt'].includes(window.location.hostname)) && (
               <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-3 text-xs mb-4 text-left shadow-xs">
@@ -1745,11 +1776,61 @@ export default function PublicHome() {
               </div>
             )}
 
-            <form onSubmit={handleAuthSubmit} className="space-y-4">
-              {authMode === 'registro' && <input type="text" required value={authData.nombre} onChange={(e) => setAuthData({...authData, nombre: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary text-sm" placeholder="Tu Nombre" />}
-              <input type="email" required value={authData.email} onChange={(e) => setAuthData({...authData, email: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary text-sm" placeholder="Correo Electrónico" />
-              <input type="password" required value={authData.password} onChange={(e) => setAuthData({...authData, password: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary text-sm" placeholder="Contraseña" />
-              <button type="submit" className="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl hover:bg-slate-700 transition">{authMode === 'login' ? 'Iniciar Sesión' : 'Registrarse'}</button>
+            <form onSubmit={handleAuthSubmit} className="space-y-3">
+              {authMode === 'registro' && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Nombre Completo *</label>
+                  <input type="text" required value={authData.nombre} onChange={(e) => setAuthData({...authData, nombre: e.target.value})} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs" placeholder="Ej: Juan Pérez" />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Correo Electrónico *</label>
+                <input type="email" required value={authData.email} onChange={(e) => setAuthData({...authData, email: e.target.value})} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs" placeholder="ganadero@ejemplo.com" />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Contraseña *</label>
+                <input type="password" required value={authData.password} onChange={(e) => setAuthData({...authData, password: e.target.value})} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs" placeholder="Mínimo 6 caracteres" />
+              </div>
+
+              {authMode === 'registro' && (
+                <>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Finca o Predio</label>
+                      <input type="text" value={authData.fincaPrincipal} onChange={(e) => setAuthData({...authData, fincaPrincipal: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs" placeholder="Ej: La Esperanza" />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio *</label>
+                      <select value={authData.municipio} onChange={(e) => setAuthData({...authData, municipio: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs">
+                        {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'Aipe', 'Algeciras', 'Baraya', 'Tarqui', 'Hobo', 'Villavieja', 'Yaguará', 'Tello', 'La Plata', 'San Agustín', 'Timaná', 'Otro'].map(m => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tipo Producción *</label>
+                      <select value={authData.tipoProduccion} onChange={(e) => setAuthData({...authData, tipoProduccion: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs font-semibold text-slate-700">
+                        {['Doble Propósito', 'Leche', 'Carne', 'Genética/Biotecnología', 'Cría y Levante', 'Otro'].map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Teléfono / WhatsApp</label>
+                      <input type="tel" value={authData.telefono} onChange={(e) => setAuthData({...authData, telefono: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs" placeholder="Ej: 3123456789" />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <button type="submit" className="w-full bg-slate-800 text-white font-bold py-3.5 rounded-xl hover:bg-slate-700 transition text-sm shadow-md mt-2">
+                {authMode === 'login' ? 'Iniciar Sesión' : 'Registrarse y Continuar'}
+              </button>
             </form>
             <div className="flex items-center gap-3 my-6">
               <div className="h-px bg-slate-200 flex-1"></div>

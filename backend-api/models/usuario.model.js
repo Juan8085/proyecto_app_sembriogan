@@ -10,6 +10,14 @@ const UsuarioSchema = new Schema({
         enum: ['Admin', 'Veterinario', 'Cliente'],
         default: 'Cliente'
     },
+    tipoProduccion: { 
+        type: String, 
+        enum: ['Doble Propósito', 'Leche', 'Carne', 'Genética/Biotecnología', 'Cría y Levante', 'Otro'],
+        default: 'Doble Propósito'
+    },
+    fincaPrincipal: { type: String, default: '' },
+    municipio: { type: String, default: 'Neiva' },
+    telefono: { type: String, default: '' },
     estado: { type: Boolean, default: true } // Para activar/desactivar usuarios
 }, { 
     timestamps: true,
