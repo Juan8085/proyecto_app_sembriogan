@@ -11,6 +11,7 @@ import { Home, PlusCircle, ShoppingBag, User } from 'lucide-react-native';
 import DoctorNurseIcon from './src/components/DoctorNurseIcon';
 
 // Pantallas
+import PortadaScreen from './src/screens/PortadaScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import CatalogoScreen from './src/screens/CatalogoScreen';
@@ -144,7 +145,8 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <StatusBar style="dark" />
-        <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+        <Stack.Navigator initialRouteName="Portada" screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Portada" component={PortadaScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Dashboard" component={MainTabs} />
         </Stack.Navigator>

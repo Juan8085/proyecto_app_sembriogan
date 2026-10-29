@@ -388,19 +388,12 @@ export default function PerfilScreen({ navigation }) {
           </View>
 
           <View style={styles.servidorInfoRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.servidorInfoLabel}>Servidor Backend API:</Text>
-              <Text style={styles.servidorInfoUrl} numberOfLines={1}>{servidorActual}</Text>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#22c55e' }} />
+              <Text style={{ fontSize: 13, color: '#0f172a', fontWeight: '600' }}>
+                Servicio Central Sincronizado
+              </Text>
             </View>
-            <TouchableOpacity
-              style={styles.btnConfigServidor}
-              onPress={() => {
-                setInputUrlServidor(servidorActual);
-                setModalServidorVisible(true);
-              }}
-            >
-              <Text style={styles.btnConfigServidorTexto}>Ajustar</Text>
-            </TouchableOpacity>
           </View>
 
           {offlineCount > 0 && (

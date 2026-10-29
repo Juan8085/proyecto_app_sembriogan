@@ -621,39 +621,10 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
               </View>
             )}
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.iconButton} 
-            onPress={() => {
-              setInputUrlServidor(servidorActual);
-              setModalServidorVisible(true);
-            }}
-          >
-            <Server color="#0284c7" size={24} />
-          </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton} onPress={handleLogout}>
             <LogOut color="#ef4444" size={24} />
           </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Barra de Estado del Servidor */}
-      <View style={styles.serverBar}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
-          <View style={[styles.dotStatus, { backgroundColor: servidorConectado ? '#22c55e' : '#f59e0b' }]} />
-          <Text style={styles.serverBarText} numberOfLines={1}>
-            Servidor: <Text style={{ fontWeight: 'bold' }}>{servidorActual}</Text>
-          </Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.serverBarAction}
-          onPress={() => {
-            setInputUrlServidor(servidorActual);
-            setModalServidorVisible(true);
-          }}
-        >
-          <Globe size={14} color="#0284c7" />
-          <Text style={styles.serverBarActionText}>Cambiar</Text>
-        </TouchableOpacity>
       </View>
 
       {/* ACCESO AL DIRECTORIO DE FINCAS Y MAPA GPS */}

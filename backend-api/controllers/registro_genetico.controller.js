@@ -105,7 +105,7 @@ const actualizarPrenez = async (req, res) => {
         const actualizado = await RegistroGenetico.findByIdAndUpdate(
             id, 
             { estadoPrenez, observaciones }, 
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if(req.io) req.io.emit('nuevo-registro-genetico');
@@ -128,7 +128,7 @@ const actualizarPaso = async (req, res) => {
         const actualizado = await RegistroGenetico.findByIdAndUpdate(
             id,
             { $set: updateObj },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if(req.io) req.io.emit('nuevo-registro-genetico');

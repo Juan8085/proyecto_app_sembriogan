@@ -31,42 +31,77 @@ const consultarIA = async (req, res) => {
 
         // 2. CONEXIÓN CON GEMINI API (Si hay clave configurada)
         if (apiKey) {
-            
             // Construir el historial en formato Gemini
             let contents = [];
-            if (historial && Array.isArray(historial)) {
-                contents = historial.map(msg => ({
-                    role: msg.isUser ? "user" : "model",
-                    parts: [{ text: msg.texto }]
-                }));
-            } else {
+            if (historial && Array.isArray(historial) && historial.length > 0) {
+                const validos = historial.filter(msg => msg && (msg.texto || msg.text));
+                
+                // Asegurar que comience con un mensaje de usuario si el primero era del modelo
+                let indexInicio = 0;
+                while (indexInicio < validos.length && !(validos[indexInicio].isUser || validos[indexInicio].role === 'user')) {
+                    indexInicio++;
+                }
+
+                const mensajesProcesables = validos.slice(indexInicio);
+
+                if (mensajesProcesables.length > 0) {
+                    contents = mensajesProcesables.map(msg => ({
+                        role: (msg.isUser || msg.role === 'user') ? "user" : "model",
+                        parts: [{ text: msg.texto || msg.text }]
+                    }));
+                }
+            }
+
+            // Si no se construyó historial pero viene mensaje directo
+            if (contents.length === 0 && mensaje) {
                 contents = [{ role: "user", parts: [{ text: mensaje }] }];
             }
 
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        systemInstruction: { parts: [{ text: promptSistema }] },
-                        contents: contents
-                    })
-                });
+            // Lista de modelos ordenados por prioridad y compatibilidad
+            const modelConfigurado = process.env.GEMINI_MODEL;
+            const modelos = [
+                modelConfigurado,
+                'gemini-3.5-flash-lite',
+                'gemini-3.8-flash',
+                'gemini-3.5-flash',
+                'gemini-flash-latest'
+            ].filter((m, i, arr) => m && arr.indexOf(m) === i);
 
-                const data = await response.json();
-                if (response.ok && data.candidates && data.candidates[0].content.parts[0].text) {
-                    return res.status(200).json({ success: true, respuesta: data.candidates[0].content.parts[0].text });
-                } else {
-                    console.error("Error desde Gemini API:", data);
+            // Intentar con los modelos disponibles
+            for (const modelo of modelos) {
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            systemInstruction: { parts: [{ text: promptSistema }] },
+                            contents: contents
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.candidates && data.candidates.length > 0) {
+                        const candidate = data.candidates[0];
+                        const validParts = candidate.content?.parts?.filter(p => p.text && !p.thought);
+                        const partsToUse = (validParts && validParts.length > 0) ? validParts : (candidate.content?.parts || []);
+                        const textoGenerado = partsToUse.map(p => p.text || '').join('\n').trim();
+
+                        if (textoGenerado) {
+                            return res.status(200).json({ success: true, respuesta: textoGenerado });
+                        }
+                    } else {
+                        console.warn(`[Gemini API] No se pudo generar con ${modelo}:`, data?.error?.message || data?.error || data);
+                    }
+                } catch (errFetch) {
+                    console.error(`[Gemini API] Error al conectar con ${modelo}:`, errFetch.message);
                 }
-            } catch (errFetch) {
-                console.error("Error en conexión con Gemini API:", errFetch.message);
             }
         }
 
-        // 3. SISTEMA DE RESPALDO VETERINARIO (Por si no hay API Key activa)
-        let fallbackMsg = mensaje || (historial && historial.length > 0 ? historial[historial.length-1].texto : "");
-        const txt = fallbackMsg.toLowerCase();
+        // 3. SISTEMA DE RESPALDO VETERINARIO (Por si no hay API Key activa o fallan las llamadas a la API)
+        let fallbackMsg = mensaje || (historial && historial.length > 0 ? (historial[historial.length-1].texto || historial[historial.length-1].text) : "");
+        const txt = (fallbackMsg || "").toLowerCase();
         let respuesta = "";
 
         if (rol === 'veterinario') {

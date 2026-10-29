@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal, ActivityIndicator, Image } from 'react-native';
 import { API_URL, setCustomApiUrl, getDefaultApiUrl, initApiUrl, getApiUrl } from '../config/api';
 import { getToken, setSession, clearSession, isTokenExpired } from '../utils/auth';
 import { User, Lock, Globe, RotateCcw, X, CheckCircle2, Server } from 'lucide-react-native';
@@ -110,7 +110,21 @@ export default function LoginScreen({ navigation }) {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Sembriogan</Text>
+          <TouchableOpacity 
+            activeOpacity={0.9}
+            onLongPress={() => {
+              setInputUrlServidor(servidorActual);
+              setModalServidorVisible(true);
+            }}
+            delayLongPress={2500}
+            style={styles.logoBadge}
+          >
+            <Image 
+              source={require('../../assets/logo.png')} 
+              style={styles.logoImage} 
+              resizeMode="contain" 
+            />
+          </TouchableOpacity>
           <Text style={styles.subtitle}>Portal Veterinario Móvil</Text>
         </View>
 
@@ -142,21 +156,6 @@ export default function LoginScreen({ navigation }) {
 
           <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
             <Text style={styles.buttonText}>{loading ? 'Iniciando...' : 'Entrar al Sistema'}</Text>
-          </TouchableOpacity>
-
-          {/* Selector interactivo de servidor/túnel */}
-          <TouchableOpacity 
-            style={styles.serverPill} 
-            onPress={() => {
-              setInputUrlServidor(servidorActual);
-              setModalServidorVisible(true);
-            }}
-          >
-            <Server size={14} color="#0284c7" />
-            <Text style={styles.serverPillText} numberOfLines={1}>
-              {servidorActual}
-            </Text>
-            <Text style={styles.serverPillAction}>Cambiar</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -226,7 +225,25 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 30,
+  },
+  logoBadge: {
+    backgroundColor: '#ffffff',
+    borderRadius: 22,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    shadowColor: '#0284c7',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 10,
+  },
+  logoImage: {
+    width: 200,
+    height: 70,
   },
   title: {
     fontSize: 36,

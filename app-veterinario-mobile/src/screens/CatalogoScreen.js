@@ -243,18 +243,6 @@ export default function CatalogoScreen({ navigation }) {
         </View>
       </View>
 
-      {/* Barra de Servidor / Red */}
-      <TouchableOpacity 
-        style={styles.serverBar} 
-        onPress={() => { setInputUrlServidor(servidorActual); setModalServidorVisible(true); }}
-      >
-        <Server size={14} color="#0284c7" />
-        <Text style={styles.serverBarText} numberOfLines={1}>
-          Servidor: {servidorActual}
-        </Text>
-        <Text style={styles.serverBarAction}>Cambiar</Text>
-      </TouchableOpacity>
-
       {loading ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#0ea5e9" />
