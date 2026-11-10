@@ -18,7 +18,8 @@ import {
   Sparkles,
   MapPin
 } from 'lucide-react';
-import AdminUsuarios from '../components/AdminUsuarios';
+import AdminPersonal from '../components/AdminPersonal';
+import AdminClientes from '../components/AdminClientes';
 import AdminTrazabilidad from '../components/AdminTrazabilidad';
 import AdminCatalogo from '../components/AdminCatalogo';
 import AdminResumen from '../components/AdminResumen';
@@ -66,7 +67,8 @@ export default function AdminDashboard() {
 
   const navItems = [
     { id: 'inicio', label: 'Inicio / Resumen', icon: LayoutDashboard, badge: 'KPIs' },
-    { id: 'veterinarios', label: 'Gestión de Personal', icon: Users },
+    { id: 'personal', label: 'Gestión de Personal', icon: ShieldCheck, badge: 'Staff' },
+    { id: 'clientes', label: 'Gestión de Clientes', icon: Users, badge: 'Ganaderos' },
     { id: 'fincas', label: 'Geolocalización Fincas', icon: MapPin, badge: 'GPS' },
     { id: 'historial', label: 'Historial Genético', icon: Dna, badge: 'Alertas' },
     { id: 'catalogo', label: 'Catálogo y Servicios', icon: ShoppingBag },
@@ -78,7 +80,9 @@ export default function AdminDashboard() {
   const getSectionTitle = () => {
     switch (activeTab) {
       case 'inicio': return { title: 'Panel de Control General', subtitle: 'Métricas financieras, tasa de preñez e inventario en tiempo real' };
-      case 'veterinarios': return { title: 'Gestión de Personal y Clientes', subtitle: 'Directorio de clientes ganaderos registrados, veterinarios y administradores' };
+      case 'personal':
+      case 'veterinarios': return { title: 'Gestión de Personal', subtitle: 'Nómina operativa de médicos veterinarios y administradores' };
+      case 'clientes': return { title: 'Directorio y Dashboard de Clientes', subtitle: 'Gestión integral, inventario bovino, hectáreas y trazabilidad por ganadero' };
       case 'fincas': return { title: 'Geolocalización de Fincas y Clientes', subtitle: 'Mapa interactivo y georreferenciación satelital de predios ganaderos' };
       case 'historial': return { title: 'Trazabilidad Genética y Protocolos', subtitle: 'Seguimiento de biotecnología reproductiva (IATF, IA, TE) y alertas clínicas' };
       case 'catalogo': return { title: 'Gestión de Tienda y Servicios', subtitle: 'Control de productos, stock en bodega y servicios biotecnológicos' };
@@ -92,7 +96,9 @@ export default function AdminDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case 'inicio': return <AdminResumen />;
-      case 'veterinarios': return <AdminUsuarios />;
+      case 'personal':
+      case 'veterinarios': return <AdminPersonal />;
+      case 'clientes': return <AdminClientes />;
       case 'fincas': return <AdminFincasMapa />;
       case 'historial': return <AdminTrazabilidad />;
       case 'catalogo': return <AdminCatalogo />;

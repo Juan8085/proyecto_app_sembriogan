@@ -70,7 +70,9 @@ export default function PublicHome() {
     telefono: '',
     fincaPrincipal: '',
     municipio: 'Neiva',
-    tipoProduccion: 'Doble Propósito'
+    tipoProduccion: 'Doble Propósito',
+    inventarioBovino: '',
+    hectareas: ''
   });
   const [nuevoTestimonio, setNuevoTestimonio] = useState({ nombre: '', rol: '', mensaje: '' });
   const [mensajeTestimonioExito, setMensajeTestimonioExito] = useState('');
@@ -615,11 +617,37 @@ export default function PublicHome() {
     }
   };
 
-  const handleUpdateProfile = (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
+    try {
+      const idUsuario = userCliente.id || userCliente._id;
+      if (idUsuario) {
+        const token = localStorage.getItem('tokenSembriogan');
+        await fetch(`${API_BASE_URL}/api/auth/usuarios/${idUsuario}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            nombre: userCliente.nombre,
+            email: userCliente.email,
+            telefono: userCliente.telefono,
+            fincaPrincipal: userCliente.fincaPrincipal,
+            municipio: userCliente.municipio,
+            tipoProduccion: userCliente.tipoProduccion,
+            inventarioBovino: Number(userCliente.inventarioBovino) || 0,
+            hectareas: Number(userCliente.hectareas) || 0,
+            ...(userCliente.password ? { password: userCliente.password } : {})
+          })
+        });
+      }
+    } catch (err) {
+      console.warn("Aviso al sincronizar perfil con servidor:", err);
+    }
     localStorage.setItem('clienteSembriogan', JSON.stringify(userCliente));
     setIsPerfilOpen(false);
-    alert('✅ Datos de perfil y contraseña actualizados correctamente.');
+    alert('✅ Datos de perfil, inventario bovino y predio actualizados correctamente.');
   };
 
   const enviarTestimonio = async (e) => {
@@ -1038,16 +1066,34 @@ export default function PublicHome() {
             </button>
 
             {/* Encabezado del Perfil */}
-            <div className="flex items-center gap-4 mb-4 border-b border-slate-100 pb-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl font-black shadow-md shadow-blue-500/20">
-                {userCliente.nombre.charAt(0).toUpperCase()}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl font-black shadow-md shadow-blue-500/20">
+                  {userCliente.nombre.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900">{userCliente.nombre}</h3>
+                  <p className="text-xs text-slate-500 font-medium">{userCliente.email}</p>
+                  <span className="inline-block mt-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                    Productor Ganadero Verificado
+                  </span>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-black text-slate-900">{userCliente.nombre}</h3>
-                <p className="text-xs text-slate-500 font-medium">{userCliente.email}</p>
-                <span className="inline-block mt-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                  Productor Ganadero Verificado
-                </span>
+
+              {/* Badges de Inventario Bovino y Hectáreas */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-center">
+                  <span className="block text-[10px] font-bold text-emerald-700 uppercase">Inventario Bovino</span>
+                  <span className="text-xs font-black text-emerald-950">
+                    🐄 {userCliente.inventarioBovino || misFincasCliente.reduce((acc, f) => acc + (f.numeroAnimales || 0), 0) || 0} animales
+                  </span>
+                </div>
+                <div className="bg-sky-50 border border-sky-200 px-3 py-1.5 rounded-xl text-center">
+                  <span className="block text-[10px] font-bold text-sky-700 uppercase">Área Total</span>
+                  <span className="text-xs font-black text-sky-950">
+                    📐 {userCliente.hectareas || misFincasCliente.reduce((acc, f) => acc + (f.hectareas || 0), 0) || 0} ha
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -1744,8 +1790,22 @@ export default function PublicHome() {
                 <input type="email" value={userCliente.email} onChange={(e) => setUserCliente({...userCliente, email: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" required />
               </div>
               <div>
+                <label className="text-xs font-bold text-slate-500 mb-1 block">Finca o Predio Principal</label>
+                <input type="text" value={userCliente.fincaPrincipal || ''} onChange={(e) => setUserCliente({...userCliente, fincaPrincipal: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs" placeholder="Ej: La Esperanza" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 mb-1 block">🐄 Inventario Bovino</label>
+                  <input type="number" min="0" value={userCliente.inventarioBovino ?? ''} onChange={(e) => setUserCliente({...userCliente, inventarioBovino: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs font-semibold" placeholder="Cabezas de ganado" />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 mb-1 block">📐 Área (Hectáreas)</label>
+                  <input type="number" step="0.1" min="0" value={userCliente.hectareas ?? ''} onChange={(e) => setUserCliente({...userCliente, hectareas: e.target.value})} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs font-semibold" placeholder="Ha" />
+                </div>
+              </div>
+              <div>
                 <label className="text-xs font-bold text-slate-500 mb-1 block">Nueva Contraseña</label>
-                <input type="password" value={userCliente.password || ''} onChange={(e) => setUserCliente({...userCliente, password: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" placeholder="••••••••" required />
+                <input type="password" value={userCliente.password || ''} onChange={(e) => setUserCliente({...userCliente, password: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" placeholder="••••••••" />
               </div>
               <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition mt-2">Guardar Cambios</button>
             </form>
@@ -1823,6 +1883,37 @@ export default function PublicHome() {
                     <div>
                       <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Teléfono / WhatsApp</label>
                       <input type="tel" value={authData.telefono} onChange={(e) => setAuthData({...authData, telefono: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs" placeholder="Ej: 3123456789" />
+                    </div>
+                  </div>
+
+                  {/* NUEVOS CAMPOS: INVENTARIO BOVINO Y ÁREA EN HECTÁREAS */}
+                  <div className="grid grid-cols-2 gap-2 bg-emerald-50/60 p-2.5 rounded-2xl border border-emerald-100">
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-emerald-800 uppercase mb-1">
+                        🐄 Inventario Bovino
+                      </label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value={authData.inventarioBovino} 
+                        onChange={(e) => setAuthData({...authData, inventarioBovino: e.target.value})} 
+                        className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl outline-none focus:border-emerald-500 text-xs font-semibold" 
+                        placeholder="Ej: 45 animales" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-extrabold text-emerald-800 uppercase mb-1">
+                        📐 Área Predio (Ha)
+                      </label>
+                      <input 
+                        type="number" 
+                        step="0.1" 
+                        min="0" 
+                        value={authData.hectareas} 
+                        onChange={(e) => setAuthData({...authData, hectareas: e.target.value})} 
+                        className="w-full px-3 py-2 bg-white border border-emerald-200 rounded-xl outline-none focus:border-emerald-500 text-xs font-semibold" 
+                        placeholder="Ej: 20 hectáreas" 
+                      />
                     </div>
                   </div>
                 </>

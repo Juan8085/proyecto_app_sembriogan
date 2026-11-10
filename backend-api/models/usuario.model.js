@@ -18,6 +18,8 @@ const UsuarioSchema = new Schema({
     fincaPrincipal: { type: String, default: '' },
     municipio: { type: String, default: 'Neiva' },
     telefono: { type: String, default: '' },
+    inventarioBovino: { type: Number, default: 0 }, // Número de cabezas de ganado bovino
+    hectareas: { type: Number, default: 0 },        // Área total de la propiedad en hectáreas
     estado: { type: Boolean, default: true } // Para activar/desactivar usuarios
 }, { 
     timestamps: true,

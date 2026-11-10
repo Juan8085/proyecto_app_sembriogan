@@ -9,7 +9,19 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // 1. REGISTRAR UN NUEVO USUARIO (Tradicional)
 const registrarUsuario = async (req, res) => {
     try {
-        const { nombre, email, password, rol, tipoProduccion, fincaPrincipal, municipio, telefono } = req.body;
+        const { 
+            nombre, 
+            email, 
+            password, 
+            rol, 
+            tipoProduccion, 
+            fincaPrincipal, 
+            municipio, 
+            telefono,
+            inventarioBovino,
+            hectareas,
+            numeroAnimales
+        } = req.body;
 
         if (!nombre || !email || !password) {
             return res.status(400).json({ success: false, mensaje: "Nombre, correo y contraseña son obligatorios" });
@@ -31,6 +43,9 @@ const registrarUsuario = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const passwordEncriptado = await bcrypt.hash(password, salt);
 
+        const animalesCant = Number(inventarioBovino) || Number(numeroAnimales) || 0;
+        const hectareasCant = Number(hectareas) || 0;
+
         const nuevoUsuario = new Usuario({
             nombre: (nombre || '').trim(),
             email: emailLimpio,
@@ -40,6 +55,8 @@ const registrarUsuario = async (req, res) => {
             fincaPrincipal: (fincaPrincipal || '').trim(),
             municipio: (municipio || 'Neiva').trim(),
             telefono: (telefono || '').trim(),
+            inventarioBovino: animalesCant,
+            hectareas: hectareasCant,
             estado: true
         });
 
@@ -61,6 +78,8 @@ const registrarUsuario = async (req, res) => {
                         propietarioTelefono: (telefono || '').trim(),
                         municipio: (municipio || 'Neiva').trim(),
                         tipoProduccion: tipoProduccion || 'Doble Propósito',
+                        numeroAnimales: animalesCant,
+                        hectareas: hectareasCant,
                         coordenadas: { lat: 2.9273, lng: -75.2819 }, // Coordenadas referencia Huila
                         registradoPor: 'Cliente'
                     });
@@ -86,6 +105,9 @@ const registrarUsuario = async (req, res) => {
                 tipoProduccion: nuevoUsuario.tipoProduccion,
                 fincaPrincipal: nuevoUsuario.fincaPrincipal,
                 municipio: nuevoUsuario.municipio,
+                telefono: nuevoUsuario.telefono,
+                inventarioBovino: nuevoUsuario.inventarioBovino,
+                hectareas: nuevoUsuario.hectareas,
                 estado: nuevoUsuario.estado
             }
         });
@@ -127,9 +149,17 @@ const loginUsuario = async (req, res) => {
             token,
             usuario: {
                 id: usuario._id,
+                _id: usuario._id,
                 nombre: usuario.nombre,
                 email: usuario.email,
-                rol: usuario.rol
+                rol: usuario.rol,
+                fincaPrincipal: usuario.fincaPrincipal || '',
+                municipio: usuario.municipio || 'Neiva',
+                tipoProduccion: usuario.tipoProduccion || 'Doble Propósito',
+                telefono: usuario.telefono || '',
+                inventarioBovino: usuario.inventarioBovino || 0,
+                hectareas: usuario.hectareas || 0,
+                estado: usuario.estado
             }
         });
 
@@ -199,9 +229,17 @@ const googleLogin = async (req, res) => {
             token: jwtToken,
             usuario: {
                 id: usuario._id,
+                _id: usuario._id,
                 nombre: usuario.nombre,
                 email: usuario.email,
-                rol: usuario.rol
+                rol: usuario.rol,
+                fincaPrincipal: usuario.fincaPrincipal || '',
+                municipio: usuario.municipio || 'Neiva',
+                tipoProduccion: usuario.tipoProduccion || 'Doble Propósito',
+                telefono: usuario.telefono || '',
+                inventarioBovino: usuario.inventarioBovino || 0,
+                hectareas: usuario.hectareas || 0,
+                estado: usuario.estado
             }
         });
 
@@ -247,6 +285,8 @@ const actualizarUsuarioAdmin = async (req, res) => {
         if (req.body.fincaPrincipal !== undefined) datosActualizar.fincaPrincipal = req.body.fincaPrincipal.trim();
         if (req.body.municipio !== undefined) datosActualizar.municipio = req.body.municipio.trim();
         if (req.body.telefono !== undefined) datosActualizar.telefono = req.body.telefono.trim();
+        if (req.body.inventarioBovino !== undefined) datosActualizar.inventarioBovino = Number(req.body.inventarioBovino) || 0;
+        if (req.body.hectareas !== undefined) datosActualizar.hectareas = Number(req.body.hectareas) || 0;
 
         if (password && password.trim() !== "") {
             if (password.length < 6) {
@@ -256,7 +296,7 @@ const actualizarUsuarioAdmin = async (req, res) => {
             datosActualizar.password = await bcrypt.hash(password, salt);
         }
 
-        const usuarioActualizado = await Usuario.findByIdAndUpdate(id, datosActualizar, { new: true }).select('-password');
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(id, datosActualizar, { returnDocument: 'after' }).select('-password');
         
         if (!usuarioActualizado) {
             return res.status(404).json({ success: false, mensaje: "Usuario no encontrado" });
