@@ -1824,3 +1824,4 @@ export default function AdminClientes() {
     </div>
   );
 }
+

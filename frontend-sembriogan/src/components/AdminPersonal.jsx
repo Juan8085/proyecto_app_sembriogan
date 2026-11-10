@@ -906,3 +906,4 @@ export default function AdminPersonal() {
     </div>
   );
 }
+
