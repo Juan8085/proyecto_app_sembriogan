@@ -227,6 +227,10 @@ export default function AdminTrazabilidad() {
   // Filtrado reactivo en tiempo real (por animal)
   const registrosFiltrados = useMemo(() => {
     return registros.filter((reg) => {
+      // Excluir registros sin correo electrónico válido (Requerimiento Sembriogan)
+      const email = (reg.productorEmail || '').trim();
+      if (!email || !email.includes('@')) return false;
+
       const termino = busqueda.toLowerCase().trim();
       const coincideBusqueda = 
         !termino ||
@@ -234,6 +238,7 @@ export default function AdminTrazabilidad() {
         (reg.finca && reg.finca.toLowerCase().includes(termino)) ||
         (reg.arete && reg.arete.toLowerCase().includes(termino)) ||
         (reg.animalId && reg.animalId.toLowerCase().includes(termino)) ||
+        (reg.productorEmail && reg.productorEmail.toLowerCase().includes(termino)) ||
         (reg.geneticaUtilizada && reg.geneticaUtilizada.toLowerCase().includes(termino)) ||
         (reg.tipoProcedimiento && reg.tipoProcedimiento.toLowerCase().includes(termino));
 
@@ -254,6 +259,10 @@ export default function AdminTrazabilidad() {
   const productoresAgrupados = useMemo(() => {
     const mapa = {};
     registros.forEach(reg => {
+      // Excluir registros sin correo electrónico válido (Requerimiento Sembriogan)
+      const email = (reg.productorEmail || '').trim();
+      if (!email || !email.includes('@')) return;
+
       const key = reg.productor?.trim() || 'Sin Productor';
       if (!mapa[key]) {
         mapa[key] = {

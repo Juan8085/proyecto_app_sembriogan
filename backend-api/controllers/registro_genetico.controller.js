@@ -4,9 +4,12 @@ const RegistroGenetico = require('../models/registro_genetico.model');
 const obtenerRegistros = async (req, res) => {
     try {
         const { email } = req.query;
-        let query = {};
+        // Solo registros con correo electrónico válido (Requerimiento Sembriogan)
+        let query = {
+            productorEmail: { $exists: true, $ne: '', $regex: '@' }
+        };
         if (email) {
-            query = { productorEmail: email.trim().toLowerCase() };
+            query.productorEmail = email.trim().toLowerCase();
         }
         // Ordenamos por la fecha de creación para ver los más recientes primero
         const registros = await RegistroGenetico.find(query).sort({ createdAt: -1 });
@@ -113,7 +116,7 @@ const crearRegistro = async (req, res) => {
                         fincaPrincipal: fincaProductor,
                         municipio: municipioProductor,
                         tipoProduccion: tipoProduccion,
-                        estado: 'Activo'
+                        estado: true
                     });
                     await usuarioCliente.save();
                     console.log(`👤 [Auto-Cliente] Ganadero "${nombreProductor}" registrado como Cliente con correo: ${emailCliente}`);

@@ -98,10 +98,11 @@ export default function AdminClientes() {
       const dataUsuarios = await resUsuarios.json();
 
       if (dataUsuarios.success && Array.isArray(dataUsuarios.data)) {
-        // Filtrar exclusivamente Clientes Ganaderos
+        // Filtrar exclusivamente Clientes Ganaderos con correo electrónico válido
         const clientesSolo = dataUsuarios.data.filter(u => {
           const r = (u.rol || '').toLowerCase();
-          return r === 'cliente';
+          const emailValido = u.email && u.email.trim() !== '' && u.email.includes('@');
+          return r === 'cliente' && emailValido;
         });
         setClientes(clientesSolo);
       }

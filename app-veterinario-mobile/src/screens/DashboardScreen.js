@@ -255,14 +255,17 @@ export default function DashboardScreen({ navigation }) {
       const data = await res.json();
       if (data.success) {
         setServidorConectado(true);
+        // Filtrar registros que cuenten con correo válido (Requerimiento Sembriogan)
+        const validos = (data.data || []).filter(r => r.productorEmail && r.productorEmail.trim() !== '' && r.productorEmail.includes('@'));
         // Guardar copia local de caché para disponibilidad offline
-        await AsyncStorage.setItem('cacheProcedimientos', JSON.stringify(data.data));
+        await AsyncStorage.setItem('cacheProcedimientos', JSON.stringify(validos));
 
         const offlineRaw = await AsyncStorage.getItem('offlineRegistros');
         const offlineData = offlineRaw ? JSON.parse(offlineRaw) : [];
-        setOfflineCount(offlineData.length);
+        const offlineValidos = offlineData.filter(r => r.productorEmail && r.productorEmail.trim() !== '' && r.productorEmail.includes('@'));
+        setOfflineCount(offlineValidos.length);
         
-        const mergedData = [...offlineData, ...data.data];
+        const mergedData = [...offlineValidos, ...validos];
         setProcedimientos(mergedData);
         calcularAlertas(mergedData);
       }
@@ -274,8 +277,11 @@ export default function DashboardScreen({ navigation }) {
       const offlineRaw = await AsyncStorage.getItem('offlineRegistros');
       const offlineData = offlineRaw ? JSON.parse(offlineRaw) : [];
       
-      setOfflineCount(offlineData.length);
-      const combined = [...offlineData, ...cacheData];
+      const offlineValidos = offlineData.filter(r => r.productorEmail && r.productorEmail.trim() !== '' && r.productorEmail.includes('@'));
+      const cacheValidos = cacheData.filter(r => r.productorEmail && r.productorEmail.trim() !== '' && r.productorEmail.includes('@'));
+
+      setOfflineCount(offlineValidos.length);
+      const combined = [...offlineValidos, ...cacheValidos];
       setProcedimientos(combined);
       calcularAlertas(combined);
       Alert.alert('Modo Offline 📡', `Mostrando ${combined.length} registros guardados en la memoria de tu celular.`);
@@ -672,23 +678,26 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
   // REPORTES CONSOLIDADOS POR PRODUCTOR / GANADERO (NIVEL DE LOTE)
   // =========================================================================
 
-  // Consolidar lista única de productores cruzando procedimientos y fincas
+  // Consolidar lista única de productores cruzando procedimientos y fincas (Solo con correo válido)
   const productoresLista = useMemo(() => {
     const mapa = new Map();
 
-    // 1. Consolidar desde procedimientos clínicos
+    // 1. Consolidar desde procedimientos clínicos (requiere correo válido)
     procedimientos.forEach(p => {
+      const email = (p.productorEmail || '').trim().toLowerCase();
+      if (!email || !email.includes('@')) return;
+
       const nombre = (p.productor || '').trim();
       if (!nombre) return;
-      const key = nombre.toLowerCase();
+      const key = email;
       if (!mapa.has(key)) {
         mapa.set(key, {
           nombre,
-          email: p.productorEmail || '',
+          email,
           fincas: new Set(),
           procedimientos: [],
-          telefono: '',
-          municipio: ''
+          telefono: p.telefonoProductor || '',
+          municipio: p.municipio || ''
         });
       }
       const prod = mapa.get(key);
@@ -696,15 +705,18 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
       prod.procedimientos.push(p);
     });
 
-    // 2. Complementar con datos de la base de fincas
+    // 2. Complementar con datos de la base de fincas (requiere correo válido)
     fincas.forEach(f => {
+      const email = (f.propietarioEmail || '').trim().toLowerCase();
+      if (!email || !email.includes('@')) return;
+
       const nombre = (f.propietarioNombre || '').trim();
       if (!nombre) return;
-      const key = nombre.toLowerCase();
+      const key = email;
       if (!mapa.has(key)) {
         mapa.set(key, {
           nombre,
-          email: f.propietarioEmail || '',
+          email,
           fincas: new Set(),
           procedimientos: [],
           telefono: f.propietarioTelefono || '',

@@ -183,6 +183,11 @@ export default function RegistroScreen({ navigation }) {
       return;
     }
 
+    if (!form.productorEmail || !form.productorEmail.trim() || !form.productorEmail.includes('@')) {
+      Alert.alert('Correo Obligatorio ✉️', 'El correo electrónico del ganadero es indispensable para el control de trazabilidad y acceso al portal web.');
+      return;
+    }
+
     setLoading(true);
 
     const geneticaFinal = (toroPendiente || !form.semenToro.trim() || form.tipoProcedimiento === 'Atencion de Parto')
@@ -616,14 +621,14 @@ export default function RegistroScreen({ navigation }) {
             })}
           </View>
 
-          <Text style={styles.label}>Correo del Cliente (Opcional - Login Portal Web)</Text>
+          <Text style={styles.label}>Correo del Cliente Ganadero * (Control y Acceso Portal Web)</Text>
           <TextInput 
             style={styles.input} 
             value={form.productorEmail} 
             onChangeText={(v) => setField('productorEmail', v)} 
             keyboardType="email-address" 
             autoCapitalize="none" 
-            placeholder="correo@ejemplo.com (Opcional)" 
+            placeholder="correo@ejemplo.com *" 
           />
 
           {/* BOTÓN CAPTURAR GPS EN CAMPO */}

@@ -253,11 +253,14 @@ const obtenerUsuarios = async (req, res) => {
     try {
         const usuarios = await Usuario.find().select('-password').sort({ createdAt: -1 }).lean();
         
+        // Excluir registros que no cuenten con correo electrónico válido (Requerimiento Sembriogan)
+        const usuariosConEmail = usuarios.filter(u => u.email && u.email.trim() !== '' && u.email.includes('@'));
+
         // Enriquecer de forma consistente con las fincas registradas en la base de datos
         const Finca = require('../models/finca.model');
         const todasFincas = await Finca.find().lean();
         
-        const usuariosEnriquecidos = usuarios.map(u => {
+        const usuariosEnriquecidos = usuariosConEmail.map(u => {
             if (u.rol !== 'Cliente') return u;
             
             const email = (u.email || '').toLowerCase().trim();
