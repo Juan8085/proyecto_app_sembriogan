@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, FlatList, Alert, Modal, RefreshControl, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView, Linking } from 'react-native';
-import { getToken, clearSession, isTokenExpired } from '../utils/auth';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, FlatList, Alert, Modal, RefreshControl, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView, Linking, Share } from 'react-native';
+import { getToken, getUsuario, getUser, clearSession, isTokenExpired } from '../utils/auth';
 import * as Location from 'expo-location';
 import { API_URL, getApiUrl, setCustomApiUrl, getDefaultApiUrl, initApiUrl } from '../config/api';
 import { 
@@ -23,7 +23,13 @@ import {
   Navigation,
   Phone,
   Plus,
-  Search
+  Search,
+  FileText,
+  Users,
+  ArrowLeft,
+  ChevronRight,
+  CheckCircle2,
+  Send
 } from 'lucide-react-native';
 
 export default function DashboardScreen({ navigation }) {
@@ -66,6 +72,13 @@ export default function DashboardScreen({ navigation }) {
     lat: '',
     lng: ''
   });
+
+  // Estados para Reportes Clínicos Consolidados por Productor / Ganadero
+  const [modalReporteProductorVisible, setModalReporteProductorVisible] = useState(false);
+  const [productorSeleccionado, setProductorSeleccionado] = useState(null);
+  const [busquedaProductor, setBusquedaProductor] = useState('');
+  const [notasReporteProductor, setNotasReporteProductor] = useState('');
+  const [veterinarioActual, setVeterinarioActual] = useState(null);
 
   // Cargar fincas desde el backend
   const cargarFincas = async () => {
@@ -184,6 +197,12 @@ export default function DashboardScreen({ navigation }) {
       setServidorActual(url);
       cargarFincas();
     });
+    const fetchUser = getUsuario || getUser;
+    if (fetchUser) {
+      fetchUser().then(u => {
+        if (u) setVeterinarioActual(u);
+      }).catch(() => {});
+    }
   }, []);
 
   const probarYGuardarServidor = async (urlAProbar) => {
@@ -555,6 +574,213 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
     });
   };
 
+  // =========================================================================
+  // REPORTES CONSOLIDADOS POR PRODUCTOR / GANADERO (NIVEL DE LOTE)
+  // =========================================================================
+
+  // Consolidar lista única de productores cruzando procedimientos y fincas
+  const productoresLista = useMemo(() => {
+    const mapa = new Map();
+
+    // 1. Consolidar desde procedimientos clínicos
+    procedimientos.forEach(p => {
+      const nombre = (p.productor || '').trim();
+      if (!nombre) return;
+      const key = nombre.toLowerCase();
+      if (!mapa.has(key)) {
+        mapa.set(key, {
+          nombre,
+          email: p.productorEmail || '',
+          fincas: new Set(),
+          procedimientos: [],
+          telefono: '',
+          municipio: ''
+        });
+      }
+      const prod = mapa.get(key);
+      if (p.finca && p.finca.trim()) prod.fincas.add(p.finca.trim());
+      prod.procedimientos.push(p);
+    });
+
+    // 2. Complementar con datos de la base de fincas
+    fincas.forEach(f => {
+      const nombre = (f.propietarioNombre || '').trim();
+      if (!nombre) return;
+      const key = nombre.toLowerCase();
+      if (!mapa.has(key)) {
+        mapa.set(key, {
+          nombre,
+          email: f.propietarioEmail || '',
+          fincas: new Set(),
+          procedimientos: [],
+          telefono: f.propietarioTelefono || '',
+          municipio: f.municipio || ''
+        });
+      }
+      const prod = mapa.get(key);
+      if (f.nombreFinca && f.nombreFinca.trim()) prod.fincas.add(f.nombreFinca.trim());
+      if (!prod.telefono && f.propietarioTelefono) prod.telefono = f.propietarioTelefono;
+      if (!prod.municipio && f.municipio) prod.municipio = f.municipio;
+    });
+
+    return Array.from(mapa.values()).map(prod => {
+      const total = prod.procedimientos.length;
+      const preñadas = prod.procedimientos.filter(p => p.estadoPrenez === 'Preñada').length;
+      const vacias = prod.procedimientos.filter(p => p.estadoPrenez === 'Vacía').length;
+      const pendientes = prod.procedimientos.filter(p => p.estadoPrenez !== 'Preñada' && p.estadoPrenez !== 'Vacía').length;
+      const evaluadas = preñadas + vacias;
+      const tasaPrenez = evaluadas > 0 ? Math.round((preñadas / evaluadas) * 100) : 0;
+
+      return {
+        ...prod,
+        fincasArray: Array.from(prod.fincas),
+        fincasStr: Array.from(prod.fincas).join(', ') || 'Predio registrado',
+        total,
+        preñadas,
+        vacias,
+        pendientes,
+        evaluadas,
+        tasaPrenez
+      };
+    }).sort((a, b) => b.total - a.total);
+  }, [procedimientos, fincas]);
+
+  // Filtrado de productores por búsqueda
+  const productoresFiltrados = useMemo(() => {
+    if (!busquedaProductor.trim()) return productoresLista;
+    const q = busquedaProductor.toLowerCase().trim();
+    return productoresLista.filter(p => 
+      p.nombre.toLowerCase().includes(q) ||
+      p.fincasStr.toLowerCase().includes(q) ||
+      (p.municipio && p.municipio.toLowerCase().includes(q))
+    );
+  }, [productoresLista, busquedaProductor]);
+
+  // Abrir reporte para un productor específico
+  const abrirReportePorProductor = (nombreProductor, fincaNombre = '', telefonoDefault = '', municipioDefault = '') => {
+    const key = (nombreProductor || '').toLowerCase().trim();
+    let prod = productoresLista.find(p => p.nombre.toLowerCase().trim() === key);
+
+    if (!prod) {
+      prod = {
+        nombre: nombreProductor,
+        fincasArray: fincaNombre ? [fincaNombre] : [],
+        fincasStr: fincaNombre || 'Predio registrado',
+        telefono: telefonoDefault || '',
+        municipio: municipioDefault || 'Huila',
+        procedimientos: [],
+        total: 0,
+        preñadas: 0,
+        vacias: 0,
+        pendientes: 0,
+        evaluadas: 0,
+        tasaPrenez: 0
+      };
+    }
+
+    setProductorSeleccionado(prod);
+    setNotasReporteProductor('Protocolo zootécnico y reproductivo evaluado en campo por Sembriogan. Continuar plan de suplementación mineral y realizar confirmación ecográfica a los 45 días.');
+    setModalReporteProductorVisible(true);
+  };
+
+  // Generar texto estructurado oficial del reporte consolidado por productor
+  const generarTextoReporteProductor = (prod, notas) => {
+    if (!prod) return '';
+
+    const hoy = new Date().toLocaleDateString('es-CO', {
+      day: '2-digit', month: 'long', year: 'numeric'
+    });
+    const vetNombre = veterinarioActual?.nombre || 'Equipo Veterinario Sembriogan';
+    const fincasTexto = prod.fincasStr || 'Predio no especificado';
+    const municipioTexto = prod.municipio ? `${prod.municipio}, Huila` : 'Huila, Colombia';
+
+    let listadoAnimales = '';
+    if (prod.procedimientos && prod.procedimientos.length > 0) {
+      listadoAnimales = prod.procedimientos.map((p, idx) => {
+        const arete = p.arete || p.animalId || `Animal #${idx + 1}`;
+        const raza = p.raza ? ` (${p.raza})` : '';
+        const tipo = p.tipoProcedimiento || 'IATF';
+        let iconoPrenez = '⏳ PENDIENTE EVALUACIÓN';
+        if (p.estadoPrenez === 'Preñada') iconoPrenez = '✅ PREÑADA';
+        else if (p.estadoPrenez === 'Vacía') iconoPrenez = '❌ VACÍA';
+
+        const fechaProc = p.fechasProtocolo?.dia0_sincronizacion || p.createdAt;
+        const fechaStr = fechaProc ? new Date(fechaProc).toLocaleDateString('es-CO') : '';
+        const gen = p.geneticaUtilizada || p.semenToro ? ` | Pajilla: ${p.geneticaUtilizada || p.semenToro}` : '';
+
+        return `🔹 Chapeta *${arete}*${raza} | ${tipo}${gen}\n   ↳ Diagnóstico: *${iconoPrenez}* ${fechaStr ? `(${fechaStr})` : ''}`;
+      }).join('\n\n');
+    } else {
+      listadoAnimales = '_Sin registros individuales cargados al momento._';
+    }
+
+    const notasTexto = (notas || '').trim() || 'Continuar con el plan de manejo y nutrición establecido en la finca.';
+
+    return `📋 *INFORME CLÍNICO REPRODUCTIVO POR GANADERO*
+🏛️ *SEMBRIOGAN - Biotecnología Bovina (EPSEA)*
+----------------------------------------
+👤 *Ganadero / Productor:* ${prod.nombre}
+🏡 *Predio(s):* ${fincasTexto}
+📍 *Ubicación:* ${municipioTexto}
+📅 *Fecha del Informe:* ${hoy}
+👨‍⚕️ *Médico Veterinario:* Dr. ${vetNombre}
+----------------------------------------
+📊 *BALANCE REPRODUCTIVO DEL LOTE:*
+• 🐮 *Total Animales Evaluados:* ${prod.total}
+• ✅ *Hembras Preñadas:* ${prod.preñadas}
+• ❌ *Hembras Vacías:* ${prod.vacias}
+• ⏳ *Pendientes de Diagnóstico:* ${prod.pendientes}
+• 📈 *Tasa de Fertilidad / Preñez:* ${prod.tasaPrenez}% (sobre ${prod.evaluadas} evaluadas)
+
+📝 *DETALLE INDIVIDUAL DE ANIMALES:*
+${listadoAnimales}
+
+🔬 *RECOMENDACIONES TÉCNICAS Y MANEJO:*
+${notasTexto}
+
+----------------------------------------
+_Informe oficial emitido por la App Móvil Veterinaria Sembriogan._
+_Contacto y asistencia técnica: +57 320 857 7634_`;
+  };
+
+  // Compartir por WhatsApp con el Ganadero
+  const compartirReporteProductorWhatsApp = (prod, notas) => {
+    const texto = generarTextoReporteProductor(prod, notas);
+    const cleanTel = (prod.telefono || '').replace(/\D/g, '');
+    const encoded = encodeURIComponent(texto);
+
+    const urlConTel = `whatsapp://send?phone=57${cleanTel}&text=${encoded}`;
+    const urlSinTel = `whatsapp://send?text=${encoded}`;
+    const webUrl = cleanTel ? `https://wa.me/57${cleanTel}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+
+    const targetUrl = cleanTel ? urlConTel : urlSinTel;
+
+    Linking.canOpenURL('whatsapp://send').then(supported => {
+      if (supported) {
+        Linking.openURL(targetUrl);
+      } else {
+        Linking.openURL(webUrl).catch(() => {
+          Alert.alert('Aviso', 'No se pudo abrir WhatsApp. Puedes usar el botón de Compartir General.');
+        });
+      }
+    }).catch(() => {
+      Linking.openURL(webUrl);
+    });
+  };
+
+  // Compartir mediante diálogo nativo universal (Gmail, Archivos, Bluetooth, etc.)
+  const compartirReporteProductorGeneral = async (prod, notas) => {
+    const texto = generarTextoReporteProductor(prod, notas);
+    try {
+      await Share.share({
+        title: `Reporte Reproductivo Sembriogan - ${prod.nombre}`,
+        message: texto
+      });
+    } catch (e) {
+      console.warn("Error compartiendo reporte:", e);
+    }
+  };
+
   const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.card} onPress={() => handleAbrirGestion(item)}>
       <View style={styles.cardHeader}>
@@ -627,28 +853,44 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
         </View>
       </View>
 
-      {/* ACCESO AL DIRECTORIO DE FINCAS Y MAPA GPS */}
+      {/* ACCESOS RÁPIDOS DE CAMPO: DIRECTORIO GPS Y REPORTES POR PRODUCTOR */}
       <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 6 }}>
-        <TouchableOpacity 
-          style={styles.fincasGpsBanner}
-          onPress={() => {
-            cargarFincas();
-            setModalFincasVisible(true);
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 }}>
-            <View style={styles.fincasGpsIcon}>
-              <MapPin color="#ffffff" size={20} />
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {/* 1. Directorio de Fincas (GPS) */}
+          <TouchableOpacity 
+            style={[styles.quickActionCard, { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }]}
+            onPress={() => {
+              cargarFincas();
+              setModalFincasVisible(true);
+            }}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: '#10b981' }]}>
+              <MapPin color="#ffffff" size={18} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.fincasGpsTitle}>Directorio de Fincas (GPS)</Text>
-              <Text style={styles.fincasGpsSubtitle}>Predios georreferenciados y rutas Waze / Maps</Text>
+              <Text style={[styles.quickActionTitle, { color: '#065f46' }]}>Directorio Fincas</Text>
+              <Text style={styles.quickActionSub}>{fincas.length} Predios GPS</Text>
             </View>
-          </View>
-          <View style={styles.fincasGpsBadge}>
-            <Text style={styles.fincasGpsBadgeText}>{fincas.length} Predios</Text>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+
+          {/* 2. Reportes por Productor (Lotes) */}
+          <TouchableOpacity 
+            style={[styles.quickActionCard, { backgroundColor: '#f0f9ff', borderColor: '#bae6fd' }]}
+            onPress={() => {
+              setProductorSeleccionado(null);
+              setBusquedaProductor('');
+              setModalReporteProductorVisible(true);
+            }}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: '#0284c7' }]}>
+              <FileText color="#ffffff" size={18} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.quickActionTitle, { color: '#0369a1' }]}>Reportes Ganadero</Text>
+              <Text style={styles.quickActionSub}>{productoresLista.length} Lotes</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -962,7 +1204,18 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
                       onPress={() => abrirRutaEnMaps(item.coordenadas?.lat, item.coordenadas?.lng)}
                     >
                       <Navigation size={15} color="#ffffff" />
-                      <Text style={styles.fincaBtnNavegarText}>Cómo llegar (GPS)</Text>
+                      <Text style={styles.fincaBtnNavegarText}>Ruta GPS</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.fincaBtnReporte}
+                      onPress={() => {
+                        setModalFincasVisible(false);
+                        abrirReportePorProductor(item.propietarioNombre, item.nombreFinca, item.propietarioTelefono, item.municipio);
+                      }}
+                    >
+                      <FileText size={15} color="#0284c7" />
+                      <Text style={styles.fincaBtnReporteText}>Reporte Lote</Text>
                     </TouchableOpacity>
 
                     {item.propietarioTelefono ? (
@@ -1141,6 +1394,252 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
                 )}
               </TouchableOpacity>
             </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ============================================================== */}
+      {/* MODAL: REPORTES CLÍNICOS CONSOLIDADOS POR PRODUCTOR / GANADERO */}
+      {/* ============================================================== */}
+      <Modal visible={modalReporteProductorVisible} animationType="slide" transparent={true}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+          style={styles.modalOverlay}
+        >
+          <View style={[styles.modalContent, { maxHeight: '92%' }]}>
+            
+            {/* Header del Modal */}
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#e0f2fe', alignItems: 'center', justifyContent: 'center' }}>
+                  <FileText color="#0284c7" size={20} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalTitle} numberOfLines={1}>
+                    {productorSeleccionado ? 'Reporte por Ganadero' : 'Reportes por Productor'}
+                  </Text>
+                  <Text style={styles.modalSubTitle} numberOfLines={1}>
+                    {productorSeleccionado ? productorSeleccionado.nombre : 'Consolidado zootécnico y reproductivo'}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setModalReporteProductorVisible(false)}>
+                <X color="#64748b" size={24} />
+              </TouchableOpacity>
+            </View>
+
+            {/* VISTA 1: LISTADO DE PRODUCTORES SI NO HAY NINGUNO SELECCIONADO */}
+            {!productorSeleccionado ? (
+              <View style={{ flex: 1 }}>
+                {/* Buscador de Productor o Finca */}
+                <View style={[styles.searchBoxFinca, { marginBottom: 12 }]}>
+                  <Search size={18} color="#94a3b8" />
+                  <TextInput
+                    style={styles.searchInputFinca}
+                    placeholder="Buscar ganadero, predio o municipio..."
+                    placeholderTextColor="#94a3b8"
+                    value={busquedaProductor}
+                    onChangeText={setBusquedaProductor}
+                  />
+                  {busquedaProductor ? (
+                    <TouchableOpacity onPress={() => setBusquedaProductor('')}>
+                      <X size={16} color="#94a3b8" />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+
+                {/* Lista de Ganaderos */}
+                <FlatList
+                  data={productoresFiltrados}
+                  keyExtractor={(item) => item.nombre}
+                  showsVerticalScrollIndicator={false}
+                  ListEmptyComponent={
+                    <View style={{ padding: 30, alignItems: 'center' }}>
+                      <Users size={36} color="#cbd5e1" />
+                      <Text style={{ fontWeight: 'bold', color: '#64748b', marginTop: 8 }}>No se encontraron ganaderos</Text>
+                      <Text style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', marginTop: 4 }}>
+                        Asegúrate de haber registrado procedimientos clínicos o fincas en la app.
+                      </Text>
+                    </View>
+                  }
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.productorCardRow}
+                      activeOpacity={0.85}
+                      onPress={() => {
+                        setProductorSeleccionado(item);
+                        setNotasReporteProductor('Protocolo reproductivo y zootécnico evaluado en campo por Sembriogan. Continuar plan de nutrición y realizar confirmación ecográfica a los 45 días.');
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 }}>
+                        <View style={styles.productorAvatarBox}>
+                          <Text style={styles.productorAvatarText}>
+                            {item.nombre.split(' ').map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.productorCardNombre}>👤 {item.nombre}</Text>
+                          <Text style={styles.productorCardFinca} numberOfLines={1}>
+                            🏡 {item.fincasStr}
+                          </Text>
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                            <View style={[styles.badgePill, { backgroundColor: '#f1f5f9' }]}>
+                              <Text style={[styles.badgePillText, { color: '#334155' }]}>
+                                🐮 {item.total} {item.total === 1 ? 'animal' : 'animales'}
+                              </Text>
+                            </View>
+                            {item.preñadas > 0 && (
+                              <View style={[styles.badgePill, { backgroundColor: '#ecfdf5' }]}>
+                                <Text style={[styles.badgePillText, { color: '#047857' }]}>
+                                  ✅ {item.preñadas} Preñadas ({item.tasaPrenez}%)
+                                </Text>
+                              </View>
+                            )}
+                            {item.vacias > 0 && (
+                              <View style={[styles.badgePill, { backgroundColor: '#fef2f2' }]}>
+                                <Text style={[styles.badgePillText, { color: '#b91c1c' }]}>
+                                  ❌ {item.vacias} Vacías
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                      <ChevronRight size={20} color="#94a3b8" />
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            ) : (
+              /* VISTA 2: DETALLE Y EMISIÓN DEL REPORTE DEL PRODUCTOR SELECCIONADO */
+              <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+                
+                {/* Botón Volver al Listado */}
+                <TouchableOpacity
+                  style={styles.btnVolverProductores}
+                  onPress={() => setProductorSeleccionado(null)}
+                >
+                  <ArrowLeft size={16} color="#0284c7" />
+                  <Text style={styles.btnVolverProductoresText}>Seleccionar otro ganadero</Text>
+                </TouchableOpacity>
+
+                {/* Tarjeta de Datos del Ganadero */}
+                <View style={styles.reporteGanaderoCard}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <View style={styles.productorAvatarLarge}>
+                      <Text style={styles.productorAvatarLargeText}>
+                        {productorSeleccionado.nombre.split(' ').map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.reporteGanaderoNombre}>{productorSeleccionado.nombre}</Text>
+                      <Text style={styles.reporteGanaderoFinca}>🏡 Predio: {productorSeleccionado.fincasStr}</Text>
+                      <Text style={styles.reporteGanaderoUbicacion}>
+                        📍 {productorSeleccionado.municipio ? `${productorSeleccionado.municipio}, Huila` : 'Huila, Colombia'}
+                        {productorSeleccionado.telefono ? ` • 📞 ${productorSeleccionado.telefono}` : ''}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Tarjetas KPI de Resumen del Lote */}
+                <View style={styles.reporteKpiGrid}>
+                  <View style={[styles.reporteKpiCard, { borderColor: '#cbd5e1' }]}>
+                    <Text style={styles.reporteKpiLabel}>TOTAL LOTE</Text>
+                    <Text style={[styles.reporteKpiValue, { color: '#0f172a' }]}>{productorSeleccionado.total}</Text>
+                    <Text style={styles.reporteKpiSub}>Animales</Text>
+                  </View>
+
+                  <View style={[styles.reporteKpiCard, { borderColor: '#a7f3d0', backgroundColor: '#f0fdf4' }]}>
+                    <Text style={[styles.reporteKpiLabel, { color: '#047857' }]}>PREÑADAS</Text>
+                    <Text style={[styles.reporteKpiValue, { color: '#059669' }]}>{productorSeleccionado.preñadas}</Text>
+                    <Text style={styles.reporteKpiSub}>Confirmadas</Text>
+                  </View>
+
+                  <View style={[styles.reporteKpiCard, { borderColor: '#fecaca', backgroundColor: '#fef2f2' }]}>
+                    <Text style={[styles.reporteKpiLabel, { color: '#b91c1c' }]}>VACÍAS</Text>
+                    <Text style={[styles.reporteKpiValue, { color: '#dc2626' }]}>{productorSeleccionado.vacias}</Text>
+                    <Text style={styles.reporteKpiSub}>Para Repaso</Text>
+                  </View>
+
+                  <View style={[styles.reporteKpiCard, { borderColor: '#bae6fd', backgroundColor: '#f0f9ff' }]}>
+                    <Text style={[styles.reporteKpiLabel, { color: '#0369a1' }]}>FERTILIDAD</Text>
+                    <Text style={[styles.reporteKpiValue, { color: '#0284c7' }]}>{productorSeleccionado.tasaPrenez}%</Text>
+                    <Text style={styles.reporteKpiSub}>Tasa Preñez</Text>
+                  </View>
+                </View>
+
+                {/* Desglose de Chapetas / Aretes */}
+                <Text style={styles.reporteSectionTitle}>Detalle de Chapetas del Lote ({productorSeleccionado.total})</Text>
+                {productorSeleccionado.procedimientos.length === 0 ? (
+                  <View style={styles.reporteEmptyBox}>
+                    <Text style={styles.reporteEmptyText}>No hay procedimientos individuales asociados a este ganadero.</Text>
+                  </View>
+                ) : (
+                  <View style={styles.reporteAnimalesList}>
+                    {productorSeleccionado.procedimientos.map((p, index) => (
+                      <View key={p._id || index} style={styles.reporteAnimalRow}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.reporteAnimalArete}>
+                            🐮 Chapeta {p.arete || p.animalId} {p.raza ? `(${p.raza})` : ''}
+                          </Text>
+                          <Text style={styles.reporteAnimalDetalle}>
+                            {p.tipoProcedimiento} {p.geneticaUtilizada || p.semenToro ? `• Pajilla: ${p.geneticaUtilizada || p.semenToro}` : ''}
+                          </Text>
+                        </View>
+                        <View style={[
+                          styles.reporteEstadoBadge,
+                          p.estadoPrenez === 'Preñada' ? styles.reporteBadgePreñada : (p.estadoPrenez === 'Vacía' ? styles.reporteBadgeVacia : styles.reporteBadgePendiente)
+                        ]}>
+                          <Text style={[
+                            styles.reporteEstadoBadgeText,
+                            p.estadoPrenez === 'Preñada' ? styles.reporteTextPreñada : (p.estadoPrenez === 'Vacía' ? styles.reporteTextVacia : styles.reporteTextPendiente)
+                          ]}>
+                            {p.estadoPrenez || 'Pendiente'}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Recomendaciones Técnicas y Plan de Manejo Editable */}
+                <Text style={styles.reporteSectionTitle}>Recomendaciones Técnicas y Plan de Manejo</Text>
+                <TextInput
+                  style={styles.reporteNotasInput}
+                  multiline
+                  numberOfLines={4}
+                  placeholder="Escribe recomendaciones técnicas, suplementación o fecha de ecografía..."
+                  placeholderTextColor="#94a3b8"
+                  value={notasReporteProductor}
+                  onChangeText={setNotasReporteProductor}
+                />
+
+                {/* Botones de Acción de Compartir */}
+                <View style={{ marginTop: 14, gap: 10, marginBottom: 30 }}>
+                  <TouchableOpacity
+                    style={styles.btnCompartirReporteWhatsApp}
+                    onPress={() => compartirReporteProductorWhatsApp(productorSeleccionado, notasReporteProductor)}
+                  >
+                    <MessageCircle color="#ffffff" size={20} />
+                    <Text style={styles.btnCompartirReporteWhatsAppText}>
+                      📲 Enviar Reporte por WhatsApp al Ganadero
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.btnCompartirReporteGeneral}
+                    onPress={() => compartirReporteProductorGeneral(productorSeleccionado, notasReporteProductor)}
+                  >
+                    <Share2 color="#0284c7" size={18} />
+                    <Text style={styles.btnCompartirReporteGeneralText}>
+                      📤 Compartir / Exportar Reporte Completo
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+              </ScrollView>
+            )}
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -1808,5 +2307,308 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  // Accesos Rápidos Superiores
+  quickActionCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  quickActionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  quickActionSub: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748b',
+    marginTop: 2,
+  },
+  // Botón Reporte en Finca
+  fincaBtnReporte: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    gap: 5,
+  },
+  fincaBtnReporteText: {
+    color: '#0284c7',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  // Estilos de Reportes por Productor
+  productorCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  productorAvatarBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#0284c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  productorAvatarText: {
+    color: '#ffffff',
+    fontWeight: '900',
+    fontSize: 16,
+  },
+  productorCardNombre: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  productorCardFinca: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  badgePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  badgePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  btnVolverProductores: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f0f9ff',
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    gap: 6,
+    marginBottom: 12,
+  },
+  btnVolverProductoresText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#0284c7',
+  },
+  reporteGanaderoCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 14,
+  },
+  productorAvatarLarge: {
+    width: 50,
+    height: 50,
+    borderRadius: 16,
+    backgroundColor: '#0284c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  productorAvatarLargeText: {
+    color: '#ffffff',
+    fontWeight: '900',
+    fontSize: 18,
+  },
+  reporteGanaderoNombre: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#0f172a',
+  },
+  reporteGanaderoFinca: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+    marginTop: 2,
+  },
+  reporteGanaderoUbicacion: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  reporteKpiGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  reporteKpiCard: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  reporteKpiLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#64748b',
+    letterSpacing: 0.5,
+  },
+  reporteKpiValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    marginVertical: 2,
+  },
+  reporteKpiSub: {
+    fontSize: 9,
+    color: '#94a3b8',
+    fontWeight: '600',
+  },
+  reporteSectionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 8,
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  reporteEmptyBox: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    marginBottom: 14,
+  },
+  reporteEmptyText: {
+    fontSize: 12,
+    color: '#94a3b8',
+    fontStyle: 'italic',
+  },
+  reporteAnimalesList: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  reporteAnimalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    gap: 10,
+  },
+  reporteAnimalArete: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0f172a',
+  },
+  reporteAnimalDetalle: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  reporteEstadoBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  reporteBadgePreñada: {
+    backgroundColor: '#ecfdf5',
+  },
+  reporteBadgeVacia: {
+    backgroundColor: '#fef2f2',
+  },
+  reporteBadgePendiente: {
+    backgroundColor: '#fffbeb',
+  },
+  reporteEstadoBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  reporteTextPreñada: {
+    color: '#047857',
+  },
+  reporteTextVacia: {
+    color: '#b91c1c',
+  },
+  reporteTextPendiente: {
+    color: '#b45309',
+  },
+  reporteNotasInput: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 14,
+    padding: 12,
+    fontSize: 13,
+    color: '#0f172a',
+    textAlignVertical: 'top',
+    minHeight: 80,
+    marginBottom: 10,
+  },
+  btnCompartirReporteWhatsApp: {
+    backgroundColor: '#16a34a',
+    borderRadius: 16,
+    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#16a34a',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  btnCompartirReporteWhatsAppText: {
+    color: '#ffffff',
+    fontWeight: '900',
+    fontSize: 14,
+  },
+  btnCompartirReporteGeneral: {
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1.5,
+    borderColor: '#bae6fd',
+    borderRadius: 16,
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  btnCompartirReporteGeneralText: {
+    color: '#0284c7',
+    fontWeight: '800',
+    fontSize: 13,
   }
 });
