@@ -924,9 +924,10 @@ export default function AdminClientes() {
             <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800 text-white p-5 sm:p-6 border-b border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative">
               <button
                 onClick={() => setClienteDashboard(null)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-xl hover:bg-slate-800 transition"
+                className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition border border-slate-700 shadow-md cursor-pointer z-30"
+                title="Cerrar Ficha"
               >
-                <X size={22} />
+                <X size={18} />
               </button>
 
               <div className="flex items-center gap-4">
@@ -1512,9 +1513,10 @@ export default function AdminClientes() {
           <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-slate-100 relative max-h-[92vh] overflow-y-auto">
             <button
               onClick={() => setIsModalCrearOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1"
+              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer z-20"
+              title="Cerrar Ventana"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
             <div className="flex items-center gap-3 mb-5">
@@ -1703,9 +1705,10 @@ export default function AdminClientes() {
           <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-100 relative max-h-[92vh] overflow-y-auto">
             <button
               onClick={() => setIsModalEditarOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1"
+              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer z-20"
+              title="Cerrar Ventana"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
             <div className="flex items-center gap-3 mb-5">

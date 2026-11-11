@@ -631,9 +631,10 @@ export default function AdminPersonal() {
           <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-100 relative">
             <button
               onClick={() => setIsModalCrearOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1"
+              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer z-10"
+              title="Cerrar Ventana"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
             <div className="flex items-center gap-3 mb-5">
@@ -772,9 +773,10 @@ export default function AdminPersonal() {
           <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-100 relative">
             <button
               onClick={() => setIsModalEditarOpen(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1"
+              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer z-10"
+              title="Cerrar Ventana"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
             <div className="flex items-center gap-3 mb-5">

@@ -1061,8 +1061,12 @@ export default function PublicHome() {
       {isClienteDashboardOpen && userCliente && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl p-6 sm:p-8 relative overflow-hidden max-h-[92vh] flex flex-col">
-            <button onClick={() => setIsClienteDashboardOpen(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 transition">
-              <X size={24}/>
+            <button 
+              onClick={() => setIsClienteDashboardOpen(false)} 
+              className="absolute top-6 right-6 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer z-20"
+              title="Cerrar Panel"
+            >
+              <X size={20}/>
             </button>
 
             {/* Encabezado del Perfil */}
@@ -1506,9 +1510,10 @@ export default function PublicHome() {
                 </button>
                 <button 
                   onClick={() => setCertificadoClienteModal(null)} 
-                  className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition"
+                  className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer"
+                  title="Cerrar Certificado"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
             </div>
@@ -1617,9 +1622,10 @@ export default function PublicHome() {
                 </button>
                 <button 
                   onClick={() => setInformeConsolidadoModal(false)} 
-                  className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition"
+                  className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer"
+                  title="Cerrar Informe"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
             </div>
@@ -1778,7 +1784,13 @@ export default function PublicHome() {
       {isPerfilOpen && userCliente && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 relative">
-            <button onClick={() => setIsPerfilOpen(false)} className="absolute top-5 right-5 text-slate-400 hover:text-slate-700"><X size={20}/></button>
+            <button 
+              onClick={() => setIsPerfilOpen(false)} 
+              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer z-10"
+              title="Cerrar"
+            >
+              <X size={18}/>
+            </button>
             <h3 className="text-xl font-black text-slate-800 mb-6 flex items-center gap-2"><Settings size={20}/> Mi Perfil</h3>
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div>
@@ -1817,7 +1829,13 @@ export default function PublicHome() {
       {isAuthOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className={`bg-white w-full ${authMode === 'registro' ? 'max-w-md max-h-[92vh] overflow-y-auto' : 'max-w-sm'} rounded-3xl shadow-2xl p-7 relative transition-all`}>
-            <button onClick={() => setIsAuthOpen(false)} className="absolute top-5 right-5 text-slate-400 hover:text-slate-700"><X size={20}/></button>
+            <button 
+              onClick={() => setIsAuthOpen(false)} 
+              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer z-10"
+              title="Cerrar"
+            >
+              <X size={18}/>
+            </button>
             <div className="text-center mb-5">
               <h3 className="text-2xl font-black text-slate-800">{authMode === 'login' ? 'Bienvenido' : 'Crear Cuenta Ganadera'}</h3>
               <p className="text-xs text-slate-500 mt-1">
@@ -1956,7 +1974,13 @@ export default function PublicHome() {
           <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col p-6">
             <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-4">
               <h3 className="text-xl font-black text-slate-800 flex items-center gap-2"><ShoppingCart size={20}/> Carrito</h3>
-              <button onClick={() => setIsCartOpen(false)} className="text-slate-400 hover:text-slate-700"><X size={24}/></button>
+              <button 
+                onClick={() => setIsCartOpen(false)} 
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer"
+                title="Cerrar Carrito"
+              >
+                <X size={18}/>
+              </button>
             </div>
             <div className="flex-1 overflow-y-auto space-y-4">
               {carrito.length === 0 ? <p className="text-center text-slate-400 py-10 font-medium">Tu carrito está vacío.</p> : (
@@ -1990,7 +2014,13 @@ export default function PublicHome() {
       {isTestimonioOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 relative">
-            <button onClick={() => setIsTestimonioOpen(false)} className="absolute top-5 right-5 text-slate-400 hover:text-slate-700"><X size={20}/></button>
+            <button 
+              onClick={() => setIsTestimonioOpen(false)} 
+              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer z-10"
+              title="Cerrar"
+            >
+              <X size={18}/>
+            </button>
             <h3 className="text-2xl font-black text-slate-800 mb-6">Tu Experiencia</h3>
             {mensajeTestimonioExito && <p className="bg-emerald-50 text-emerald-700 p-3 rounded-xl mb-4 text-sm font-bold">{mensajeTestimonioExito}</p>}
             <form onSubmit={enviarTestimonio} className="space-y-4">

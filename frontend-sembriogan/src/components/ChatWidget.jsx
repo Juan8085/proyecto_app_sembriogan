@@ -147,8 +147,12 @@ const ChatWidget = () => {
                                 <p className="text-blue-200 text-[10px]">Orientación Clínica & Reproductiva 24/7</p>
                             </div>
                         </div>
-                        <button onClick={() => setIsOpen(false)} className="text-slate-300 hover:text-white transition p-1 rounded-lg hover:bg-white/10 cursor-pointer">
-                            <X size={20} />
+                        <button 
+                            onClick={() => setIsOpen(false)} 
+                            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+                            title="Cerrar Asistente"
+                        >
+                            <X size={16} />
                         </button>
                     </div>
                     

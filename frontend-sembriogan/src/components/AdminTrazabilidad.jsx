@@ -775,9 +775,10 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
                 </button>
                 <button 
                   onClick={() => setCertificadoModal(null)} 
-                  className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition"
+                  className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer"
+                  title="Cerrar Certificado"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
             </div>
@@ -928,9 +929,10 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
                 </button>
                 <button 
                   onClick={() => setReporteProductorModal(null)} 
-                  className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition"
+                  className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer"
+                  title="Cerrar Reporte"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
             </div>

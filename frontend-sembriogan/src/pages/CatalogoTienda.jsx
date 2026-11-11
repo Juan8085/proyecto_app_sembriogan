@@ -988,9 +988,10 @@ export default function CatalogoTienda() {
                 </div>
                 <button 
                   onClick={() => setIsCartOpen(false)} 
-                  className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition"
+                  className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer"
+                  title="Cerrar Carrito"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
 
@@ -1074,9 +1075,10 @@ export default function CatalogoTienda() {
           <div className="bg-white w-full max-w-md max-h-[92vh] overflow-y-auto rounded-3xl shadow-2xl p-7 relative border border-slate-200">
             <button 
               onClick={() => setIsAuthOpen(false)} 
-              className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 p-1"
+              className="absolute top-6 right-6 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer z-20"
+              title="Cerrar"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
 
             <div className="text-center mb-6">
@@ -1238,8 +1240,12 @@ export default function CatalogoTienda() {
       {isClienteDashboardOpen && userCliente && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl p-6 sm:p-8 relative overflow-hidden max-h-[92vh] flex flex-col">
-            <button onClick={() => setIsClienteDashboardOpen(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 transition">
-              <X size={24}/>
+            <button 
+              onClick={() => setIsClienteDashboardOpen(false)} 
+              className="absolute top-6 right-6 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer z-20"
+              title="Cerrar Panel"
+            >
+              <X size={20}/>
             </button>
 
             {/* Encabezado del Perfil */}
@@ -1665,9 +1671,10 @@ export default function CatalogoTienda() {
                 </button>
                 <button 
                   onClick={() => setCertificadoClienteModal(null)} 
-                  className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                  className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer"
+                  title="Cerrar Certificado"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
             </div>
@@ -1776,9 +1783,10 @@ export default function CatalogoTienda() {
                 </button>
                 <button 
                   onClick={() => setInformeConsolidadoModal(false)} 
-                  className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                  className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer"
+                  title="Cerrar Informe"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
             </div>

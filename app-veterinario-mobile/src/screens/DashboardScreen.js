@@ -911,9 +911,14 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Alertas del Día</Text>
-              <TouchableOpacity onPress={() => setModalAlertasVisible(false)}>
-                <Text style={styles.modalClose}>Cerrar</Text>
+              <Text style={[styles.modalTitle, { flex: 1 }]}>Alertas del Día</Text>
+              <TouchableOpacity 
+                style={styles.modalCloseBtn}
+                onPress={() => setModalAlertasVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.7}
+              >
+                <X color="#475569" size={20} />
               </TouchableOpacity>
             </View>
             
@@ -952,14 +957,19 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
         >
           <View style={[styles.modalContent, { maxHeight: '90%' }]}>
             <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalTitle}>Ficha: {selectedProc?.arete || selectedProc?.animalId}</Text>
-                <Text style={styles.modalSubTitle}>
+              <View style={{ flex: 1, marginRight: 10 }}>
+                <Text style={styles.modalTitle} numberOfLines={1}>Ficha: {selectedProc?.arete || selectedProc?.animalId}</Text>
+                <Text style={styles.modalSubTitle} numberOfLines={1}>
                   {selectedProc?.finca ? `${selectedProc?.finca} - ` : ''}{selectedProc?.productor} ({selectedProc?.tipoProcedimiento})
                 </Text>
               </View>
-              <TouchableOpacity onPress={() => setModalGestionVisible(false)}>
-                <X color="#ef4444" size={24} />
+              <TouchableOpacity 
+                style={styles.modalCloseBtn}
+                onPress={() => setModalGestionVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.7}
+              >
+                <X color="#475569" size={20} />
               </TouchableOpacity>
             </View>
 
@@ -1048,12 +1058,19 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Server color="#0284c7" size={22} />
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, marginRight: 8 }}>
+                <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#e0f2fe', alignItems: 'center', justifyContent: 'center' }}>
+                  <Server color="#0284c7" size={18} />
+                </View>
                 <Text style={styles.modalTitle}>Conexión con el Servidor</Text>
               </View>
-              <TouchableOpacity onPress={() => setModalServidorVisible(false)}>
-                <X color="#64748b" size={22} />
+              <TouchableOpacity 
+                style={styles.modalCloseBtn}
+                onPress={() => setModalServidorVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.7}
+              >
+                <X color="#475569" size={20} />
               </TouchableOpacity>
             </View>
 
@@ -1101,17 +1118,22 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
           <View style={[styles.modalContent, { maxHeight: '92%', height: '92%' }]}>
             {/* Header del Modal */}
             <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, marginRight: 8 }}>
                 <View style={[styles.fincasGpsIcon, { width: 36, height: 36 }]}>
                   <MapPin color="#fff" size={20} />
                 </View>
-                <View>
-                  <Text style={styles.modalTitle}>Directorio de Fincas</Text>
-                  <Text style={styles.modalSubTitle}>Geolocalización satelital y rutas GPS</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalTitle} numberOfLines={1}>Directorio de Fincas</Text>
+                  <Text style={styles.modalSubTitle} numberOfLines={1}>Geolocalización satelital y rutas GPS</Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => setModalFincasVisible(false)}>
-                <X color="#64748b" size={24} />
+              <TouchableOpacity 
+                style={styles.modalCloseBtn}
+                onPress={() => setModalFincasVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.7}
+              >
+                <X color="#475569" size={20} />
               </TouchableOpacity>
             </View>
 
@@ -1249,12 +1271,22 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
         >
           <View style={[styles.modalContent, { maxHeight: '90%' }]}>
             <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <MapPin color="#10b981" size={22} />
-                <Text style={styles.modalTitle}>Georreferenciar Predio</Text>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, marginRight: 8 }}>
+                <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: '#d1fae5', alignItems: 'center', justifyContent: 'center' }}>
+                  <MapPin color="#059669" size={18} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalTitle} numberOfLines={1}>Georreferenciar Predio</Text>
+                  <Text style={styles.modalSubTitle} numberOfLines={1}>Registro satelital en campo</Text>
+                </View>
               </View>
-              <TouchableOpacity onPress={() => setModalNuevaFincaVisible(false)}>
-                <X color="#64748b" size={22} />
+              <TouchableOpacity 
+                style={styles.modalCloseBtn}
+                onPress={() => setModalNuevaFincaVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                activeOpacity={0.7}
+              >
+                <X color="#475569" size={20} />
               </TouchableOpacity>
             </View>
 
@@ -1410,7 +1442,7 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
             
             {/* Header del Modal */}
             <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, marginRight: 8 }}>
                 <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#e0f2fe', alignItems: 'center', justifyContent: 'center' }}>
                   <FileText color="#0284c7" size={20} />
                 </View>
@@ -1423,8 +1455,13 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
                   </Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => setModalReporteProductorVisible(false)}>
-                <X color="#64748b" size={24} />
+              <TouchableOpacity 
+                style={styles.modalCloseBtn}
+                onPress={() => setModalReporteProductorVisible(false)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                activeOpacity={0.7}
+              >
+                <X color="#475569" size={20} />
               </TouchableOpacity>
             </View>
 
@@ -1809,11 +1846,22 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
     paddingBottom: 12,
+  },
+  modalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginLeft: 8,
   },
   modalTitle: {
     fontSize: 20,

@@ -683,10 +683,10 @@ export default function AdminFincasMapa() {
                 </button>
                 <button
                   onClick={() => setSelectedFinca(null)}
-                  className="p-2 text-slate-400 hover:text-slate-600 rounded-xl"
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer"
                   title="Cerrar detalle"
                 >
-                  <X size={15} />
+                  <X size={14} />
                 </button>
               </div>
             </div>
@@ -840,9 +840,10 @@ export default function AdminFincasMapa() {
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition"
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer"
+                title="Cerrar Ventana"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 

@@ -433,12 +433,16 @@ export default function PerfilScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 8 }}>
                 <Server size={22} color="#0284c7" />
                 <Text style={styles.modalTitle}>Configurar Servidor</Text>
               </View>
-              <TouchableOpacity onPress={() => setModalServidorVisible(false)}>
-                <X size={22} color="#64748b" />
+              <TouchableOpacity 
+                style={styles.modalCloseBtn}
+                onPress={() => setModalServidorVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={18} color="#475569" />
               </TouchableOpacity>
             </View>
 
@@ -749,6 +753,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 14
+  },
+  modalCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginLeft: 8,
   },
   modalTitle: {
     fontSize: 17,
