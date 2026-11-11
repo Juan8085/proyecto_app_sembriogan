@@ -86,6 +86,9 @@ export const getUsuario = async () => {
   }
 };
 
+// Alias en inglés para compatibilidad
+export const getUser = getUsuario;
+
 /**
  * Guarda la sesión de forma redundante para máxima compatibilidad móvil y offline
  */

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, NativeModules } from 'react-native';
 
 // Detecta automáticamente la IP de la computadora desde Metro Bundler (Expo)
-const getDevServerHost = () => {
+export const getDevServerHost = () => {
   try {
     const scriptURL = NativeModules?.SourceCode?.scriptURL;
     if (scriptURL) {
@@ -15,15 +15,14 @@ const getDevServerHost = () => {
   return null;
 };
 
-const devHost = getDevServerHost();
-
 // IP por defecto o URL pública de producción
 export const getDefaultApiUrl = () => {
   if (process.env.EXPO_PUBLIC_API_URL && process.env.EXPO_PUBLIC_API_URL.trim()) {
     return process.env.EXPO_PUBLIC_API_URL.trim().replace(/\/$/, '');
   }
-  if (devHost) return `http://${devHost}:3000`;
-  return 'http://192.168.1.107:3000';
+  const host = getDevServerHost();
+  if (host) return `http://${host}:3000`;
+  return 'http://192.168.1.105:3000';
 };
 
 export let API_URL = getDefaultApiUrl();
@@ -32,11 +31,23 @@ export let API_URL = getDefaultApiUrl();
 export const initApiUrl = async () => {
   try {
     const saved = await AsyncStorage.getItem('custom_api_url');
+    const defaultUrl = getDefaultApiUrl();
+    const currentHost = getDevServerHost();
+
     if (saved && saved.trim()) {
-      API_URL = saved.trim().replace(/\/$/, '');
-      console.log('📡 [Sembriogan Mobile] API_URL personalizada cargada:', API_URL);
+      const cleanSaved = saved.trim().replace(/\/$/, '');
+      // Si la URL guardada es una IP local y no coincide con el host actual detectado por Metro,
+      // actualizamos automáticamente a la IP detectada para que no quede bloqueada en una IP antigua
+      const isLocalIp = /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.\d+\.\d+\.\d+):3000$/i.test(cleanSaved);
+      if (isLocalIp && currentHost && !cleanSaved.includes(currentHost)) {
+        console.log(`🔄 [Sembriogan Mobile] La IP local cambió a ${currentHost}. Actualizando URL...`);
+        API_URL = defaultUrl;
+        await AsyncStorage.setItem('custom_api_url', defaultUrl);
+      } else {
+        API_URL = cleanSaved;
+      }
     } else {
-      API_URL = getDefaultApiUrl();
+      API_URL = defaultUrl;
     }
   } catch (e) {
     API_URL = getDefaultApiUrl();

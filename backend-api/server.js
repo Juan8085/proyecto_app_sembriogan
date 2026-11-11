@@ -1,4 +1,5 @@
-require('dotenv').config(); // Recargar .env actualizado
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') }); // Cargar .env de backend-api
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -6,7 +7,6 @@ const cors = require('cors');
 const morgan = require('morgan');
 const conectarDB = require('./database/db');
 const fs = require('fs');
-const path = require('path');
 
 // Asegurar existencia de carpeta uploads en cualquier servidor o contenedor
 const uploadsDir = path.join(__dirname, 'uploads');

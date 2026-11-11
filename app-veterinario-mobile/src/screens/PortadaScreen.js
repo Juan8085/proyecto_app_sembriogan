@@ -10,7 +10,7 @@ import {
   Platform,
   StatusBar
 } from 'react-native';
-import { getToken, getUser, isTokenExpired } from '../utils/auth';
+import { getToken, getUsuario, getUser, isTokenExpired } from '../utils/auth';
 import { ArrowRight, ShieldCheck, Dna, MapPin, Sparkles } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -32,7 +32,8 @@ export default function PortadaScreen({ navigation }) {
     const verificarSesion = async () => {
       try {
         const token = await getToken();
-        const user = await getUser();
+        const fetchUserFn = getUsuario || getUser;
+        const user = fetchUserFn ? await fetchUserFn() : null;
         if (token && !isTokenExpired(token) && user) {
           setUsuarioGuardado(user);
           setSesionValida(true);
