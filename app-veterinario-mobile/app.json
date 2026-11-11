@@ -35,6 +35,9 @@
           "locationAlwaysAndWhenInUsePermission": "Sembriogan requiere acceso al GPS para georreferenciar las fincas ganaderas en campo."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "apiUrl": "https://sembriogan-backend.onrender.com"
+    }
   }
 }
