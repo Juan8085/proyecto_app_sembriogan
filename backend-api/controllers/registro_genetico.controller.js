@@ -47,10 +47,23 @@ const crearRegistro = async (req, res) => {
         const municipioProductor = (req.body.municipio || 'Neiva, Huila').trim();
         const tipoProduccion = req.body.tipoProduccion || req.body.tipoProduccionFinca || 'Doble Propósito';
 
-        // Si no se digitó correo en la oficina, generar uno para su perfil
+        // Si no se digitó correo en campo u oficina, vincular por nombre existente o generar uno para su perfil
         if (!emailCliente && nombreProductor) {
-            const slug = nombreProductor.toLowerCase().replace(/[^a-z0-9]/g, '');
-            emailCliente = `cliente.${slug || Date.now()}@sembriogan.com`;
+            try {
+                const Usuario = require('../models/usuario.model');
+                const userExistente = await Usuario.findOne({ 
+                    nombre: new RegExp('^' + nombreProductor.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
+                });
+                if (userExistente && userExistente.email) {
+                    emailCliente = userExistente.email;
+                } else {
+                    const slug = nombreProductor.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    emailCliente = `cliente.${slug || Date.now()}@sembriogan.com`;
+                }
+            } catch (e) {
+                const slug = nombreProductor.toLowerCase().replace(/[^a-z0-9]/g, '');
+                emailCliente = `cliente.${slug || Date.now()}@sembriogan.com`;
+            }
         }
         req.body.productorEmail = emailCliente;
         req.body.telefonoProductor = telefonoProductor;

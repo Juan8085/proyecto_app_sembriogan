@@ -43,6 +43,10 @@ export default function AdminTrazabilidad() {
   const [errorCrearProc, setErrorCrearProc] = useState('');
   const [mensajeExitoProc, setMensajeExitoProc] = useState('');
   const [veterinariosDisponibles, setVeterinariosDisponibles] = useState([]);
+  const [clientesDisponibles, setClientesDisponibles] = useState([]);
+  const [modoCliente, setModoCliente] = useState('existente'); // 'existente' | 'nuevo'
+  const [clienteSeleccionadoId, setClienteSeleccionadoId] = useState('');
+  const [filtroBusquedaCliente, setFiltroBusquedaCliente] = useState('');
   const [nuevoProcedimiento, setNuevoProcedimiento] = useState({
     tipoProcedimiento: 'IATF',
     fechaVisita: new Date().toISOString().split('T')[0],
@@ -79,30 +83,67 @@ export default function AdminTrazabilidad() {
     }
   };
 
-  // Cargar lista de veterinarios del sistema
-  const cargarVeterinarios = async () => {
+  // Cargar lista de veterinarios y clientes del sistema
+  const cargarUsuariosSistema = async () => {
     try {
       const token = localStorage.getItem('tokenSembriogan');
       const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (data.success && Array.isArray(data.usuarios)) {
-        const vets = data.usuarios.filter(u => u.rol === 'Veterinario' || u.rol === 'Admin');
+      const lista = data.data || data.usuarios || [];
+      if (Array.isArray(lista)) {
+        const vets = lista.filter(u => u.rol === 'Veterinario' || u.rol === 'Admin');
         setVeterinariosDisponibles(vets);
+
+        const cls = lista.filter(u => (u.rol || '').toLowerCase() === 'cliente');
+        setClientesDisponibles(cls);
       }
     } catch (e) {
-      console.warn("No se pudieron cargar veterinarios:", e);
+      console.warn("No se pudieron cargar usuarios del sistema:", e);
     }
   };
 
   useEffect(() => {
     cargarRegistros();
-    cargarVeterinarios();
+    cargarUsuariosSistema();
     // Auto-actualizar cada 20 segundos para reflejar registros de campo en vivo
     const timer = setInterval(cargarRegistros, 20000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleSeleccionarCliente = (clientId) => {
+    setClienteSeleccionadoId(clientId);
+    if (!clientId) return;
+    const cliente = clientesDisponibles.find(c => c._id === clientId);
+    if (cliente) {
+      setNuevoProcedimiento(prev => ({
+        ...prev,
+        productor: cliente.nombre || '',
+        productorEmail: cliente.email || '',
+        telefonoProductor: cliente.telefono || '',
+        finca: cliente.fincaPrincipal || '',
+        municipio: cliente.municipio || 'Neiva, Huila',
+        tipoProduccion: cliente.tipoProduccion || 'Doble Propósito'
+      }));
+    }
+  };
+
+  const handleCambiarModoCliente = (modo) => {
+    setModoCliente(modo);
+    if (modo === 'nuevo') {
+      setClienteSeleccionadoId('');
+      setNuevoProcedimiento(prev => ({
+        ...prev,
+        productor: '',
+        productorEmail: '',
+        telefonoProductor: '',
+        finca: '',
+        municipio: 'Neiva, Huila',
+        tipoProduccion: 'Doble Propósito'
+      }));
+    }
+  };
 
   // Programar y registrar nuevo procedimiento desde el panel administrativo
   const handleCrearProcedimiento = async (e) => {
@@ -1304,12 +1345,101 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
               <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-2">
-                    <UserPlus size={14} className="text-blue-600" /> 2. Ganadero y Predio (Auto-creación de Cuenta)
+                    <UserPlus size={14} className="text-blue-600" /> 2. Ganadero y Predio
                   </span>
-                  <span className="text-[10px] text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full font-bold">
-                    Acceso Portal Web Automático
-                  </span>
+                  
+                  {/* Selector de Modo: Existente vs Nuevo */}
+                  <div className="flex items-center gap-1.5 bg-slate-200/70 p-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => handleCambiarModoCliente('existente')}
+                      className={`px-3 py-1 text-xs font-bold rounded-lg transition cursor-pointer ${
+                        modoCliente === 'existente'
+                          ? 'bg-white text-blue-700 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      👥 Seleccionar Cliente ({clientesDisponibles.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCambiarModoCliente('nuevo')}
+                      className={`px-3 py-1 text-xs font-bold rounded-lg transition cursor-pointer ${
+                        modoCliente === 'nuevo'
+                          ? 'bg-white text-emerald-700 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      ➕ Nuevo Ganadero
+                    </button>
+                  </div>
                 </div>
+
+                {modoCliente === 'existente' && (
+                  <div className="bg-blue-50/60 p-3.5 rounded-2xl border border-blue-100 space-y-2.5">
+                    <div>
+                      <label className="block text-[11px] font-bold text-blue-900 mb-1">
+                        Buscar y Seleccionar Cliente de la Base de Datos
+                      </label>
+                      <select
+                        value={clienteSeleccionadoId}
+                        onChange={(e) => handleSeleccionarCliente(e.target.value)}
+                        className="w-full text-xs font-bold border border-blue-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">-- Elige un ganadero registrado ({clientesDisponibles.length} disponibles) --</option>
+                        {clientesDisponibles.map((cli) => (
+                          <option key={cli._id} value={cli._id}>
+                            {cli.nombre} • Predio: {cli.fincaPrincipal || 'No asignado'} ({cli.email})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {clienteSeleccionadoId ? (
+                      <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 text-emerald-900 px-3 py-2 rounded-xl text-xs font-semibold">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 size={15} className="text-emerald-600" />
+                          <span>Cliente seleccionado de la base de datos. Datos cargados abajo:</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCambiarModoCliente('nuevo')}
+                          className="text-[11px] font-bold text-emerald-700 underline hover:text-emerald-900 cursor-pointer"
+                        >
+                          ¿No está en la lista? Crear nuevo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between text-[11px] text-blue-700">
+                        <span>¿El ganadero no aparece en la base de datos?</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCambiarModoCliente('nuevo')}
+                          className="font-bold underline hover:text-blue-900 cursor-pointer"
+                        >
+                          + Registrar ganadero desde cero
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {modoCliente === 'nuevo' && (
+                  <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles size={15} className="text-emerald-600" />
+                      <span>Creando nuevo cliente: Se registrará en la base de datos y tendrá acceso al portal web.</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCambiarModoCliente('existente')}
+                      className="text-[11px] font-bold text-emerald-700 underline hover:text-emerald-900 cursor-pointer"
+                    >
+                      Volver a seleccionar existente
+                    </button>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">Nombre Completo del Ganadero *</label>
