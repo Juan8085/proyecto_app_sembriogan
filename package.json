@@ -12,6 +12,7 @@
     "start": "node backend-api/server.js",
     "build": "npm run build --workspaces --if-present",
     "build:frontend": "npm run build --workspace=frontend-sembriogan",
+    "build:apk": "cd app-veterinario-mobile && npx eas-cli build -p android --profile preview",
     "dev": "npm run dev --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
