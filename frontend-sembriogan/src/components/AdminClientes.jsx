@@ -256,11 +256,11 @@ export default function AdminClientes() {
       nombre: c.nombre || '',
       email: c.email || '',
       telefono: c.telefono || '',
-      fincaPrincipal: c.fincaPrincipal || '',
+      fincaPrincipal: (c.fincaPrincipal && c.fincaPrincipal !== 'Predio no especificado') ? c.fincaPrincipal : (c.fincasAsociadas?.[0]?.nombreFinca || ''),
       municipio: c.municipio || 'Neiva',
       tipoProduccion: c.tipoProduccion || 'Doble Propósito',
-      inventarioBovino: c.inventarioBovino || 0,
-      hectareas: c.hectareas || 0,
+      inventarioBovino: Number(c.inventarioBovino) || 0,
+      hectareas: Number(c.hectareas) || 0,
       password: ''
     });
     setMostrarPasswordEditar(false);
@@ -359,26 +359,74 @@ export default function AdminClientes() {
     }
   };
 
+  // 1. Enriquecer clientes cruzando con fincas de forma reactiva y consistente
+  const clientesEnriquecidos = useMemo(() => {
+    return clientes.map(c => {
+      const email = (c.email || '').toLowerCase().trim();
+      const nombre = (c.nombre || '').toLowerCase().trim();
+      const fincaNom = (c.fincaPrincipal || '').toLowerCase().trim();
+
+      const fincasAsociadas = fincas.filter(f => 
+        (f.propietarioEmail && f.propietarioEmail.toLowerCase().trim() === email) ||
+        (f.propietarioNombre && f.propietarioNombre.toLowerCase().trim() === nombre) ||
+        (fincaNom && f.nombreFinca && f.nombreFinca.toLowerCase().trim() === fincaNom)
+      );
+
+      const totalAnimalesFincas = fincasAsociadas.reduce((sum, f) => sum + (Number(f.numeroAnimales) || 0), 0);
+      const totalHectareasFincas = fincasAsociadas.reduce((sum, f) => sum + (Number(f.hectareas) || 0), 0);
+      const primeraFinca = fincasAsociadas[0];
+
+      const inventarioBovino = (Number(c.inventarioBovino) > 0)
+        ? Number(c.inventarioBovino)
+        : totalAnimalesFincas;
+
+      const hectareas = (Number(c.hectareas) > 0)
+        ? Number(c.hectareas)
+        : totalHectareasFincas;
+
+      const fincaPrincipal = (c.fincaPrincipal && c.fincaPrincipal.trim() !== '' && c.fincaPrincipal !== 'Predio no especificado')
+        ? c.fincaPrincipal
+        : (primeraFinca?.nombreFinca || 'Predio no especificado');
+
+      const telefono = (c.telefono && c.telefono.trim() !== '')
+        ? c.telefono
+        : (fincasAsociadas.find(f => f.propietarioTelefono?.trim())?.propietarioTelefono || '');
+
+      const municipio = (c.municipio && c.municipio.trim() !== '')
+        ? c.municipio
+        : (primeraFinca?.municipio || 'Neiva');
+
+      const tipoProduccion = (c.tipoProduccion && c.tipoProduccion.trim() !== '')
+        ? c.tipoProduccion
+        : (primeraFinca?.tipoProduccion || 'Doble Propósito');
+
+      return {
+        ...c,
+        inventarioBovino,
+        hectareas,
+        fincaPrincipal,
+        telefono,
+        municipio,
+        tipoProduccion,
+        fincasAsociadas,
+        tieneFincaGps: fincasAsociadas.length > 0
+      };
+    });
+  }, [clientes, fincas]);
+
   // Métricas Consolidadas del Sector Clientes Ganaderos
   const metricas = useMemo(() => {
-    const total = clientes.length;
-    const activos = clientes.filter(c => c.estado).length;
-    const inactivos = clientes.filter(c => !c.estado).length;
+    const total = clientesEnriquecidos.length;
+    const activos = clientesEnriquecidos.filter(c => c.estado).length;
+    const inactivos = clientesEnriquecidos.filter(c => !c.estado).length;
     
     // Sumatoria de inventario bovino total
-    const inventarioTotal = clientes.reduce((acc, c) => acc + (Number(c.inventarioBovino) || 0), 0);
+    const inventarioTotal = clientesEnriquecidos.reduce((acc, c) => acc + (Number(c.inventarioBovino) || 0), 0);
     // Sumatoria de hectáreas totales
-    const hectareasTotal = clientes.reduce((acc, c) => acc + (Number(c.hectareas) || 0), 0);
+    const hectareasTotal = clientesEnriquecidos.reduce((acc, c) => acc + (Number(c.hectareas) || 0), 0);
 
     // Cuántos clientes tienen fincas georreferenciadas
-    const clientesConFinca = clientes.filter(c => {
-      const email = (c.email || '').toLowerCase();
-      const nom = (c.nombre || '').toLowerCase();
-      return fincas.some(f => 
-        (f.propietarioEmail && f.propietarioEmail.toLowerCase() === email) ||
-        (f.propietarioNombre && f.propietarioNombre.toLowerCase() === nom)
-      );
-    }).length;
+    const clientesConFinca = clientesEnriquecidos.filter(c => c.tieneFincaGps).length;
 
     return {
       total,
@@ -388,20 +436,20 @@ export default function AdminClientes() {
       hectareasTotal,
       clientesConFinca
     };
-  }, [clientes, fincas]);
+  }, [clientesEnriquecidos]);
 
   // Lista de municipios únicos para filtrar
   const municipiosDisponibles = useMemo(() => {
     const setM = new Set();
-    clientes.forEach(c => {
+    clientesEnriquecidos.forEach(c => {
       if (c.municipio && c.municipio.trim()) setM.add(c.municipio.trim());
     });
     return Array.from(setM).sort();
-  }, [clientes]);
+  }, [clientesEnriquecidos]);
 
   // Filtrado dinámico
   const clientesFiltrados = useMemo(() => {
-    return clientes.filter(c => {
+    return clientesEnriquecidos.filter(c => {
       const q = busqueda.toLowerCase().trim();
       const matchBusqueda = !q ||
         (c.nombre || '').toLowerCase().includes(q) ||
@@ -425,7 +473,7 @@ export default function AdminClientes() {
 
       return true;
     });
-  }, [clientes, busqueda, filtroMunicipio, filtroProduccion, filtroEstado]);
+  }, [clientesEnriquecidos, busqueda, filtroMunicipio, filtroProduccion, filtroEstado]);
 
   const getInitials = (name) => {
     if (!name) return 'G';
@@ -898,6 +946,11 @@ export default function AdminClientes() {
                       <span className="flex items-center gap-1"><Phone size={12} /> {clienteDashboard.telefono}</span>
                     )}
                     <span className="flex items-center gap-1"><MapPin size={12} /> {clienteDashboard.municipio || 'Neiva'}</span>
+                    {(clienteDashboard.fincaPrincipal && clienteDashboard.fincaPrincipal !== 'Predio no especificado') && (
+                      <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-lg text-xs font-bold">
+                        🏡 {clienteDashboard.fincaPrincipal}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -1037,7 +1090,11 @@ export default function AdminClientes() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
                       <div>
                         <span className="text-slate-400 font-semibold block">Predio / Finca Principal:</span>
-                        <span className="font-extrabold text-slate-800 text-sm">{clienteDashboard.fincaPrincipal || 'No especificada'}</span>
+                        <span className="font-extrabold text-slate-800 text-sm">
+                          {clienteDashboard.fincaPrincipal && clienteDashboard.fincaPrincipal !== 'Predio no especificado' 
+                            ? clienteDashboard.fincaPrincipal 
+                            : (datosClienteDashboard.fincasAsociadas[0]?.nombreFinca || 'No especificada')}
+                        </span>
                       </div>
                       <div>
                         <span className="text-slate-400 font-semibold block">Municipio / Departamento:</span>
@@ -1327,7 +1384,10 @@ export default function AdminClientes() {
                         const data = await res.json();
                         if (data.success) {
                           setMensaje("✅ Ficha del cliente actualizada exitosamente.");
-                          cargarDatos(true);
+                          if (data.data) {
+                            setClienteDashboard(prev => ({ ...prev, ...data.data }));
+                          }
+                          await cargarDatos(true);
                           setTabDashboard('resumen');
                         } else {
                           alert(data.mensaje || 'Error al actualizar');

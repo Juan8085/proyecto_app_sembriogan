@@ -251,8 +251,41 @@ const googleLogin = async (req, res) => {
 // 4. OBTENER TODOS LOS USUARIOS (Para el Panel Admin)
 const obtenerUsuarios = async (req, res) => {
     try {
-        const usuarios = await Usuario.find().select('-password').sort({ createdAt: -1 });
-        res.status(200).json({ success: true, data: usuarios });
+        const usuarios = await Usuario.find().select('-password').sort({ createdAt: -1 }).lean();
+        
+        // Enriquecer de forma consistente con las fincas registradas en la base de datos
+        const Finca = require('../models/finca.model');
+        const todasFincas = await Finca.find().lean();
+        
+        const usuariosEnriquecidos = usuarios.map(u => {
+            if (u.rol !== 'Cliente') return u;
+            
+            const email = (u.email || '').toLowerCase().trim();
+            const nom = (u.nombre || '').toLowerCase().trim();
+            const fincaNom = (u.fincaPrincipal || '').toLowerCase().trim();
+            
+            const fincasUsuario = todasFincas.filter(f => 
+                (f.propietarioEmail && f.propietarioEmail.toLowerCase().trim() === email) ||
+                (f.propietarioNombre && f.propietarioNombre.toLowerCase().trim() === nom) ||
+                (fincaNom && f.nombreFinca && f.nombreFinca.toLowerCase().trim() === fincaNom)
+            );
+            
+            const totalAnimales = fincasUsuario.reduce((acc, f) => acc + (Number(f.numeroAnimales) || 0), 0);
+            const totalHa = fincasUsuario.reduce((acc, f) => acc + (Number(f.hectareas) || 0), 0);
+            const primeraFinca = fincasUsuario[0];
+            
+            return {
+                ...u,
+                fincaPrincipal: (u.fincaPrincipal && u.fincaPrincipal.trim()) ? u.fincaPrincipal : (primeraFinca?.nombreFinca || ''),
+                inventarioBovino: (Number(u.inventarioBovino) > 0) ? Number(u.inventarioBovino) : totalAnimales,
+                hectareas: (Number(u.hectareas) > 0) ? Number(u.hectareas) : totalHa,
+                telefono: (u.telefono && u.telefono.trim()) ? u.telefono : (fincasUsuario.find(f => f.propietarioTelefono?.trim())?.propietarioTelefono || ''),
+                municipio: (u.municipio && u.municipio.trim()) ? u.municipio : (primeraFinca?.municipio || 'Neiva'),
+                tipoProduccion: (u.tipoProduccion && u.tipoProduccion.trim()) ? u.tipoProduccion : (primeraFinca?.tipoProduccion || 'Doble Propósito')
+            };
+        });
+
+        res.status(200).json({ success: true, data: usuariosEnriquecidos });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
@@ -302,6 +335,25 @@ const actualizarUsuarioAdmin = async (req, res) => {
             return res.status(404).json({ success: false, mensaje: "Usuario no encontrado" });
         }
 
+        // Sincronizar automáticamente con las fincas asociadas al cliente si aplica
+        if (usuarioActualizado.rol === 'Cliente') {
+            const Finca = require('../models/finca.model');
+            let fincaUpdates = {};
+            if (req.body.inventarioBovino !== undefined) fincaUpdates.numeroAnimales = Number(req.body.inventarioBovino) || 0;
+            if (req.body.hectareas !== undefined) fincaUpdates.hectareas = Number(req.body.hectareas) || 0;
+            if (req.body.telefono !== undefined) fincaUpdates.propietarioTelefono = req.body.telefono.trim();
+            if (req.body.fincaPrincipal !== undefined && req.body.fincaPrincipal.trim()) fincaUpdates.nombreFinca = req.body.fincaPrincipal.trim();
+            if (req.body.municipio !== undefined) fincaUpdates.municipio = req.body.municipio.trim();
+            if (req.body.tipoProduccion !== undefined) fincaUpdates.tipoProduccion = req.body.tipoProduccion;
+
+            if (Object.keys(fincaUpdates).length > 0) {
+                await Finca.updateMany(
+                    { propietarioEmail: usuarioActualizado.email },
+                    { $set: fincaUpdates }
+                );
+            }
+        }
+
         res.status(200).json({ 
             success: true, 
             mensaje: "Información de usuario actualizada correctamente", 
@@ -311,8 +363,14 @@ const actualizarUsuarioAdmin = async (req, res) => {
                 nombre: usuarioActualizado.nombre,
                 email: usuarioActualizado.email,
                 rol: usuarioActualizado.rol,
-                estado: usuarioActualizado.estado
-            },
+                estado: usuarioActualizado.estado,
+                fincaPrincipal: usuarioActualizado.fincaPrincipal,
+                inventarioBovino: usuarioActualizado.inventarioBovino,
+                hectareas: usuarioActualizado.hectareas,
+                telefono: usuarioActualizado.telefono,
+                municipio: usuarioActualizado.municipio,
+                tipoProduccion: usuarioActualizado.tipoProduccion
+            }, 
             data: usuarioActualizado 
         });
     } catch (error) {
