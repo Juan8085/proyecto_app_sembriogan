@@ -1406,7 +1406,7 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
           behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
           style={styles.modalOverlay}
         >
-          <View style={[styles.modalContent, { maxHeight: '92%' }]}>
+          <View style={[styles.modalContent, { height: '92%', maxHeight: '92%' }]}>
             
             {/* Header del Modal */}
             <View style={styles.modalHeader}>
@@ -1453,6 +1453,7 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
                   data={productoresFiltrados}
                   keyExtractor={(item) => item.nombre}
                   showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 30 }}
                   ListEmptyComponent={
                     <View style={{ padding: 30, alignItems: 'center' }}>
                       <Users size={36} color="#cbd5e1" />
@@ -1512,7 +1513,7 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
               </View>
             ) : (
               /* VISTA 2: DETALLE Y EMISIÓN DEL REPORTE DEL PRODUCTOR SELECCIONADO */
-              <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+              <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
                 
                 {/* Botón Volver al Listado */}
                 <TouchableOpacity
