@@ -1523,6 +1523,7 @@ export default function PublicHome() {
                 <img src="/logo.png" alt="Sembriogan" className="h-14 sm:h-16 object-contain" />
                 <div className="sm:text-right">
                   <h3 className="text-lg font-black text-slate-900 tracking-tight">SEMBRIOGAN - SOMOS EPSEA</h3>
+                  <p className="text-xs text-slate-700 font-bold">NIT: 900.060.236</p>
                   <p className="text-xs text-slate-600 font-semibold">Biotecnología Reproductiva y Mejoramiento Genético Bovino</p>
                   <p className="text-[11px] text-slate-500">Certificación Oficial de Procedimientos de Campo</p>
                 </div>
@@ -1639,7 +1640,8 @@ export default function PublicHome() {
                 </div>
                 <div className="sm:text-right">
                   <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">SEMBRIOGAN - SOMOS EPSEA</h3>
-                  <p className="text-xs text-slate-700 font-bold">Entidad Prestadora del Servicio de Extensión Agropecuaria</p>
+                  <p className="text-xs text-slate-800 font-bold">NIT: 900.060.236</p>
+                  <p className="text-xs text-slate-700 font-semibold">Entidad Prestadora del Servicio de Extensión Agropecuaria</p>
                   <p className="text-[11px] text-slate-500">Biotecnología Reproductiva, Mejoramiento Genético e IATF Bovina</p>
                   <p className="text-[10px] text-blue-700 font-mono mt-0.5">Acreditación MinAgricultura / ADR - Departamento del Huila</p>
                 </div>
@@ -2070,7 +2072,7 @@ export default function PublicHome() {
 
           {/* Derechos de Autor */}
           <p className="text-xs text-slate-400 font-medium">
-            © {new Date().getFullYear()} Sembriogan - SOMOS EPSEA. Todos los derechos reservados.
+            © {new Date().getFullYear()} Sembriogan - SOMOS EPSEA | NIT: 900.060.236. Todos los derechos reservados.
           </p>
         </div>
       </footer>

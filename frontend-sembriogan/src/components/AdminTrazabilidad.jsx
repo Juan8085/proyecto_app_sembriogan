@@ -999,6 +999,7 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
                 <img src="/logo.png" alt="Sembriogan" className="h-14 sm:h-16 object-contain" />
                 <div className="sm:text-right">
                   <h3 className="text-lg font-black text-slate-900 tracking-tight">SEMBRIOGAN - SOMOS EPSEA</h3>
+                  <p className="text-xs text-slate-700 font-bold">NIT: 900.060.236</p>
                   <p className="text-xs text-slate-600 font-semibold">Biotecnología Reproductiva y Mejoramiento Genético Bovino</p>
                   <p className="text-[11px] text-slate-500">Certificación Oficial de Procedimientos de Campo</p>
                 </div>
@@ -1154,6 +1155,7 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
                 <img src="/logo.png" alt="Sembriogan" className="h-14 sm:h-16 object-contain" />
                 <div className="sm:text-right">
                   <h3 className="text-lg font-black text-slate-900 tracking-tight">SEMBRIOGAN - SOMOS EPSEA</h3>
+                  <p className="text-xs text-slate-700 font-bold">NIT: 900.060.236</p>
                   <p className="text-xs text-slate-600 font-semibold">Biotecnología Reproductiva y Extensión Agropecuaria</p>
                   <p className="text-[11px] text-slate-500">Informe Técnico Consolidado de Intervención en Campo</p>
                 </div>
