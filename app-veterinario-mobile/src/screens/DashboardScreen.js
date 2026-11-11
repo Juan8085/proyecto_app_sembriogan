@@ -44,6 +44,7 @@ export default function DashboardScreen({ navigation }) {
   const [modalGestionVisible, setModalGestionVisible] = useState(false);
   const [nuevoEstadoPrenez, setNuevoEstadoPrenez] = useState('Pendiente Evaluación');
   const [novedadesTexto, setNovedadesTexto] = useState('');
+  const [toroGeneticaTexto, setToroGeneticaTexto] = useState('');
   const [guardandoGestion, setGuardandoGestion] = useState(false);
 
   // Estados para configuración de servidor
@@ -354,7 +355,8 @@ export default function DashboardScreen({ navigation }) {
     };
 
     procs.forEach(proc => {
-      if (proc.estadoPrenez === 'Preñada' || proc.estadoPrenez === 'Vacía') return;
+      // Si el procedimiento ya está completado definitivamente, no generar alerta activa
+      if (proc.estadoPrenez === 'Preñada' || proc.estadoPrenez === 'Vacía' || proc.estadoPrenez === 'Parto Atendido') return;
 
       let pasoActual = null;
       let endpointPaso = null;
@@ -363,38 +365,91 @@ export default function DashboardScreen({ navigation }) {
       dia0.setHours(0, 0, 0, 0);
       const comp = proc.pasosCompletados || {};
 
+      // -------------------------------------------------------------
+      // 1. ATENCIÓN DE PARTO (Prioridad Inmediata)
+      // -------------------------------------------------------------
+      if (proc.tipoProcedimiento === 'Atencion de Parto') {
+        const diasDiff = Math.ceil((hoy - dia0) / (1000 * 60 * 60 * 24));
+        alertasGeneradas.push({
+          ...proc,
+          pasoNombre: '🚨 Asistencia y Atención de Parto',
+          endpointPaso: 'dia45_confirmacion',
+          esUrgente: true,
+          retrasado: diasDiff > 0
+        });
+        return;
+      }
+
+      // -------------------------------------------------------------
+      // 2. DIAGNÓSTICO DE PREÑEZ (Palpación o Ecografía)
+      // -------------------------------------------------------------
+      if (proc.tipoProcedimiento === 'Diagnostico') {
+        if (proc.estadoPrenez === 'Pendiente Evaluación') {
+          const diasFaltantes = Math.ceil((dia0 - hoy) / (1000 * 60 * 60 * 24));
+          if (diasFaltantes <= 1) {
+            alertasGeneradas.push({
+              ...proc,
+              pasoNombre: '🩺 Diagnóstico de Preñez (Palpación)',
+              endpointPaso: 'dia45_confirmacion',
+              retrasado: diasFaltantes < 0
+            });
+          }
+        }
+        return;
+      }
+
+      // -------------------------------------------------------------
+      // 3. IATF (Inseminación a Tiempo Fijo)
+      // -------------------------------------------------------------
       if (proc.tipoProcedimiento === 'IATF') {
         if (!comp.dia8_retiro) {
           pasoActual = { nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) };
           endpointPaso = 'dia8_retiro';
         } else if (!comp.dia10_inseminacion) {
-          pasoActual = { nombre: 'Inseminación (Día 10)', fecha: sumarDias(dia0, 10) };
+          const toroPendiente = (!proc.geneticaUtilizada || proc.geneticaUtilizada === 'Pendiente de Selección');
+          pasoActual = { 
+            nombre: toroPendiente ? 'Inseminación (Día 10) ⚠️ Definir Toro' : `Inseminación (Día 10) - Toro: ${proc.geneticaUtilizada}`, 
+            fecha: sumarDias(dia0, 10) 
+          };
           endpointPaso = 'dia10_inseminacion';
         } else if (!comp.dia45_confirmacion) {
           pasoActual = { nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) };
           endpointPaso = 'dia45_confirmacion';
         }
       } else if (proc.tipoProcedimiento === 'IA') {
-        // IA en celo natural: solo confirmación de preñez
+        // IA en celo natural
         if (!comp.dia45_confirmacion) {
           pasoActual = { nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) };
           endpointPaso = 'dia45_confirmacion';
         }
       } else if (proc.tipoProcedimiento === 'TE') {
+        // Transferencia de Embriones
         if (!comp.dia8_retiro) {
           pasoActual = { nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) };
           endpointPaso = 'dia8_retiro';
         } else if (!comp.dia17_transferencia) {
-          pasoActual = { nombre: 'Transferencia (Día 17)', fecha: sumarDias(dia0, 17) };
+          const embrioPendiente = (!proc.geneticaUtilizada || proc.geneticaUtilizada === 'Pendiente de Selección');
+          pasoActual = { 
+            nombre: embrioPendiente ? 'Transferencia (Día 17) ⚠️ Definir Genética' : `Transferencia (Día 17) - Genética: ${proc.geneticaUtilizada}`, 
+            fecha: sumarDias(dia0, 17) 
+          };
           endpointPaso = 'dia17_transferencia';
         } else if (!comp.dia45_confirmacion) {
           pasoActual = { nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) };
           endpointPaso = 'dia45_confirmacion';
         }
-      } else if (proc.tipoProcedimiento === 'Diagnostico') {
-        if (!comp.dia45_confirmacion) {
-          pasoActual = { nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) };
-          endpointPaso = 'dia45_confirmacion';
+      }
+
+      // Si es una visita técnica recién programada en la oficina para el día de hoy (Día 0)
+      if (!comp.dia8_retiro && !comp.dia10_inseminacion && !comp.dia17_transferencia) {
+        const diffDia0 = Math.ceil((dia0 - hoy) / (1000 * 60 * 60 * 24));
+        if (diffDia0 === 0) {
+          alertasGeneradas.push({
+            ...proc,
+            pasoNombre: `🗓️ Visita Programada Hoy: ${proc.tipoProcedimiento}`,
+            endpointPaso: null,
+            retrasado: false
+          });
         }
       }
 
@@ -416,8 +471,37 @@ export default function DashboardScreen({ navigation }) {
 
   const confirmarPaso = async (idProcedimiento, nombrePasoBD) => {
     const proc = procedimientos.find(p => p._id === idProcedimiento);
-    if (nombrePasoBD === 'dia45_confirmacion' && proc) {
+    if (!proc) return;
+
+    if (nombrePasoBD === 'dia45_confirmacion' || proc.tipoProcedimiento === 'Atencion de Parto') {
+      setModalAlertasVisible(false);
       handleAbrirGestion(proc);
+      return;
+    }
+
+    // Si es Día 10 o Día 17 y el toro / genética sigue pendiente de selección:
+    const esPasoGenetica = (nombrePasoBD === 'dia10_inseminacion' || nombrePasoBD === 'dia17_transferencia');
+    const toroPendiente = (!proc.geneticaUtilizada || proc.geneticaUtilizada === 'Pendiente de Selección');
+
+    if (esPasoGenetica && toroPendiente) {
+      Alert.alert(
+        '🧬 Registrar Toro / Genética',
+        'El ganadero ya puede seleccionar el toro o pajilla de su elección para el servicio hoy. ¿Deseas registrarlo ahora en la ficha?',
+        [
+          { 
+            text: 'Completar Paso Directo', 
+            style: 'destructive',
+            onPress: () => ejecutarCompletarPaso(idProcedimiento, nombrePasoBD)
+          },
+          { 
+            text: 'Definir Toro en Ficha', 
+            onPress: () => {
+              setModalAlertasVisible(false);
+              handleAbrirGestion(proc);
+            } 
+          }
+        ]
+      );
       return;
     }
 
@@ -428,32 +512,34 @@ export default function DashboardScreen({ navigation }) {
         { text: 'Cancelar', style: 'cancel' },
         { 
           text: 'Sí, Completar', 
-          onPress: async () => {
-            try {
-              const currentUrl = getApiUrl() || API_URL;
-              const token = await getToken();
-              const res = await fetch(`${currentUrl}/api/registro-genetico/${idProcedimiento}/paso`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ paso: nombrePasoBD })
-              });
-              const data = await res.json();
-              if (data.success) {
-                Alert.alert('Éxito', 'Paso marcado como completado.');
-                cargarProcedimientos();
-              } else {
-                Alert.alert('Error', data.mensaje);
-              }
-            } catch (error) {
-              Alert.alert('Error', 'No se pudo actualizar el progreso.');
-            }
-          }
+          onPress: () => ejecutarCompletarPaso(idProcedimiento, nombrePasoBD)
         }
       ]
     );
+  };
+
+  const ejecutarCompletarPaso = async (idProcedimiento, nombrePasoBD) => {
+    try {
+      const currentUrl = getApiUrl() || API_URL;
+      const token = await getToken();
+      const res = await fetch(`${currentUrl}/api/registro-genetico/${idProcedimiento}/paso`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ paso: nombrePasoBD })
+      });
+      const data = await res.json();
+      if (data.success) {
+        Alert.alert('Éxito', 'Paso marcado como completado.');
+        cargarProcedimientos();
+      } else {
+        Alert.alert('Error', data.mensaje);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo actualizar el progreso.');
+    }
   };
 
   // Abrir Modal de Gestión al tocar una ficha
@@ -461,6 +547,11 @@ export default function DashboardScreen({ navigation }) {
     setSelectedProc(item);
     setNuevoEstadoPrenez(item.estadoPrenez || 'Pendiente Evaluación');
     setNovedadesTexto(item.observaciones || '');
+    setToroGeneticaTexto(
+      (item.geneticaUtilizada && item.geneticaUtilizada !== 'Pendiente de Selección')
+        ? item.geneticaUtilizada 
+        : ''
+    );
     setModalGestionVisible(true);
   };
 
@@ -472,6 +563,8 @@ export default function DashboardScreen({ navigation }) {
     try {
       const token = await getToken();
       let sincronizado = false;
+
+      const geneticaAGuardar = toroGeneticaTexto.trim() || selectedProc.geneticaUtilizada || 'Pendiente de Selección';
 
       // Si no es un id offline, intentamos guardar en el servidor
       if (!selectedProc.isOffline) {
@@ -485,7 +578,8 @@ export default function DashboardScreen({ navigation }) {
             },
             body: JSON.stringify({
               estadoPrenez: nuevoEstadoPrenez,
-              observaciones: novedadesTexto
+              observaciones: novedadesTexto,
+              geneticaUtilizada: geneticaAGuardar
             })
           });
           const data = await res.json();
@@ -499,7 +593,7 @@ export default function DashboardScreen({ navigation }) {
 
       // Actualizar estado en memoria
       const actualizarItem = (p) => p._id === selectedProc._id 
-        ? { ...p, estadoPrenez: nuevoEstadoPrenez, observaciones: novedadesTexto } 
+        ? { ...p, estadoPrenez: nuevoEstadoPrenez, observaciones: novedadesTexto, geneticaUtilizada: geneticaAGuardar } 
         : p;
 
       setProcedimientos(prev => prev.map(actualizarItem));
@@ -512,9 +606,9 @@ export default function DashboardScreen({ navigation }) {
       }
 
       if (sincronizado) {
-        Alert.alert('Actualizado ✅', 'Diagnóstico y novedades guardadas en el servidor y panel administrativo.');
+        Alert.alert('Actualizado ✅', 'Ficha clínica, genética y diagnóstico guardados en el servidor.');
       } else {
-        Alert.alert('Guardado Offline 📡', 'Diagnóstico guardado en la memoria del celular. Se sincronizará con el servidor al reconectar.');
+        Alert.alert('Guardado Offline 📡', 'Datos guardados en la memoria del celular. Se sincronizarán al reconectar.');
       }
 
       setModalGestionVisible(false);
@@ -793,6 +887,18 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
       </View>
       <Text style={styles.detail}>Finca: {item.finca ? `${item.finca} (${item.productor})` : item.productor}</Text>
       <Text style={styles.detail}>Día 0: {new Date(item.fechasProtocolo?.dia0_sincronizacion || item.createdAt).toLocaleDateString()}</Text>
+      {item.geneticaUtilizada === 'Pendiente de Selección' ? (
+        <Text style={[styles.detail, { color: '#d97706', fontWeight: 'bold' }]}>
+          ⚠️ Toro: Pendiente por definir en campo
+        </Text>
+      ) : item.geneticaUtilizada ? (
+        <Text style={styles.detail}>🧬 Toro: {item.geneticaUtilizada}</Text>
+      ) : null}
+      {item.tipoProcedimiento === 'Atencion de Parto' ? (
+        <Text style={[styles.detail, { color: '#dc2626', fontWeight: 'bold' }]}>
+          🚨 Visita de Atención de Parto
+        </Text>
+      ) : null}
       {item.observaciones ? <Text style={styles.obsPreview} numberOfLines={2}>📝 {item.observaciones}</Text> : null}
       
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
@@ -974,8 +1080,8 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Diagnóstico de Gestación */}
-              <Text style={styles.modalSectionLabel}>Diagnóstico de Gestación</Text>
+              {/* Diagnóstico de Gestación y Estado */}
+              <Text style={styles.modalSectionLabel}>Diagnóstico / Estado Clínico</Text>
               <View style={styles.diagGroup}>
                 <TouchableOpacity 
                   style={[styles.diagBtn, nuevoEstadoPrenez === 'Preñada' && styles.diagBtnPreñadaActive]}
@@ -1003,7 +1109,37 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
                     ⏳ Pendiente
                   </Text>
                 </TouchableOpacity>
+
+                {selectedProc?.tipoProcedimiento === 'Atencion de Parto' && (
+                  <TouchableOpacity 
+                    style={[styles.diagBtn, nuevoEstadoPrenez === 'Parto Atendido' && styles.diagBtnPreñadaActive]}
+                    onPress={() => setNuevoEstadoPrenez('Parto Atendido')}
+                  >
+                    <Text style={[styles.diagBtnText, nuevoEstadoPrenez === 'Parto Atendido' && styles.diagBtnTextActive]}>
+                      🎉 Parto Atendido
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
+
+              {/* Registro / Actualización del Toro o Genética en Campo */}
+              <Text style={styles.modalSectionLabel}>Toro / Genética Utilizada (Día de Servicio)</Text>
+              <TextInput
+                style={[styles.modalInput, { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 12, padding: 12, fontSize: 13 }]}
+                placeholder="Nombre del toro, pajilla o embrión (ej: Fabuloso, Sansao...)"
+                placeholderTextColor="#94a3b8"
+                value={toroGeneticaTexto}
+                onChangeText={setToroGeneticaTexto}
+              />
+              {(!toroGeneticaTexto || toroGeneticaTexto === 'Pendiente de Selección') ? (
+                <Text style={{ fontSize: 11, color: '#d97706', fontWeight: 'bold', marginBottom: 12, marginTop: 4 }}>
+                  ⚠️ Genética pendiente: el ganadero puede definirla hasta el día del servicio.
+                </Text>
+              ) : (
+                <Text style={{ fontSize: 11, color: '#059669', fontWeight: 'bold', marginBottom: 12, marginTop: 4 }}>
+                  🧬 Genética asignada para el certificado oficial.
+                </Text>
+              )}
 
               {/* Novedades y Observaciones Clínicas */}
               <Text style={styles.modalSectionLabel}>Novedades Clínicas / Observaciones de Campo</Text>

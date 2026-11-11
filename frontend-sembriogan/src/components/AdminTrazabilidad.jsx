@@ -20,7 +20,12 @@ import {
   TrendingUp,
   Building2,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Plus,
+  UserPlus,
+  Phone,
+  Mail,
+  MapPin
 } from 'lucide-react';
 
 export default function AdminTrazabilidad() {
@@ -31,6 +36,29 @@ export default function AdminTrazabilidad() {
   const [modoVista, setModoVista] = useState('animales'); // 'animales' | 'productores'
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
+
+  // Modal: Programar Visita / Procedimiento desde Oficina
+  const [isModalCrearOpen, setIsModalCrearOpen] = useState(false);
+  const [guardandoProc, setGuardandoProc] = useState(false);
+  const [errorCrearProc, setErrorCrearProc] = useState('');
+  const [mensajeExitoProc, setMensajeExitoProc] = useState('');
+  const [veterinariosDisponibles, setVeterinariosDisponibles] = useState([]);
+  const [nuevoProcedimiento, setNuevoProcedimiento] = useState({
+    tipoProcedimiento: 'IATF',
+    fechaVisita: new Date().toISOString().split('T')[0],
+    productor: '',
+    productorEmail: '',
+    telefonoProductor: '',
+    finca: '',
+    municipio: 'Neiva, Huila',
+    tipoProduccion: 'Doble Propósito',
+    arete: '',
+    raza: 'Gyr',
+    geneticaUtilizada: '',
+    toroPendiente: true,
+    veterinarioAsignado: 'Equipo Veterinario Sembriogan',
+    observaciones: ''
+  });
 
   // Cargar registros desde el backend
   const cargarRegistros = async () => {
@@ -51,12 +79,104 @@ export default function AdminTrazabilidad() {
     }
   };
 
+  // Cargar lista de veterinarios del sistema
+  const cargarVeterinarios = async () => {
+    try {
+      const token = localStorage.getItem('tokenSembriogan');
+      const res = await fetch(`${API_BASE_URL}/api/auth/usuarios`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.usuarios)) {
+        const vets = data.usuarios.filter(u => u.rol === 'Veterinario' || u.rol === 'Admin');
+        setVeterinariosDisponibles(vets);
+      }
+    } catch (e) {
+      console.warn("No se pudieron cargar veterinarios:", e);
+    }
+  };
+
   useEffect(() => {
     cargarRegistros();
+    cargarVeterinarios();
     // Auto-actualizar cada 20 segundos para reflejar registros de campo en vivo
     const timer = setInterval(cargarRegistros, 20000);
     return () => clearInterval(timer);
   }, []);
+
+  // Programar y registrar nuevo procedimiento desde el panel administrativo
+  const handleCrearProcedimiento = async (e) => {
+    e.preventDefault();
+    setErrorCrearProc('');
+    setGuardandoProc(true);
+
+    try {
+      const token = localStorage.getItem('tokenSembriogan');
+      const genetica = (nuevoProcedimiento.toroPendiente || !nuevoProcedimiento.geneticaUtilizada.trim())
+        ? 'Pendiente de Selección'
+        : nuevoProcedimiento.geneticaUtilizada.trim();
+
+      const bodyData = {
+        productor: nuevoProcedimiento.productor.trim(),
+        productorEmail: nuevoProcedimiento.productorEmail.trim(),
+        telefonoProductor: nuevoProcedimiento.telefonoProductor.trim(),
+        finca: nuevoProcedimiento.finca.trim(),
+        municipio: nuevoProcedimiento.municipio.trim() || 'Neiva, Huila',
+        tipoProduccion: nuevoProcedimiento.tipoProduccion,
+        arete: nuevoProcedimiento.arete.trim(),
+        raza: nuevoProcedimiento.raza.trim() || 'Bovino',
+        tipoProcedimiento: nuevoProcedimiento.tipoProcedimiento,
+        geneticaUtilizada: genetica,
+        veterinarioAsignado: nuevoProcedimiento.veterinarioAsignado || 'Equipo Veterinario Sembriogan',
+        observaciones: nuevoProcedimiento.observaciones.trim(),
+        origenRegistro: 'Oficina / Administrativo',
+        fechasProtocolo: {
+          dia0_sincronizacion: new Date(nuevoProcedimiento.fechaVisita)
+        }
+      };
+
+      const res = await fetch(`${API_BASE_URL}/api/registro-genetico`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(bodyData)
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setMensajeExitoProc(`✅ Visita técnica (${nuevoProcedimiento.tipoProcedimiento}) registrada con éxito. Sincronizada en tiempo real con la app de los veterinarios y generada la cuenta del ganadero.`);
+        cargarRegistros();
+        setIsModalCrearOpen(false);
+        setNuevoProcedimiento({
+          tipoProcedimiento: 'IATF',
+          fechaVisita: new Date().toISOString().split('T')[0],
+          productor: '',
+          productorEmail: '',
+          telefonoProductor: '',
+          finca: '',
+          municipio: 'Neiva, Huila',
+          tipoProduccion: 'Doble Propósito',
+          arete: '',
+          raza: 'Gyr',
+          geneticaUtilizada: '',
+          toroPendiente: true,
+          veterinarioAsignado: 'Equipo Veterinario Sembriogan',
+          observaciones: ''
+        });
+        setTimeout(() => setMensajeExitoProc(''), 9000);
+      } else {
+        setErrorCrearProc(data.mensaje || 'Error al guardar el procedimiento.');
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorCrearProc('Error de conexión con el servidor.');
+    } finally {
+      setGuardandoProc(false);
+    }
+  };
 
   const formatearFecha = (fecha) => {
     if (!fecha) return 'N/A';
@@ -273,6 +393,12 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
 
   // LÓGICA DE ALERTAS Y CRONOGRAMA CLÍNICO
   const obtenerAlertaProtocolo = (registro) => {
+    if (registro.tipoProcedimiento === 'Atencion de Parto') {
+      if (registro.estadoPrenez === 'Parto Atendido') {
+        return { texto: '🎉 Parto Atendido con Éxito', color: 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-bold' };
+      }
+      return { texto: '🚨 Asistencia de Parto en Curso', color: 'bg-rose-50 text-rose-700 font-bold border border-rose-200 animate-pulse' };
+    }
     if (registro.estadoPrenez === 'Preñada') {
       return { texto: 'Ciclo Cerrado (Preñez Confirmada)', color: 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-bold' };
     }
@@ -337,6 +463,8 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
         return 'bg-emerald-50 text-emerald-700 border border-emerald-200/80';
       case 'Diagnostico':
         return 'bg-amber-50 text-amber-700 border border-amber-200/80';
+      case 'Atencion de Parto':
+        return 'bg-rose-50 text-rose-700 border border-rose-200/80';
       default:
         return 'bg-slate-50 text-slate-700 border border-slate-200';
     }
@@ -397,13 +525,34 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
 
           <button 
             onClick={exportarExcelGenetica}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold transition shadow-md shadow-emerald-600/20 justify-center shrink-0"
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold transition shadow-md shadow-emerald-600/20 justify-center shrink-0 cursor-pointer"
           >
             <FileSpreadsheet size={15} />
-            <span>Exportar Todo (CSV)</span>
+            <span>Exportar CSV</span>
+          </button>
+
+          <button 
+            onClick={() => setIsModalCrearOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-black transition shadow-md shadow-blue-600/25 justify-center shrink-0 cursor-pointer"
+          >
+            <Plus size={16} />
+            <span>+ Programar Visita / Procedimiento</span>
           </button>
         </div>
       </div>
+
+      {/* MENSAJE DE ÉXITO */}
+      {mensajeExitoProc && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-bold flex items-center justify-between shadow-xs animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+            <span>{mensajeExitoProc}</span>
+          </div>
+          <button onClick={() => setMensajeExitoProc('')} className="p-1 hover:bg-emerald-100 rounded-lg text-emerald-600 cursor-pointer">
+            <X size={15} />
+          </button>
+        </div>
+      )}
 
       {/* BARRA DE BÚSQUEDA Y FILTROS RÁPIDOS */}
       <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
@@ -646,7 +795,13 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
                           </span>
                         </td>
                         <td className="px-4 py-4 text-xs font-semibold text-slate-700">
-                          {reg.geneticaUtilizada || 'N/A'}
+                          {reg.geneticaUtilizada === 'Pendiente de Selección' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[11px]">
+                              ⚠️ Toro Pendiente (En campo)
+                            </span>
+                          ) : (
+                            reg.geneticaUtilizada || 'N/A'
+                          )}
                         </td>
                         <td className="px-4 py-4">
                           <span className={`px-3 py-1.5 rounded-xl text-xs block text-center font-medium ${alerta.color}`}>
@@ -706,7 +861,11 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
                   <div className="text-xs text-slate-600 border-t border-slate-100 pt-2 flex justify-between">
                     <div>
                       <span className="font-bold block text-[10px] text-slate-400 uppercase">Genética:</span> 
-                      {reg.geneticaUtilizada || 'N/A'}
+                      {reg.geneticaUtilizada === 'Pendiente de Selección' ? (
+                        <span className="text-amber-700 font-bold text-[11px] block">⚠️ Toro pendiente en campo</span>
+                      ) : (
+                        reg.geneticaUtilizada || 'N/A'
+                      )}
                     </div>
                     <div className="text-right">
                       <span className="font-bold block text-[10px] text-slate-400 uppercase">Día 0 (Inicio):</span> 
@@ -1053,6 +1212,287 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
               </div>
 
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL 3: PROGRAMAR VISITA O PROCEDIMIENTO DESDE OFICINA      */}
+      {/* ============================================================ */}
+      {isModalCrearOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl p-6 sm:p-8 relative my-8 border border-slate-200 flex flex-col max-h-[92vh]">
+            
+            {/* Header del Modal */}
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                  <Calendar size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">Programar Visita Técnica o Procedimiento</h3>
+                  <p className="text-xs text-slate-500">Registro en oficina • Notifica a veterinarios en móvil y crea cuenta del ganadero</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsModalCrearOpen(false)} 
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition border border-slate-200 cursor-pointer"
+                title="Cerrar"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Formulario con Scroll Interno */}
+            <form onSubmit={handleCrearProcedimiento} className="overflow-y-auto pr-1 py-4 space-y-6 flex-1">
+              {errorCrearProc && (
+                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs font-semibold text-rose-800 flex items-center gap-2">
+                  <AlertTriangle size={16} className="text-rose-600 flex-shrink-0" />
+                  <span>{errorCrearProc}</span>
+                </div>
+              )}
+
+              {/* SECCIÓN 1: SERVICIO Y FECHA */}
+              <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70 space-y-4">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                  <Sparkles size={14} className="text-emerald-600" /> 1. Tipo de Servicio y Fecha de Atención
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Tipo de Procedimiento *</label>
+                    <select
+                      value={nuevoProcedimiento.tipoProcedimiento}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, tipoProcedimiento: e.target.value })}
+                      className="w-full text-xs font-bold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="IATF">IATF (Sincronización a Tiempo Fijo)</option>
+                      <option value="TE">TE (Transferencia de Embriones)</option>
+                      <option value="IA">IA (Inseminación Artificial Celo Visto)</option>
+                      <option value="Diagnostico">Diagnóstico de Preñez (Palpación/Eco)</option>
+                      <option value="Atencion de Parto">🚨 Atención de Parto / Urgencia</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Fecha Programada (Día 0) *</label>
+                    <input
+                      type="date"
+                      value={nuevoProcedimiento.fechaVisita}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, fechaVisita: e.target.value })}
+                      className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Veterinario Asignado</label>
+                    <select
+                      value={nuevoProcedimiento.veterinarioAsignado}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, veterinarioAsignado: e.target.value })}
+                      className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="Equipo Veterinario Sembriogan">Equipo Veterinario Sembriogan (Todos)</option>
+                      {veterinariosDisponibles.map((v) => (
+                        <option key={v._id || v.email} value={v.nombre}>
+                          {v.nombre} ({v.telefono || 'Sin tel.'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECCIÓN 2: DATOS DEL GANADERO Y FINCA */}
+              <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                    <UserPlus size={14} className="text-blue-600" /> 2. Ganadero y Predio (Auto-creación de Cuenta)
+                  </span>
+                  <span className="text-[10px] text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full font-bold">
+                    Acceso Portal Web Automático
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Nombre Completo del Ganadero *</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Carlos Arturo Mendoza"
+                      value={nuevoProcedimiento.productor}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, productor: e.target.value })}
+                      className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Correo Electrónico (Login Portal Ganadero) *</label>
+                    <input
+                      type="email"
+                      placeholder="ejemplo@ganaderia.com"
+                      value={nuevoProcedimiento.productorEmail}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, productorEmail: e.target.value })}
+                      className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Teléfono / WhatsApp de Contacto</label>
+                    <input
+                      type="tel"
+                      placeholder="Ej. 3123456789"
+                      value={nuevoProcedimiento.telefonoProductor}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, telefonoProductor: e.target.value })}
+                      className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Nombre de la Finca / Predio *</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Hacienda El Roble"
+                      value={nuevoProcedimiento.finca}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, finca: e.target.value })}
+                      className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Municipio / Departamento</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Neiva, Huila / Palermo"
+                      value={nuevoProcedimiento.municipio}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, municipio: e.target.value })}
+                      className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Sistema Productivo</label>
+                    <select
+                      value={nuevoProcedimiento.tipoProduccion}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, tipoProduccion: e.target.value })}
+                      className="w-full text-xs font-bold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Doble Propósito">Doble Propósito</option>
+                      <option value="Carne / Ceba">Carne / Ceba</option>
+                      <option value="Lechería Especializada">Lechería Especializada</option>
+                      <option value="Cría y Genética">Cría y Genética</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECCIÓN 3: BOVINO Y GENÉTICA (CON TORO PENDIENTE) */}
+              <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70 space-y-4">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                  <Dna size={14} className="text-purple-600" /> 3. Identificación Bovina y Selección Genética
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Chapeta / Arete / Lote *</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. 5432 o Lote Vacas 1"
+                      value={nuevoProcedimiento.arete}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, arete: e.target.value })}
+                      className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Raza o Cruzamiento</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Gyr Puro / Brahman / Girolando"
+                      value={nuevoProcedimiento.raza}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, raza: e.target.value })}
+                      className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Switch / Checkbox Toro Pendiente */}
+                <div className="bg-white p-3.5 rounded-2xl border border-slate-200 space-y-2">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={nuevoProcedimiento.toroPendiente}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, toroPendiente: e.target.checked })}
+                      className="mt-0.5 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block">
+                        Dejar genética / toro pendiente de selección (Se define el día de la inseminación/TE)
+                      </span>
+                      <span className="text-[11px] text-slate-500 block leading-tight">
+                        Recomendado si el ganadero elegirá la pajilla o toro a última hora antes del procedimiento en campo.
+                      </span>
+                    </div>
+                  </label>
+
+                  {!nuevoProcedimiento.toroPendiente ? (
+                    <div className="pt-2">
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">Nombre o Registro del Toro / Donadora / Pajilla</label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Fabuloso da Cal / Toro Brahman Rojo 808"
+                        value={nuevoProcedimiento.geneticaUtilizada}
+                        onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, geneticaUtilizada: e.target.value })}
+                        className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                  ) : (
+                    <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-[11px] font-semibold flex items-center gap-2">
+                      <AlertTriangle size={15} className="text-amber-600 flex-shrink-0" />
+                      <span>El procedimiento quedará con estado "Pendiente de Selección". El veterinario en campo lo completará directamente en su app móvil el día de la inseminación/transferencia.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECCIÓN 4: OBSERVACIONES */}
+              <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/70 space-y-2">
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-500">
+                  4. Observaciones o Indicaciones Técnicas
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Ej. Vaca recién parida, signos de celo detectados, indicaciones de llegada a la finca..."
+                  value={nuevoProcedimiento.observaciones}
+                  onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, observaciones: e.target.value })}
+                  className="w-full text-xs font-normal border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              {/* Footer con Botones */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsModalCrearOpen(false)}
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={guardandoProc}
+                  className={`px-6 py-2.5 rounded-xl text-xs font-bold text-white shadow-md transition flex items-center gap-2 cursor-pointer ${
+                    guardandoProc ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
+                >
+                  {guardandoProc ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Registrando y Notificando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={16} />
+                      <span>Programar y Notificar en Móvil</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+
           </div>
         </div>
       )}
