@@ -14,7 +14,9 @@
       "package": "com.sembriogan.veterinario",
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -37,7 +39,10 @@
       ]
     ],
     "extra": {
-      "apiUrl": "https://sembriogan-backend.onrender.com"
+      "apiUrl": "https://sembriogan-backend.onrender.com",
+      "eas": {
+        "projectId": "eb02bc76-f4df-4d87-9c89-c900b230781b"
+      }
     }
   }
 }

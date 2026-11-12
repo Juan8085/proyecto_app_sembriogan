@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal, ActivityIndicator, Image } from 'react-native';
 import { API_URL, setCustomApiUrl, getDefaultApiUrl, initApiUrl, getApiUrl } from '../config/api';
 import { getToken, setSession, clearSession, isTokenExpired } from '../utils/auth';
-import { User, Lock, Globe, RotateCcw, X, CheckCircle2, Server } from 'lucide-react-native';
+import { User, Lock, Globe, RotateCcw, X, CheckCircle2, Server, Eye, EyeOff } from 'lucide-react-native';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Estados para configuración de servidor / túnel
@@ -146,12 +147,24 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.inputContainer}>
             <Lock color="#64748b" size={20} style={styles.icon} />
             <TextInput 
-              style={styles.input} 
+              style={[styles.input, { flex: 1 }]} 
               placeholder="Contraseña"
+              placeholderTextColor="#94a3b8"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!mostrarPassword}
             />
+            <TouchableOpacity 
+              onPress={() => setMostrarPassword(!mostrarPassword)}
+              style={{ padding: 6 }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              {mostrarPassword ? (
+                <EyeOff size={20} color="#64748b" />
+              ) : (
+                <Eye size={20} color="#64748b" />
+              )}
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>

@@ -30,7 +30,9 @@ import {
   CheckCircle2,
   MapPin,
   Compass,
-  Navigation
+  Navigation,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export default function CatalogoTienda() {
@@ -75,6 +77,7 @@ export default function CatalogoTienda() {
     municipio: 'Neiva',
     tipoProduccion: 'Doble Propósito'
   });
+  const [mostrarPasswordAuth, setMostrarPasswordAuth] = useState(false);
   const [configGlobal, setConfigGlobal] = useState(null);
   const [misOrdenesCliente, setMisOrdenesCliente] = useState([]);
   const [misProcedimientosCliente, setMisProcedimientosCliente] = useState([]);
@@ -1130,14 +1133,24 @@ export default function CatalogoTienda() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Contraseña *</label>
-                <input 
-                  type="password" 
-                  value={authData.password} 
-                  onChange={e => setAuthData({...authData, password: e.target.value})} 
-                  required 
-                  placeholder="••••••••" 
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
+                <div className="relative">
+                  <input 
+                    type={mostrarPasswordAuth ? "text" : "password"} 
+                    value={authData.password} 
+                    onChange={e => setAuthData({...authData, password: e.target.value})} 
+                    required 
+                    placeholder="••••••••" 
+                    className="w-full px-4 py-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarPasswordAuth(!mostrarPasswordAuth)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition p-1"
+                    title={mostrarPasswordAuth ? "Ocultar contraseña" : "Ver contraseña"}
+                  >
+                    {mostrarPasswordAuth ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               {authMode === 'registro' && (

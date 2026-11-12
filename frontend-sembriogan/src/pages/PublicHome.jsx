@@ -25,7 +25,9 @@ import {
   Compass,
   Navigation,
   Plus,
-  Trash2
+  Trash2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export default function PublicHome() {
@@ -74,6 +76,8 @@ export default function PublicHome() {
     inventarioBovino: '',
     hectareas: ''
   });
+  const [mostrarPasswordAuth, setMostrarPasswordAuth] = useState(false);
+  const [mostrarPasswordPerfil, setMostrarPasswordPerfil] = useState(false);
   const [nuevoTestimonio, setNuevoTestimonio] = useState({ nombre: '', rol: '', mensaje: '' });
   const [mensajeTestimonioExito, setMensajeTestimonioExito] = useState('');
   const [infoNosotros, setInfoNosotros] = useState(null);
@@ -1819,7 +1823,23 @@ export default function PublicHome() {
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 mb-1 block">Nueva Contraseña</label>
-                <input type="password" value={userCliente.password || ''} onChange={(e) => setUserCliente({...userCliente, password: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" placeholder="••••••••" />
+                <div className="relative">
+                  <input 
+                    type={mostrarPasswordPerfil ? "text" : "password"} 
+                    value={userCliente.password || ''} 
+                    onChange={(e) => setUserCliente({...userCliente, password: e.target.value})} 
+                    className="w-full p-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" 
+                    placeholder="••••••••" 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarPasswordPerfil(!mostrarPasswordPerfil)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition p-1"
+                    title={mostrarPasswordPerfil ? "Ocultar contraseña" : "Ver contraseña"}
+                  >
+                    {mostrarPasswordPerfil ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition mt-2">Guardar Cambios</button>
             </form>
@@ -1871,7 +1891,24 @@ export default function PublicHome() {
 
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Contraseña *</label>
-                <input type="password" required value={authData.password} onChange={(e) => setAuthData({...authData, password: e.target.value})} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs" placeholder="Mínimo 6 caracteres" />
+                <div className="relative">
+                  <input 
+                    type={mostrarPasswordAuth ? "text" : "password"} 
+                    required 
+                    value={authData.password} 
+                    onChange={(e) => setAuthData({...authData, password: e.target.value})} 
+                    className="w-full px-3.5 py-2.5 pr-10 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs" 
+                    placeholder="Mínimo 6 caracteres" 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarPasswordAuth(!mostrarPasswordAuth)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition p-1"
+                    title={mostrarPasswordAuth ? "Ocultar contraseña" : "Ver contraseña"}
+                  >
+                    {mostrarPasswordAuth ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               {authMode === 'registro' && (

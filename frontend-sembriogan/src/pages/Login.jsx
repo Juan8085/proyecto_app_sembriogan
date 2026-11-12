@@ -1,10 +1,12 @@
 import { API_BASE_URL, getApiUrl, getMediaUrl } from '../config/api';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [formData, setFormData] = useState({ nombre: '', email: '', password: '' });
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -113,12 +115,24 @@ export default function Login() {
             </div>
             <div className="mb-6">
               <label className="block text-sm font-bold text-gray-700 mb-1">Contraseña</label>
-              <input 
-                type="password" name="password" required 
-                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                placeholder="••••••••"
-                onChange={handleChange}
-              />
+              <div className="relative">
+                <input 
+                  type={mostrarPassword ? "text" : "password"} 
+                  name="password" 
+                  required 
+                  className="w-full p-3 pr-11 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  placeholder="••••••••"
+                  onChange={handleChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarPassword(!mostrarPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition p-1"
+                  title={mostrarPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                >
+                  {mostrarPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <button 
               type="submit" disabled={loading}
@@ -159,12 +173,24 @@ export default function Login() {
             </div>
             <div className="mb-6">
               <label className="block text-sm font-bold text-gray-700 mb-1">Contraseña</label>
-              <input 
-                type="password" name="password" required 
-                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all"
-                placeholder="••••••••"
-                onChange={handleChange}
-              />
+              <div className="relative">
+                <input 
+                  type={mostrarPassword ? "text" : "password"} 
+                  name="password" 
+                  required 
+                  className="w-full p-3 pr-11 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all"
+                  placeholder="••••••••"
+                  onChange={handleChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarPassword(!mostrarPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition p-1"
+                  title={mostrarPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                >
+                  {mostrarPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <button 
               type="submit" disabled={loading}
