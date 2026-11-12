@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { API_BASE_URL, getApiUrl, getMediaUrl, GOOGLE_CLIENT_ID } from '../config/api';
+import { DEPARTAMENTOS_COLOMBIA, MUNICIPIOS_POR_DEPARTAMENTO, obtenerMunicipios, formatearUbicacion } from '../utils/colombiaData';
 import { Link } from 'react-router-dom';
 import { GoogleLogin, useGoogleLogin } from '@react-oauth/google';
 import { 
@@ -74,7 +75,9 @@ export default function CatalogoTienda() {
     nombre: '', 
     telefono: '',
     fincaPrincipal: '',
+    departamento: 'Huila',
     municipio: 'Neiva',
+    municipioPersonalizado: '',
     tipoProduccion: 'Doble Propósito'
   });
   const [mostrarPasswordAuth, setMostrarPasswordAuth] = useState(false);
@@ -88,7 +91,9 @@ export default function CatalogoTienda() {
   const [guardandoFincaCliente, setGuardandoFincaCliente] = useState(false);
   const [nuevaFincaCliente, setNuevaFincaCliente] = useState({
     nombreFinca: '',
+    departamento: 'Huila',
     municipio: 'Neiva',
+    municipioPersonalizado: '',
     vereda: '',
     lat: '',
     lng: '',
@@ -261,6 +266,10 @@ export default function CatalogoTienda() {
 
     setGuardandoFincaCliente(true);
     try {
+      const muniFinal = (nuevaFincaCliente.municipio === 'Otro' && nuevaFincaCliente.municipioPersonalizado?.trim())
+        ? nuevaFincaCliente.municipioPersonalizado.trim()
+        : (nuevaFincaCliente.municipio || 'Neiva');
+
       const res = await fetch(`${API_BASE_URL}/api/fincas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -268,7 +277,8 @@ export default function CatalogoTienda() {
           nombreFinca: nuevaFincaCliente.nombreFinca.trim(),
           propietarioNombre: userCliente.nombre,
           propietarioEmail: userCliente.email,
-          municipio: nuevaFincaCliente.municipio,
+          departamento: nuevaFincaCliente.departamento || 'Huila',
+          municipio: muniFinal,
           vereda: nuevaFincaCliente.vereda,
           coordenadas: {
             lat: parseFloat(nuevaFincaCliente.lat),
@@ -285,7 +295,9 @@ export default function CatalogoTienda() {
       if (data.success) {
         setNuevaFincaCliente({
           nombreFinca: '',
+          departamento: 'Huila',
           municipio: 'Neiva',
+          municipioPersonalizado: '',
           vereda: '',
           lat: '',
           lng: '',
@@ -475,10 +487,20 @@ export default function CatalogoTienda() {
     e.preventDefault();
     const endpoint = authMode === 'login' ? 'login' : 'registro';
     try {
+      const muniFinal = (authData.municipio === 'Otro' && authData.municipioPersonalizado?.trim())
+        ? authData.municipioPersonalizado.trim()
+        : (authData.municipio || 'Neiva');
+
+      const payloadAuth = {
+        ...authData,
+        municipio: muniFinal,
+        departamento: authData.departamento || 'Huila'
+      };
+
       const res = await fetch(`${API_BASE_URL}/api/auth/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(authData)
+        body: JSON.stringify(payloadAuth)
       });
       const data = await res.json();
       if (data.success) {
@@ -1146,30 +1168,60 @@ export default function CatalogoTienda() {
 
               {authMode === 'registro' && (
                 <>
-                  <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Finca o Predio</label>
+                    <input 
+                      type="text" 
+                      value={authData.fincaPrincipal} 
+                      onChange={e => setAuthData({...authData, fincaPrincipal: e.target.value})} 
+                      placeholder="Ej: La Esperanza" 
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Finca o Predio</label>
-                      <input 
-                        type="text" 
-                        value={authData.fincaPrincipal} 
-                        onChange={e => setAuthData({...authData, fincaPrincipal: e.target.value})} 
-                        placeholder="Ej: La Esperanza" 
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                      />
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Departamento *</label>
+                      <select 
+                        value={authData.departamento || 'Huila'} 
+                        onChange={(e) => {
+                          const d = e.target.value;
+                          const primerM = obtenerMunicipios(d)[0] || 'Otro';
+                          setAuthData({...authData, departamento: d, municipio: primerM});
+                        }} 
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                      >
+                        {DEPARTAMENTOS_COLOMBIA.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio *</label>
                       <select 
-                        value={authData.municipio} 
+                        value={authData.municipio || 'Neiva'} 
                         onChange={e => setAuthData({...authData, municipio: e.target.value})} 
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
                       >
-                        {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'Aipe', 'Algeciras', 'Baraya', 'Tarqui', 'Hobo', 'Villavieja', 'Yaguará', 'Tello', 'La Plata', 'San Agustín', 'Timaná', 'Otro'].map(m => (
+                        {obtenerMunicipios(authData.departamento || 'Huila').map(m => (
                           <option key={m} value={m}>{m}</option>
                         ))}
                       </select>
                     </div>
                   </div>
+
+                  {authData.municipio === 'Otro' && (
+                    <div>
+                      <label className="block text-[11px] font-bold text-emerald-800 uppercase mb-1">Escribir Municipio / Vereda</label>
+                      <input 
+                        type="text" 
+                        value={authData.municipioPersonalizado || ''} 
+                        onChange={(e) => setAuthData({...authData, municipioPersonalizado: e.target.value})} 
+                        className="w-full px-3 py-2 bg-emerald-50/50 border border-emerald-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-semibold" 
+                        placeholder="Digita el municipio o sector" 
+                      />
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -1351,32 +1403,62 @@ export default function CatalogoTienda() {
                         <span className="text-[11px] text-slate-400">Coordenadas por GPS</span>
                       </div>
 
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">Nombre de la Finca *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Ej. Hacienda La Esperanza"
+                          value={nuevaFincaCliente.nombreFinca}
+                          onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, nombreFinca: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Nombre de la Finca *</label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="Ej. Hacienda La Esperanza"
-                            value={nuevaFincaCliente.nombreFinca}
-                            onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, nombreFinca: e.target.value })}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                          />
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Departamento *</label>
+                          <select
+                            value={nuevaFincaCliente.departamento || 'Huila'}
+                            onChange={(e) => {
+                              const d = e.target.value;
+                              const primerM = obtenerMunicipios(d)[0] || 'Otro';
+                              setNuevaFincaCliente({ ...nuevaFincaCliente, departamento: d, municipio: primerM });
+                            }}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                          >
+                            {DEPARTAMENTOS_COLOMBIA.map(d => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
                         </div>
 
                         <div>
                           <label className="block text-[11px] font-bold text-slate-600 mb-1">Municipio *</label>
                           <select
-                            value={nuevaFincaCliente.municipio}
+                            value={nuevaFincaCliente.municipio || 'Neiva'}
                             onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, municipio: e.target.value })}
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                           >
-                            {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'Aipe', 'Algeciras', 'Baraya', 'Tarqui', 'Hobo', 'Villavieja', 'Yaguará', 'Tello', 'La Plata', 'San Agustín', 'Timaná', 'Otro'].map(m => (
+                            {obtenerMunicipios(nuevaFincaCliente.departamento || 'Huila').map(m => (
                               <option key={m} value={m}>{m}</option>
                             ))}
                           </select>
                         </div>
                       </div>
+
+                      {nuevaFincaCliente.municipio === 'Otro' && (
+                        <div>
+                          <label className="block text-[11px] font-bold text-emerald-800 mb-1">Escribir Municipio</label>
+                          <input
+                            type="text"
+                            placeholder="Digita el municipio o vereda"
+                            value={nuevaFincaCliente.municipioPersonalizado || ''}
+                            onChange={(e) => setNuevaFincaCliente({ ...nuevaFincaCliente, municipioPersonalizado: e.target.value })}
+                            className="w-full px-3 py-2 bg-emerald-50/50 border border-emerald-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                         <div>

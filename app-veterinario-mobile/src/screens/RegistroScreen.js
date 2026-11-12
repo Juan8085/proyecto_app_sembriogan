@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Platform, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Platform, KeyboardAvoidingView, ActivityIndicator, Modal, FlatList } from 'react-native';
 import * as Location from 'expo-location';
 import { API_URL, getApiUrl } from '../config/api';
 import { getToken, clearSession, isTokenExpired } from '../utils/auth';
 import { ArrowLeft, Save, MapPin, Compass, CheckCircle, Search, UserPlus, Users, Check, AlertTriangle, X, ChevronRight, Dna } from 'lucide-react-native';
+import { DEPARTAMENTOS_COLOMBIA, obtenerMunicipios, formatearUbicacion } from '../utils/colombiaData';
 
 export default function RegistroScreen({ navigation }) {
   const [form, setForm] = useState({
@@ -14,6 +15,9 @@ export default function RegistroScreen({ navigation }) {
     tipoProcedimiento: 'IATF',
     semenToro: '',
     finca: '',
+    departamento: 'Huila',
+    municipio: 'Neiva',
+    municipioPersonalizado: '',
     productor: '',
     productorEmail: '',
     telefonoProductor: '',
@@ -33,6 +37,21 @@ export default function RegistroScreen({ navigation }) {
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [busquedaCliente, setBusquedaCliente] = useState('');
   const [cargandoClientes, setCargandoClientes] = useState(false);
+
+  // Estados para selector modal de Departamento y Municipio
+  const [modalUbicacionVisible, setModalUbicacionVisible] = useState(false);
+  const [tipoSeleccionUbicacion, setTipoSeleccionUbicacion] = useState('departamento'); // 'departamento' | 'municipio'
+  const [busquedaUbicacion, setBusquedaUbicacion] = useState('');
+
+  const opcionesUbicacionFiltradas = useMemo(() => {
+    const q = busquedaUbicacion.trim().toLowerCase();
+    const lista = tipoSeleccionUbicacion === 'departamento'
+      ? DEPARTAMENTOS_COLOMBIA
+      : obtenerMunicipios(form.departamento || 'Huila');
+
+    if (!q) return lista;
+    return lista.filter(item => item.toLowerCase().includes(q));
+  }, [tipoSeleccionUbicacion, busquedaUbicacion, form.departamento]);
 
   // Cargar lista de clientes de la base de datos (con soporte offline)
   const cargarClientes = async () => {
@@ -99,6 +118,9 @@ export default function RegistroScreen({ navigation }) {
       productorEmail: c.email || '',
       telefonoProductor: c.telefono || '',
       finca: c.fincaPrincipal || '',
+      departamento: c.departamento || 'Huila',
+      municipio: c.municipio || 'Neiva',
+      municipioPersonalizado: '',
       tipoProduccion: c.tipoProduccion || 'Doble Propósito'
     }));
     setBusquedaCliente('');
@@ -117,6 +139,9 @@ export default function RegistroScreen({ navigation }) {
       productorEmail: '',
       telefonoProductor: '',
       finca: '',
+      departamento: 'Huila',
+      municipio: 'Neiva',
+      municipioPersonalizado: '',
       tipoProduccion: 'Doble Propósito'
     }));
   };
@@ -194,8 +219,14 @@ export default function RegistroScreen({ navigation }) {
       ? (form.tipoProcedimiento === 'Atencion de Parto' ? 'N/A (Atención de Parto)' : 'Pendiente de Selección')
       : form.semenToro.trim();
 
+    const municipioFinal = form.municipio === 'Otro'
+      ? (form.municipioPersonalizado?.trim() || 'Otro')
+      : (form.municipio?.trim() || 'Neiva');
+
     const payload = {
       ...form,
+      departamento: form.departamento || 'Huila',
+      municipio: municipioFinal,
       geneticaUtilizada: geneticaFinal,
       toroPendiente: toroPendiente && form.tipoProcedimiento !== 'Atencion de Parto',
       fechasProtocolo: { dia0_sincronizacion: form.fechaProcedimiento },
@@ -587,6 +618,55 @@ export default function RegistroScreen({ navigation }) {
             placeholder="Ej: La Esperanza" 
           />
 
+          {/* DEPARTAMENTO Y MUNICIPIO */}
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Departamento *</Text>
+              <TouchableOpacity
+                style={styles.selectorUbicacionBtn}
+                onPress={() => {
+                  setTipoSeleccionUbicacion('departamento');
+                  setBusquedaUbicacion('');
+                  setModalUbicacionVisible(true);
+                }}
+              >
+                <Text style={styles.selectorUbicacionTexto} numberOfLines={1}>
+                  {form.departamento || 'Huila'}
+                </Text>
+                <ChevronRight size={16} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Municipio *</Text>
+              <TouchableOpacity
+                style={styles.selectorUbicacionBtn}
+                onPress={() => {
+                  setTipoSeleccionUbicacion('municipio');
+                  setBusquedaUbicacion('');
+                  setModalUbicacionVisible(true);
+                }}
+              >
+                <Text style={styles.selectorUbicacionTexto} numberOfLines={1}>
+                  {form.municipio || 'Neiva'}
+                </Text>
+                <ChevronRight size={16} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {form.municipio === 'Otro' && (
+            <View style={{ marginBottom: 12 }}>
+              <Text style={[styles.label, { color: '#b45309' }]}>Especificar Municipio / Sector *</Text>
+              <TextInput
+                style={[styles.input, { borderColor: '#f59e0b', backgroundColor: '#fffbeb' }]}
+                value={form.municipioPersonalizado || ''}
+                onChangeText={(v) => setField('municipioPersonalizado', v)}
+                placeholder="Escribe el nombre del municipio o sector"
+              />
+            </View>
+          )}
+
           <Text style={styles.label}>Teléfono / WhatsApp de Contacto</Text>
           <TextInput 
             style={styles.input} 
@@ -661,6 +741,78 @@ export default function RegistroScreen({ navigation }) {
           <Text style={styles.submitBtnText}>{loading ? 'Guardando en Servidor...' : 'Guardar Procedimiento'}</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* MODAL SELECTOR DE DEPARTAMENTO O MUNICIPIO */}
+      <Modal visible={modalUbicacionVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalUbicacionContainer}>
+            <View style={styles.modalUbicacionHeader}>
+              <Text style={styles.modalUbicacionTitulo}>
+                {tipoSeleccionUbicacion === 'departamento' ? 'Seleccionar Departamento' : `Municipios de ${form.departamento || 'Huila'}`}
+              </Text>
+              <TouchableOpacity onPress={() => setModalUbicacionVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <X color="#475569" size={22} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.searchUbicacionBox}>
+              <Search size={16} color="#94a3b8" style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.searchUbicacionInput}
+                placeholder={`Buscar ${tipoSeleccionUbicacion === 'departamento' ? 'departamento...' : 'municipio...'}`}
+                value={busquedaUbicacion}
+                onChangeText={setBusquedaUbicacion}
+                autoCorrect={false}
+              />
+              {busquedaUbicacion.length > 0 && (
+                <TouchableOpacity onPress={() => setBusquedaUbicacion('')}>
+                  <X size={16} color="#94a3b8" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <FlatList
+              data={opcionesUbicacionFiltradas}
+              keyExtractor={(item) => item}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => {
+                const seleccionado = tipoSeleccionUbicacion === 'departamento'
+                  ? form.departamento === item
+                  : form.municipio === item;
+                return (
+                  <TouchableOpacity
+                    style={[styles.itemUbicacion, seleccionado && styles.itemUbicacionActivo]}
+                    onPress={() => {
+                      if (tipoSeleccionUbicacion === 'departamento') {
+                        const munis = obtenerMunicipios(item);
+                        setForm(prev => ({
+                          ...prev,
+                          departamento: item,
+                          municipio: munis[0] || 'Otro',
+                          municipioPersonalizado: ''
+                        }));
+                      } else {
+                        setForm(prev => ({
+                          ...prev,
+                          municipio: item,
+                          municipioPersonalizado: item === 'Otro' ? '' : prev.municipioPersonalizado
+                        }));
+                      }
+                      setModalUbicacionVisible(false);
+                    }}
+                  >
+                    <Text style={[styles.itemUbicacionTexto, seleccionado && styles.itemUbicacionTextoActivo]}>
+                      {item}
+                    </Text>
+                    {seleccionado && <Check size={18} color="#0284c7" />}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -1025,5 +1177,85 @@ const styles = StyleSheet.create({
   },
   btnGpsTextActivo: {
     color: '#059669',
+  },
+  selectorUbicacionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginTop: 4,
+  },
+  selectorUbicacionTexto: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0f172a',
+    flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalUbicacionContainer: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '75%',
+    padding: 20,
+    paddingBottom: 30,
+  },
+  modalUbicacionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  modalUbicacionTitulo: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0f172a',
+    flex: 1,
+  },
+  searchUbicacionBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  searchUbicacionInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#0f172a',
+    padding: 0,
+  },
+  itemUbicacion: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 13,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  itemUbicacionActivo: {
+    backgroundColor: '#f0f9ff',
+    borderRadius: 8,
+  },
+  itemUbicacionTexto: {
+    fontSize: 14,
+    color: '#334155',
+    fontWeight: '600',
+  },
+  itemUbicacionTextoActivo: {
+    color: '#0284c7',
+    fontWeight: '800',
   }
 });

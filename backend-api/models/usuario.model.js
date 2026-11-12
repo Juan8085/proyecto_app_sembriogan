@@ -16,6 +16,7 @@ const UsuarioSchema = new Schema({
         default: 'Doble Propósito'
     },
     fincaPrincipal: { type: String, default: '' },
+    departamento: { type: String, default: 'Huila' },
     municipio: { type: String, default: 'Neiva' },
     telefono: { type: String, default: '' },
     inventarioBovino: { type: Number, default: 0 }, // Número de cabezas de ganado bovino

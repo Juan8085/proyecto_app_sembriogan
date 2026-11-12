@@ -59,7 +59,8 @@ const crearRegistro = async (req, res) => {
         let emailCliente = req.body.productorEmail ? req.body.productorEmail.trim().toLowerCase() : '';
         const telefonoProductor = (req.body.telefonoProductor || req.body.telefono || '').trim();
         const fincaProductor = (req.body.finca || '').trim();
-        const municipioProductor = (req.body.municipio || 'Neiva, Huila').trim();
+        const departamentoProductor = (req.body.departamento || 'Huila').trim();
+        const municipioProductor = (req.body.municipio || 'Neiva').trim();
         const tipoProduccion = req.body.tipoProduccion || req.body.tipoProduccionFinca || 'Doble Propósito';
 
         // Si no se digitó correo en campo u oficina, vincular por nombre existente o generar uno para su perfil
@@ -83,6 +84,7 @@ const crearRegistro = async (req, res) => {
         req.body.productorEmail = emailCliente;
         req.body.telefonoProductor = telefonoProductor;
         req.body.finca = fincaProductor;
+        req.body.departamento = departamentoProductor;
         req.body.municipio = municipioProductor;
 
         const nuevoRegistro = new RegistroGenetico(req.body);
@@ -126,6 +128,7 @@ const crearRegistro = async (req, res) => {
                         rol: 'Cliente',
                         telefono: telefonoProductor,
                         fincaPrincipal: fincaProductor,
+                        departamento: departamentoProductor,
                         municipio: municipioProductor,
                         tipoProduccion: tipoProduccion,
                         estado: true
@@ -165,6 +168,7 @@ const crearRegistro = async (req, res) => {
                         propietarioNombre: nombreProductor || 'Productor Ganadero',
                         propietarioEmail: emailCliente,
                         propietarioTelefono: telefonoProductor,
+                        departamento: departamentoProductor,
                         municipio: municipioProductor,
                         tipoProduccion: tipoProduccion,
                         coordenadas: (req.body.coordenadas && req.body.coordenadas.lat) ? {
@@ -237,9 +241,12 @@ const actualizarPrenez = async (req, res) => {
             updateData.veterinarioAsignado = veterinarioAsignado.trim();
         }
 
-        // Si se confirma preñez, animal vacío o parto atendido, marcar pasos de visita y confirmación como completados
+        // Si se confirma preñez, animal vacío o parto atendido, marcar todos los pasos del protocolo como completados
         if (estadoPrenez === 'Preñada' || estadoPrenez === 'Vacía' || estadoPrenez === 'Parto Atendido') {
             updateData['pasosCompletados.dia0_visita'] = true;
+            updateData['pasosCompletados.dia8_retiro'] = true;
+            updateData['pasosCompletados.dia10_inseminacion'] = true;
+            updateData['pasosCompletados.dia17_transferencia'] = true;
             updateData['pasosCompletados.dia45_confirmacion'] = true;
         }
 
@@ -278,6 +285,21 @@ const actualizarPaso = async (req, res) => {
         }
         if (paso === 'dia0_visita' || paso === 'visita') {
             updateObj['pasosCompletados.dia0_visita'] = true;
+        }
+        if (paso === 'dia8_retiro') {
+            updateObj['pasosCompletados.dia0_visita'] = true;
+            updateObj['pasosCompletados.dia8_retiro'] = true;
+        }
+        if (paso === 'dia10_inseminacion' || paso === 'dia17_transferencia') {
+            updateObj['pasosCompletados.dia0_visita'] = true;
+            updateObj['pasosCompletados.dia8_retiro'] = true;
+            updateObj[`pasosCompletados.${paso}`] = true;
+        }
+        if (paso === 'dia45_confirmacion') {
+            updateObj['pasosCompletados.dia0_visita'] = true;
+            updateObj['pasosCompletados.dia8_retiro'] = true;
+            updateObj['pasosCompletados.dia10_inseminacion'] = true;
+            updateObj['pasosCompletados.dia45_confirmacion'] = true;
         }
 
         // Si en el día de la inseminación o transferencia se define el toro:

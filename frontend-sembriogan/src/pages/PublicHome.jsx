@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { API_BASE_URL, getApiUrl, getMediaUrl, GOOGLE_CLIENT_ID } from '../config/api';
+import { DEPARTAMENTOS_COLOMBIA, MUNICIPIOS_POR_DEPARTAMENTO, obtenerMunicipios, formatearUbicacion } from '../utils/colombiaData';
 import { Link } from 'react-router-dom';
 import { GoogleLogin, useGoogleLogin } from '@react-oauth/google';
 // Importamos los íconos profesionales de Lucide
@@ -71,7 +72,9 @@ export default function PublicHome() {
     nombre: '', 
     telefono: '',
     fincaPrincipal: '',
+    departamento: 'Huila',
     municipio: 'Neiva',
+    municipioPersonalizado: '',
     tipoProduccion: 'Doble Propósito',
     inventarioBovino: '',
     hectareas: ''
@@ -596,10 +599,20 @@ export default function PublicHome() {
     e.preventDefault();
     const endpoint = authMode === 'login' ? 'login' : 'registro';
     try {
+      const muniFinal = (authData.municipio === 'Otro' && authData.municipioPersonalizado?.trim())
+        ? authData.municipioPersonalizado.trim()
+        : (authData.municipio || 'Neiva');
+
+      const payloadAuth = {
+        ...authData,
+        municipio: muniFinal,
+        departamento: authData.departamento || 'Huila'
+      };
+
       const res = await fetch(`${API_BASE_URL}/api/auth/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(authData)
+        body: JSON.stringify(payloadAuth)
       });
       const data = await res.json();
       if (data.success) {
@@ -1904,20 +1917,54 @@ export default function PublicHome() {
 
               {authMode === 'registro' && (
                 <>
-                  <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Finca o Predio</label>
+                    <input type="text" value={authData.fincaPrincipal} onChange={(e) => setAuthData({...authData, fincaPrincipal: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs" placeholder="Ej: La Esperanza" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Finca o Predio</label>
-                      <input type="text" value={authData.fincaPrincipal} onChange={(e) => setAuthData({...authData, fincaPrincipal: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs" placeholder="Ej: La Esperanza" />
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Departamento *</label>
+                      <select 
+                        value={authData.departamento || 'Huila'} 
+                        onChange={(e) => {
+                          const d = e.target.value;
+                          const primerM = obtenerMunicipios(d)[0] || 'Otro';
+                          setAuthData({...authData, departamento: d, municipio: primerM});
+                        }} 
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs font-semibold cursor-pointer"
+                      >
+                        {DEPARTAMENTOS_COLOMBIA.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio *</label>
-                      <select value={authData.municipio} onChange={(e) => setAuthData({...authData, municipio: e.target.value})} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs">
-                        {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'Aipe', 'Algeciras', 'Baraya', 'Tarqui', 'Hobo', 'Villavieja', 'Yaguará', 'Tello', 'La Plata', 'San Agustín', 'Timaná', 'Otro'].map(m => (
+                      <select 
+                        value={authData.municipio || 'Neiva'} 
+                        onChange={(e) => setAuthData({...authData, municipio: e.target.value})} 
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 text-xs font-semibold cursor-pointer"
+                      >
+                        {obtenerMunicipios(authData.departamento || 'Huila').map(m => (
                           <option key={m} value={m}>{m}</option>
                         ))}
                       </select>
                     </div>
                   </div>
+
+                  {authData.municipio === 'Otro' && (
+                    <div>
+                      <label className="block text-[11px] font-bold text-emerald-800 uppercase mb-1">Escribir Municipio / Vereda</label>
+                      <input 
+                        type="text" 
+                        value={authData.municipioPersonalizado || ''} 
+                        onChange={(e) => setAuthData({...authData, municipioPersonalizado: e.target.value})} 
+                        className="w-full px-3 py-2 bg-emerald-50/50 border border-emerald-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-semibold" 
+                        placeholder="Digita el municipio o sector" 
+                      />
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>

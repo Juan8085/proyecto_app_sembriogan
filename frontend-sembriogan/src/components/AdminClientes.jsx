@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { API_BASE_URL } from '../config/api';
+import { DEPARTAMENTOS_COLOMBIA, MUNICIPIOS_POR_DEPARTAMENTO, obtenerMunicipios, formatearUbicacion } from '../utils/colombiaData';
 import {
   Users,
   UserCheck,
@@ -61,7 +62,9 @@ export default function AdminClientes() {
     password: '',
     telefono: '',
     fincaPrincipal: '',
+    departamento: 'Huila',
     municipio: 'Neiva',
+    municipioPersonalizado: '',
     tipoProduccion: 'Doble Propósito',
     inventarioBovino: '',
     hectareas: ''
@@ -78,7 +81,9 @@ export default function AdminClientes() {
     email: '',
     telefono: '',
     fincaPrincipal: '',
+    departamento: 'Huila',
     municipio: 'Neiva',
+    municipioPersonalizado: '',
     tipoProduccion: 'Doble Propósito',
     inventarioBovino: 0,
     hectareas: 0,
@@ -201,6 +206,10 @@ export default function AdminClientes() {
     setCreando(true);
     try {
       const token = localStorage.getItem('tokenSembriogan');
+      const muniFinal = (nuevoCliente.municipio === 'Otro' && nuevoCliente.municipioPersonalizado?.trim())
+        ? nuevoCliente.municipioPersonalizado.trim()
+        : (nuevoCliente.municipio || 'Neiva');
+
       const res = await fetch(`${API_BASE_URL}/api/auth/registro`, {
         method: 'POST',
         headers: {
@@ -214,7 +223,8 @@ export default function AdminClientes() {
           rol: 'Cliente',
           telefono: nuevoCliente.telefono.trim(),
           fincaPrincipal: nuevoCliente.fincaPrincipal.trim(),
-          municipio: nuevoCliente.municipio || 'Neiva',
+          departamento: nuevoCliente.departamento || 'Huila',
+          municipio: muniFinal,
           tipoProduccion: nuevoCliente.tipoProduccion || 'Doble Propósito',
           inventarioBovino: Number(nuevoCliente.inventarioBovino) || 0,
           hectareas: Number(nuevoCliente.hectareas) || 0
@@ -232,7 +242,9 @@ export default function AdminClientes() {
           password: '',
           telefono: '',
           fincaPrincipal: '',
+          departamento: 'Huila',
           municipio: 'Neiva',
+          municipioPersonalizado: '',
           tipoProduccion: 'Doble Propósito',
           inventarioBovino: '',
           hectareas: ''
@@ -258,7 +270,9 @@ export default function AdminClientes() {
       email: c.email || '',
       telefono: c.telefono || '',
       fincaPrincipal: (c.fincaPrincipal && c.fincaPrincipal !== 'Predio no especificado') ? c.fincaPrincipal : (c.fincasAsociadas?.[0]?.nombreFinca || ''),
+      departamento: c.departamento || 'Huila',
       municipio: c.municipio || 'Neiva',
+      municipioPersonalizado: '',
       tipoProduccion: c.tipoProduccion || 'Doble Propósito',
       inventarioBovino: Number(c.inventarioBovino) || 0,
       hectareas: Number(c.hectareas) || 0,
@@ -289,12 +303,17 @@ export default function AdminClientes() {
     setEditando(true);
     try {
       const token = localStorage.getItem('tokenSembriogan');
+      const muniFinal = (clienteAEditar.municipio === 'Otro' && clienteAEditar.municipioPersonalizado?.trim())
+        ? clienteAEditar.municipioPersonalizado.trim()
+        : (clienteAEditar.municipio || 'Neiva');
+
       const payload = {
         nombre: clienteAEditar.nombre.trim(),
         email: clienteAEditar.email.toLowerCase().trim(),
         telefono: clienteAEditar.telefono ? clienteAEditar.telefono.trim() : '',
         fincaPrincipal: clienteAEditar.fincaPrincipal ? clienteAEditar.fincaPrincipal.trim() : '',
-        municipio: clienteAEditar.municipio || 'Neiva',
+        departamento: clienteAEditar.departamento || 'Huila',
+        municipio: muniFinal,
         tipoProduccion: clienteAEditar.tipoProduccion || 'Doble Propósito',
         inventarioBovino: Number(clienteAEditar.inventarioBovino) || 0,
         hectareas: Number(clienteAEditar.hectareas) || 0
@@ -826,7 +845,7 @@ export default function AdminClientes() {
                           </p>
                           <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 mt-0.5">
                             <MapPin size={11} className="text-emerald-600" />
-                            {c.municipio || 'Neiva'} &bull; <span className="text-slate-400">{c.tipoProduccion || 'Doble Propósito'}</span>
+                            {formatearUbicacion(c.municipio, c.departamento)} &bull; <span className="text-slate-400">{c.tipoProduccion || 'Doble Propósito'}</span>
                           </span>
                         </div>
                       </td>
@@ -1431,24 +1450,41 @@ export default function AdminClientes() {
                       </div>
                     </div>
 
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Finca Principal</label>
+                      <input
+                        type="text"
+                        value={clienteDashboard.fincaPrincipal || ''}
+                        onChange={(e) => setClienteDashboard({ ...clienteDashboard, fincaPrincipal: e.target.value })}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500"
+                      />
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Finca Principal</label>
-                        <input
-                          type="text"
-                          value={clienteDashboard.fincaPrincipal || ''}
-                          onChange={(e) => setClienteDashboard({ ...clienteDashboard, fincaPrincipal: e.target.value })}
-                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500"
-                        />
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Departamento</label>
+                        <select
+                          value={clienteDashboard.departamento || 'Huila'}
+                          onChange={(e) => {
+                            const d = e.target.value;
+                            const primerM = obtenerMunicipios(d)[0] || 'Otro';
+                            setClienteDashboard({ ...clienteDashboard, departamento: d, municipio: primerM });
+                          }}
+                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-semibold cursor-pointer"
+                        >
+                          {DEPARTAMENTOS_COLOMBIA.map(d => (
+                            <option key={d} value={d}>{d}</option>
+                          ))}
+                        </select>
                       </div>
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio Sede</label>
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio</label>
                         <select
                           value={clienteDashboard.municipio || 'Neiva'}
                           onChange={(e) => setClienteDashboard({ ...clienteDashboard, municipio: e.target.value })}
-                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-semibold"
+                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-semibold cursor-pointer"
                         >
-                          {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'Aipe', 'Algeciras', 'Baraya', 'Tarqui', 'Hobo', 'Villavieja', 'Yaguará', 'Tello', 'La Plata', 'San Agustín', 'Timaná', 'Otro'].map(m => (
+                          {obtenerMunicipios(clienteDashboard.departamento || 'Huila').map(m => (
                             <option key={m} value={m}>{m}</option>
                           ))}
                         </select>
@@ -1571,31 +1607,61 @@ export default function AdminClientes() {
                 />
               </div>
 
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Finca o Predio</label>
+                <input
+                  type="text"
+                  placeholder="Ej: La Florida"
+                  value={nuevoCliente.fincaPrincipal}
+                  onChange={(e) => setNuevoCliente({ ...nuevoCliente, fincaPrincipal: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Finca o Predio</label>
-                  <input
-                    type="text"
-                    placeholder="Ej: La Florida"
-                    value={nuevoCliente.fincaPrincipal}
-                    onChange={(e) => setNuevoCliente({ ...nuevoCliente, fincaPrincipal: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:border-emerald-500"
-                  />
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Departamento *</label>
+                  <select
+                    value={nuevoCliente.departamento || 'Huila'}
+                    onChange={(e) => {
+                      const d = e.target.value;
+                      const primerM = obtenerMunicipios(d)[0] || 'Otro';
+                      setNuevoCliente({ ...nuevoCliente, departamento: d, municipio: primerM });
+                    }}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                  >
+                    {DEPARTAMENTOS_COLOMBIA.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio Sede</label>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio *</label>
                   <select
-                    value={nuevoCliente.municipio}
+                    value={nuevoCliente.municipio || 'Neiva'}
                     onChange={(e) => setNuevoCliente({ ...nuevoCliente, municipio: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer"
                   >
-                    {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'Aipe', 'Algeciras', 'Baraya', 'Tarqui', 'Hobo', 'Villavieja', 'Yaguará', 'Tello', 'La Plata', 'San Agustín', 'Timaná', 'Otro'].map(m => (
+                    {obtenerMunicipios(nuevoCliente.departamento || 'Huila').map(m => (
                       <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
                 </div>
               </div>
+
+              {nuevoCliente.municipio === 'Otro' && (
+                <div>
+                  <label className="block text-[11px] font-bold text-emerald-800 uppercase mb-1">Escribir Municipio / Vereda</label>
+                  <input
+                    type="text"
+                    placeholder="Digita el municipio o sector"
+                    value={nuevoCliente.municipioPersonalizado || ''}
+                    onChange={(e) => setNuevoCliente({ ...nuevoCliente, municipioPersonalizado: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-emerald-50/50 border border-emerald-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -1761,30 +1827,60 @@ export default function AdminClientes() {
                 />
               </div>
 
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Finca Principal</label>
+                <input
+                  type="text"
+                  value={clienteAEditar.fincaPrincipal}
+                  onChange={(e) => setClienteAEditar({ ...clienteAEditar, fincaPrincipal: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Finca Principal</label>
-                  <input
-                    type="text"
-                    value={clienteAEditar.fincaPrincipal}
-                    onChange={(e) => setClienteAEditar({ ...clienteAEditar, fincaPrincipal: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:border-emerald-500"
-                  />
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Departamento</label>
+                  <select
+                    value={clienteAEditar.departamento || 'Huila'}
+                    onChange={(e) => {
+                      const d = e.target.value;
+                      const primerM = obtenerMunicipios(d)[0] || 'Otro';
+                      setClienteAEditar({ ...clienteAEditar, departamento: d, municipio: primerM });
+                    }}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                  >
+                    {DEPARTAMENTOS_COLOMBIA.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio Sede</label>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio</label>
                   <select
-                    value={clienteAEditar.municipio}
+                    value={clienteAEditar.municipio || 'Neiva'}
                     onChange={(e) => setClienteAEditar({ ...clienteAEditar, municipio: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:outline-none focus:border-emerald-500 cursor-pointer"
                   >
-                    {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'Aipe', 'Algeciras', 'Baraya', 'Tarqui', 'Hobo', 'Villavieja', 'Yaguará', 'Tello', 'La Plata', 'San Agustín', 'Timaná', 'Otro'].map(m => (
+                    {obtenerMunicipios(clienteAEditar.departamento || 'Huila').map(m => (
                       <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
                 </div>
               </div>
+
+              {clienteAEditar.municipio === 'Otro' && (
+                <div>
+                  <label className="block text-[11px] font-bold text-emerald-800 uppercase mb-1">Escribir Municipio / Vereda</label>
+                  <input
+                    type="text"
+                    placeholder="Digita el municipio o sector"
+                    value={clienteAEditar.municipioPersonalizado || ''}
+                    onChange={(e) => setClienteAEditar({ ...clienteAEditar, municipioPersonalizado: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-emerald-50/50 border border-emerald-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

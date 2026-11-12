@@ -4,6 +4,7 @@ const RegistroGeneticoSchema = new Schema({
     productor: { type: String, required: true },
     productorEmail: { type: String, required: false }, // Para enlazar con la cuenta del cliente
     telefonoProductor: { type: String, default: '' },
+    departamento: { type: String, default: 'Huila' },
     municipio: { type: String, default: 'Neiva, Huila' },
     finca: { type: String, required: false },
     arete: { type: String, required: true },

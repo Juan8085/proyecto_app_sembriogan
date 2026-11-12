@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { API_BASE_URL } from '../config/api';
+import { DEPARTAMENTOS_COLOMBIA, MUNICIPIOS_POR_DEPARTAMENTO, obtenerMunicipios } from '../utils/colombiaData';
 import {
   Users,
   UserCheck,
@@ -47,6 +48,7 @@ export default function AdminUsuarios() {
     rol: 'Veterinario',
     tipoProduccion: 'Doble Propósito',
     fincaPrincipal: '',
+    departamento: 'Huila',
     municipio: 'Neiva',
     telefono: ''
   });
@@ -63,6 +65,7 @@ export default function AdminUsuarios() {
     rol: 'Veterinario',
     tipoProduccion: 'Doble Propósito',
     fincaPrincipal: '',
+    departamento: 'Huila',
     municipio: 'Neiva',
     telefono: '',
     password: ''
@@ -864,17 +867,34 @@ export default function AdminUsuarios() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Municipio</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Departamento</label>
                     <select
-                      value={nuevoUsuario.municipio}
-                      onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, municipio: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      value={nuevoUsuario.departamento || 'Huila'}
+                      onChange={(e) => {
+                        const d = e.target.value;
+                        const primerM = obtenerMunicipios(d)[0] || 'Otro';
+                        setNuevoUsuario({ ...nuevoUsuario, departamento: d, municipio: primerM });
+                      }}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
                     >
-                      {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'Aipe', 'Algeciras', 'Baraya', 'Tarqui', 'Hobo', 'Villavieja', 'Yaguará', 'Tello', 'La Plata', 'San Agustín', 'Timaná', 'Otro'].map(m => (
-                        <option key={m} value={m}>{m}</option>
+                      {DEPARTAMENTOS_COLOMBIA.map(d => (
+                        <option key={d} value={d}>{d}</option>
                       ))}
                     </select>
                   </div>
+                </div>
+
+                <div className="mb-2">
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Municipio</label>
+                  <select
+                    value={nuevoUsuario.municipio || 'Neiva'}
+                    onChange={(e) => setNuevoUsuario({ ...nuevoUsuario, municipio: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                  >
+                    {obtenerMunicipios(nuevoUsuario.departamento || 'Huila').map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -1097,17 +1117,34 @@ export default function AdminUsuarios() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Municipio</label>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Departamento</label>
                     <select
-                      value={usuarioAEditar.municipio}
-                      onChange={(e) => setUsuarioAEditar({ ...usuarioAEditar, municipio: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      value={usuarioAEditar.departamento || 'Huila'}
+                      onChange={(e) => {
+                        const d = e.target.value;
+                        const primerM = obtenerMunicipios(d)[0] || 'Otro';
+                        setUsuarioAEditar({ ...usuarioAEditar, departamento: d, municipio: primerM });
+                      }}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
                     >
-                      {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'Aipe', 'Algeciras', 'Baraya', 'Tarqui', 'Hobo', 'Villavieja', 'Yaguará', 'Tello', 'La Plata', 'San Agustín', 'Timaná', 'Otro'].map(m => (
-                        <option key={m} value={m}>{m}</option>
+                      {DEPARTAMENTOS_COLOMBIA.map(d => (
+                        <option key={d} value={d}>{d}</option>
                       ))}
                     </select>
                   </div>
+                </div>
+
+                <div className="mb-2">
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">Municipio</label>
+                  <select
+                    value={usuarioAEditar.municipio || 'Neiva'}
+                    onChange={(e) => setUsuarioAEditar({ ...usuarioAEditar, municipio: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                  >
+                    {obtenerMunicipios(usuarioAEditar.departamento || 'Huila').map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">

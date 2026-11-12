@@ -16,6 +16,7 @@ const registrarUsuario = async (req, res) => {
             rol, 
             tipoProduccion, 
             fincaPrincipal, 
+            departamento,
             municipio, 
             telefono,
             inventarioBovino,
@@ -53,6 +54,7 @@ const registrarUsuario = async (req, res) => {
             rol: rolAsignado,
             tipoProduccion: tipoProduccion || 'Doble Propósito',
             fincaPrincipal: (fincaPrincipal || '').trim(),
+            departamento: (departamento || 'Huila').trim(),
             municipio: (municipio || 'Neiva').trim(),
             telefono: (telefono || '').trim(),
             inventarioBovino: animalesCant,
@@ -76,6 +78,7 @@ const registrarUsuario = async (req, res) => {
                         propietarioNombre: nuevoUsuario.nombre,
                         propietarioEmail: emailLimpio,
                         propietarioTelefono: (telefono || '').trim(),
+                        departamento: (departamento || 'Huila').trim(),
                         municipio: (municipio || 'Neiva').trim(),
                         tipoProduccion: tipoProduccion || 'Doble Propósito',
                         numeroAnimales: animalesCant,
@@ -104,6 +107,7 @@ const registrarUsuario = async (req, res) => {
                 rol: nuevoUsuario.rol,
                 tipoProduccion: nuevoUsuario.tipoProduccion,
                 fincaPrincipal: nuevoUsuario.fincaPrincipal,
+                departamento: nuevoUsuario.departamento || 'Huila',
                 municipio: nuevoUsuario.municipio,
                 telefono: nuevoUsuario.telefono,
                 inventarioBovino: nuevoUsuario.inventarioBovino,
@@ -154,6 +158,7 @@ const loginUsuario = async (req, res) => {
                 email: usuario.email,
                 rol: usuario.rol,
                 fincaPrincipal: usuario.fincaPrincipal || '',
+                departamento: usuario.departamento || 'Huila',
                 municipio: usuario.municipio || 'Neiva',
                 tipoProduccion: usuario.tipoProduccion || 'Doble Propósito',
                 telefono: usuario.telefono || '',
@@ -234,6 +239,7 @@ const googleLogin = async (req, res) => {
                 email: usuario.email,
                 rol: usuario.rol,
                 fincaPrincipal: usuario.fincaPrincipal || '',
+                departamento: usuario.departamento || 'Huila',
                 municipio: usuario.municipio || 'Neiva',
                 tipoProduccion: usuario.tipoProduccion || 'Doble Propósito',
                 telefono: usuario.telefono || '',
@@ -283,6 +289,7 @@ const obtenerUsuarios = async (req, res) => {
                 inventarioBovino: (Number(u.inventarioBovino) > 0) ? Number(u.inventarioBovino) : totalAnimales,
                 hectareas: (Number(u.hectareas) > 0) ? Number(u.hectareas) : totalHa,
                 telefono: (u.telefono && u.telefono.trim()) ? u.telefono : (fincasUsuario.find(f => f.propietarioTelefono?.trim())?.propietarioTelefono || ''),
+                departamento: (u.departamento && u.departamento.trim()) ? u.departamento : (primeraFinca?.departamento || 'Huila'),
                 municipio: (u.municipio && u.municipio.trim()) ? u.municipio : (primeraFinca?.municipio || 'Neiva'),
                 tipoProduccion: (u.tipoProduccion && u.tipoProduccion.trim()) ? u.tipoProduccion : (primeraFinca?.tipoProduccion || 'Doble Propósito')
             };
@@ -319,6 +326,7 @@ const actualizarUsuarioAdmin = async (req, res) => {
         if (estado !== undefined) datosActualizar.estado = estado;
         if (req.body.tipoProduccion !== undefined) datosActualizar.tipoProduccion = req.body.tipoProduccion;
         if (req.body.fincaPrincipal !== undefined) datosActualizar.fincaPrincipal = req.body.fincaPrincipal.trim();
+        if (req.body.departamento !== undefined) datosActualizar.departamento = req.body.departamento.trim();
         if (req.body.municipio !== undefined) datosActualizar.municipio = req.body.municipio.trim();
         if (req.body.telefono !== undefined) datosActualizar.telefono = req.body.telefono.trim();
         if (req.body.inventarioBovino !== undefined) datosActualizar.inventarioBovino = Number(req.body.inventarioBovino) || 0;
@@ -346,6 +354,7 @@ const actualizarUsuarioAdmin = async (req, res) => {
             if (req.body.hectareas !== undefined) fincaUpdates.hectareas = Number(req.body.hectareas) || 0;
             if (req.body.telefono !== undefined) fincaUpdates.propietarioTelefono = req.body.telefono.trim();
             if (req.body.fincaPrincipal !== undefined && req.body.fincaPrincipal.trim()) fincaUpdates.nombreFinca = req.body.fincaPrincipal.trim();
+            if (req.body.departamento !== undefined) fincaUpdates.departamento = req.body.departamento.trim();
             if (req.body.municipio !== undefined) fincaUpdates.municipio = req.body.municipio.trim();
             if (req.body.tipoProduccion !== undefined) fincaUpdates.tipoProduccion = req.body.tipoProduccion;
 
@@ -371,6 +380,7 @@ const actualizarUsuarioAdmin = async (req, res) => {
                 inventarioBovino: usuarioActualizado.inventarioBovino,
                 hectareas: usuarioActualizado.hectareas,
                 telefono: usuarioActualizado.telefono,
+                departamento: usuarioActualizado.departamento || 'Huila',
                 municipio: usuarioActualizado.municipio,
                 tipoProduccion: usuarioActualizado.tipoProduccion
             }, 

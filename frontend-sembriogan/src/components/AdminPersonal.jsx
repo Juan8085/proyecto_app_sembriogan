@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { API_BASE_URL } from '../config/api';
+import { DEPARTAMENTOS_COLOMBIA, MUNICIPIOS_POR_DEPARTAMENTO, obtenerMunicipios, formatearUbicacion } from '../utils/colombiaData';
 import {
   Users,
   UserCheck,
@@ -44,6 +45,7 @@ export default function AdminPersonal() {
     password: '',
     rol: 'Veterinario',
     telefono: '',
+    departamento: 'Huila',
     municipio: 'Neiva'
   });
 
@@ -58,6 +60,7 @@ export default function AdminPersonal() {
     email: '',
     rol: 'Veterinario',
     telefono: '',
+    departamento: 'Huila',
     municipio: 'Neiva',
     password: ''
   });
@@ -145,6 +148,7 @@ export default function AdminPersonal() {
           password: nuevoMiembro.password,
           rol: nuevoMiembro.rol,
           telefono: nuevoMiembro.telefono ? nuevoMiembro.telefono.trim() : '',
+          departamento: nuevoMiembro.departamento || 'Huila',
           municipio: nuevoMiembro.municipio || 'Neiva'
         })
       });
@@ -160,6 +164,7 @@ export default function AdminPersonal() {
           password: '',
           rol: 'Veterinario',
           telefono: '',
+          departamento: 'Huila',
           municipio: 'Neiva'
         });
         cargarPersonal(true);
@@ -182,6 +187,7 @@ export default function AdminPersonal() {
       email: m.email || '',
       rol: m.rol || 'Veterinario',
       telefono: m.telefono || '',
+      departamento: m.departamento || 'Huila',
       municipio: m.municipio || 'Neiva',
       password: ''
     });
@@ -214,6 +220,7 @@ export default function AdminPersonal() {
         email: miembroAEditar.email.toLowerCase().trim(),
         rol: miembroAEditar.rol,
         telefono: miembroAEditar.telefono ? miembroAEditar.telefono.trim() : '',
+        departamento: miembroAEditar.departamento || 'Huila',
         municipio: miembroAEditar.municipio || 'Neiva'
       };
 
@@ -575,7 +582,7 @@ export default function AdminPersonal() {
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <span className="font-medium text-slate-700">{m.municipio || 'Neiva'}</span>
+                        <span className="font-medium text-slate-700">{formatearUbicacion(m.municipio, m.departamento)}</span>
                       </td>
 
                       <td className="py-3.5 px-4 text-slate-500 font-medium text-[11px]">
@@ -692,17 +699,34 @@ export default function AdminPersonal() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio Sede</label>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Departamento</label>
                   <select
-                    value={nuevoMiembro.municipio}
-                    onChange={(e) => setNuevoMiembro({ ...nuevoMiembro, municipio: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-500"
+                    value={nuevoMiembro.departamento || 'Huila'}
+                    onChange={(e) => {
+                      const d = e.target.value;
+                      const primerM = obtenerMunicipios(d)[0] || 'Otro';
+                      setNuevoMiembro({ ...nuevoMiembro, departamento: d, municipio: primerM });
+                    }}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
                   >
-                    {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'La Plata'].map(m => (
-                      <option key={m} value={m}>{m}</option>
+                    {DEPARTAMENTOS_COLOMBIA.map(d => (
+                      <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio Sede</label>
+                <select
+                  value={nuevoMiembro.municipio || 'Neiva'}
+                  onChange={(e) => setNuevoMiembro({ ...nuevoMiembro, municipio: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  {obtenerMunicipios(nuevoMiembro.departamento || 'Huila').map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -832,17 +856,34 @@ export default function AdminPersonal() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio Sede</label>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Departamento</label>
                   <select
-                    value={miembroAEditar.municipio}
-                    onChange={(e) => setMiembroAEditar({ ...miembroAEditar, municipio: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-500"
+                    value={miembroAEditar.departamento || 'Huila'}
+                    onChange={(e) => {
+                      const d = e.target.value;
+                      const primerM = obtenerMunicipios(d)[0] || 'Otro';
+                      setMiembroAEditar({ ...miembroAEditar, departamento: d, municipio: primerM });
+                    }}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
                   >
-                    {['Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 'Gigante', 'La Plata'].map(m => (
-                      <option key={m} value={m}>{m}</option>
+                    {DEPARTAMENTOS_COLOMBIA.map(d => (
+                      <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Municipio Sede</label>
+                <select
+                  value={miembroAEditar.municipio || 'Neiva'}
+                  onChange={(e) => setMiembroAEditar({ ...miembroAEditar, municipio: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  {obtenerMunicipios(miembroAEditar.departamento || 'Huila').map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
               </div>
 
               <div>

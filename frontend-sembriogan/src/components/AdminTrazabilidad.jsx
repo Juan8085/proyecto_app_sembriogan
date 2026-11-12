@@ -27,6 +27,7 @@ import {
   Mail,
   MapPin
 } from 'lucide-react';
+import { DEPARTAMENTOS_COLOMBIA, obtenerMunicipios, formatearUbicacion } from '../utils/colombiaData';
 
 export default function AdminTrazabilidad() {
   const [registros, setRegistros] = useState([]);
@@ -54,7 +55,9 @@ export default function AdminTrazabilidad() {
     productorEmail: '',
     telefonoProductor: '',
     finca: '',
-    municipio: 'Neiva, Huila',
+    departamento: 'Huila',
+    municipio: 'Neiva',
+    municipioPersonalizado: '',
     tipoProduccion: 'Doble Propósito',
     arete: '',
     raza: 'Gyr',
@@ -123,7 +126,9 @@ export default function AdminTrazabilidad() {
         productorEmail: cliente.email || '',
         telefonoProductor: cliente.telefono || '',
         finca: cliente.fincaPrincipal || '',
-        municipio: cliente.municipio || 'Neiva, Huila',
+        departamento: cliente.departamento || 'Huila',
+        municipio: cliente.municipio || 'Neiva',
+        municipioPersonalizado: '',
         tipoProduccion: cliente.tipoProduccion || 'Doble Propósito'
       }));
     }
@@ -139,7 +144,9 @@ export default function AdminTrazabilidad() {
         productorEmail: '',
         telefonoProductor: '',
         finca: '',
-        municipio: 'Neiva, Huila',
+        departamento: 'Huila',
+        municipio: 'Neiva',
+        municipioPersonalizado: '',
         tipoProduccion: 'Doble Propósito'
       }));
     }
@@ -157,12 +164,17 @@ export default function AdminTrazabilidad() {
         ? 'Pendiente de Selección'
         : nuevoProcedimiento.geneticaUtilizada.trim();
 
+      const municipioFinal = nuevoProcedimiento.municipio === 'Otro'
+        ? (nuevoProcedimiento.municipioPersonalizado?.trim() || 'Otro')
+        : (nuevoProcedimiento.municipio?.trim() || 'Neiva');
+
       const bodyData = {
         productor: nuevoProcedimiento.productor.trim(),
         productorEmail: nuevoProcedimiento.productorEmail.trim(),
         telefonoProductor: nuevoProcedimiento.telefonoProductor.trim(),
         finca: nuevoProcedimiento.finca.trim(),
-        municipio: nuevoProcedimiento.municipio.trim() || 'Neiva, Huila',
+        departamento: nuevoProcedimiento.departamento || 'Huila',
+        municipio: municipioFinal,
         tipoProduccion: nuevoProcedimiento.tipoProduccion,
         arete: nuevoProcedimiento.arete.trim(),
         raza: nuevoProcedimiento.raza.trim() || 'Bovino',
@@ -199,7 +211,9 @@ export default function AdminTrazabilidad() {
           productorEmail: '',
           telefonoProductor: '',
           finca: '',
-          municipio: 'Neiva, Huila',
+          departamento: 'Huila',
+          municipio: 'Neiva',
+          municipioPersonalizado: '',
           tipoProduccion: 'Doble Propósito',
           arete: '',
           raza: 'Gyr',
@@ -493,25 +507,32 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
     const pasos = [];
     const comp = registro.pasosCompletados || {};
 
+    const dia10Hecho = Boolean(comp.dia10_inseminacion);
+    const dia8Hecho = Boolean(comp.dia8_retiro) || dia10Hecho;
+    const dia17Hecho = Boolean(comp.dia17_transferencia);
+    const dia45Hecho = Boolean(comp.dia45_confirmacion);
+    // Si ya se realizó retiro, inseminación, transferencia o confirmación, Día 0 está completado
+    const dia0Hecho = Boolean(comp.dia0_visita) || dia8Hecho || dia10Hecho || dia17Hecho || dia45Hecho;
+
     if (registro.tipoProcedimiento === 'IATF') {
-      if (!comp.dia0_visita) pasos.push({ nombre: 'Sincronización (Día 0)', fecha: dia0 });
-      if (!comp.dia8_retiro) pasos.push({ nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) });
-      if (!comp.dia10_inseminacion) pasos.push({ nombre: 'Inseminación (Día 10)', fecha: sumarDias(dia0, 10) });
-      if (!comp.dia45_confirmacion) pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
+      if (!dia0Hecho) pasos.push({ nombre: 'Sincronización (Día 0)', fecha: dia0 });
+      if (!dia8Hecho) pasos.push({ nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) });
+      if (!dia10Hecho) pasos.push({ nombre: 'Inseminación (Día 10)', fecha: sumarDias(dia0, 10) });
+      if (!dia45Hecho) pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
     } else if (registro.tipoProcedimiento === 'IA') {
-      if (!comp.dia0_visita) pasos.push({ nombre: 'Inseminación (Día 0)', fecha: dia0 });
-      if (!comp.dia45_confirmacion) pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
+      if (!dia0Hecho) pasos.push({ nombre: 'Inseminación (Día 0)', fecha: dia0 });
+      if (!dia45Hecho) pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
     } else if (registro.tipoProcedimiento === 'TE') {
-      if (!comp.dia0_visita) pasos.push({ nombre: 'Inicio Receptoras (Día 0)', fecha: dia0 });
-      if (!comp.dia8_retiro) pasos.push({ nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) });
-      if (!comp.dia17_transferencia) pasos.push({ nombre: 'Transferencia (Día 17)', fecha: sumarDias(dia0, 17) });
-      if (!comp.dia45_confirmacion) pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
+      if (!dia0Hecho) pasos.push({ nombre: 'Inicio Receptoras (Día 0)', fecha: dia0 });
+      if (!dia8Hecho) pasos.push({ nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) });
+      if (!dia17Hecho) pasos.push({ nombre: 'Transferencia (Día 17)', fecha: sumarDias(dia0, 17) });
+      if (!dia45Hecho) pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
       pasos.push({ nombre: 'Entrega (Día 90)', fecha: sumarDias(dia0, 90) });
     } else if (registro.tipoProcedimiento === 'Diagnostico') {
-      if (!comp.dia0_visita && !comp.dia45_confirmacion) pasos.push({ nombre: 'Diagnóstico Ecográfico', fecha: dia0 });
+      if (!dia0Hecho && !dia45Hecho) pasos.push({ nombre: 'Diagnóstico Ecográfico', fecha: dia0 });
     } else {
-      if (!comp.dia0_visita) pasos.push({ nombre: 'Atención en Campo (Día 0)', fecha: dia0 });
-      if (!comp.dia45_confirmacion) pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
+      if (!dia0Hecho) pasos.push({ nombre: 'Atención en Campo (Día 0)', fecha: dia0 });
+      if (!dia45Hecho) pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
     }
 
     const proximoPaso = pasos[0]; 
@@ -1524,15 +1545,51 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Municipio / Departamento</label>
-                    <input
-                      type="text"
-                      placeholder="Ej. Neiva, Huila / Palermo"
-                      value={nuevoProcedimiento.municipio}
-                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, municipio: e.target.value })}
-                      className="w-full text-xs font-semibold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Departamento *</label>
+                    <select
+                      value={nuevoProcedimiento.departamento || 'Huila'}
+                      onChange={(e) => {
+                        const nuevoDep = e.target.value;
+                        const munis = obtenerMunicipios(nuevoDep);
+                        setNuevoProcedimiento({
+                          ...nuevoProcedimiento,
+                          departamento: nuevoDep,
+                          municipio: munis[0] || 'Otro',
+                          municipioPersonalizado: ''
+                        });
+                      }}
+                      className="w-full text-xs font-bold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {DEPARTAMENTOS_COLOMBIA.map((dep) => (
+                        <option key={dep} value={dep}>{dep}</option>
+                      ))}
+                    </select>
                   </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Municipio Sede *</label>
+                    <select
+                      value={nuevoProcedimiento.municipio || 'Neiva'}
+                      onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, municipio: e.target.value })}
+                      className="w-full text-xs font-bold border border-slate-200 rounded-xl p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {obtenerMunicipios(nuevoProcedimiento.departamento || 'Huila').map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {nuevoProcedimiento.municipio === 'Otro' && (
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-bold text-amber-700 mb-1">Especificar Municipio / Corregimiento *</label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Garzón rural, Inspección Zuluaga..."
+                        value={nuevoProcedimiento.municipioPersonalizado || ''}
+                        onChange={(e) => setNuevoProcedimiento({ ...nuevoProcedimiento, municipioPersonalizado: e.target.value })}
+                        className="w-full text-xs font-semibold border border-amber-300 rounded-xl p-2.5 bg-amber-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        required
+                      />
+                    </div>
+                  )}
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">Sistema Productivo</label>
                     <select

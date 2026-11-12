@@ -25,6 +25,7 @@ import {
   Map as MapIcon,
   Globe
 } from 'lucide-react';
+import { DEPARTAMENTOS_COLOMBIA, obtenerMunicipios, formatearUbicacion } from '../utils/colombiaData';
 
 const MUNICIPIOS_HUILA = [
   'Neiva', 'Rivera', 'Campoalegre', 'Garzón', 'Pitalito', 'Palermo', 
@@ -70,6 +71,7 @@ export default function AdminFincasMapa() {
     propietarioTelefono: '',
     departamento: 'Huila',
     municipio: 'Neiva',
+    municipioPersonalizado: '',
     vereda: '',
     coordenadas: { lat: 2.9273, lng: -75.2819 },
     numeroAnimales: '',
@@ -176,6 +178,15 @@ export default function AdminFincasMapa() {
     }
   };
 
+  // Lista dinámica de municipios con predios registrados
+  const listaMunicipiosFiltro = useMemo(() => {
+    const setM = new Set();
+    fincas.forEach((f) => {
+      if (f.municipio) setM.add(f.municipio);
+    });
+    return Array.from(setM).sort();
+  }, [fincas]);
+
   // Filtrado de fincas
   const fincasFiltradas = useMemo(() => {
     return fincas.filter((f) => {
@@ -270,7 +281,7 @@ export default function AdminFincasMapa() {
               </div>
               <div style="font-size: 12px; color: #475569; line-height: 1.5;">
                 <p style="margin: 2px 0;"><strong>👤 Propietario:</strong> ${finca.propietarioNombre}</p>
-                <p style="margin: 2px 0;"><strong>📍 Ubicación:</strong> ${finca.municipio} - ${finca.vereda || 'Principal'}</p>
+                <p style="margin: 2px 0;"><strong>📍 Ubicación:</strong> ${formatearUbicacion(finca.municipio, finca.departamento)} - ${finca.vereda || 'Principal'}</p>
                 <p style="margin: 2px 0;"><strong>🐄 Animales:</strong> ${finca.numeroAnimales || 0} cabezas</p>
                 <p style="margin: 2px 0;"><strong>🌱 Producción:</strong> ${finca.tipoProduccion || 'Doble Propósito'}</p>
                 <p style="margin: 2px 0;"><strong>🌐 GPS:</strong> ${lat.toFixed(4)}, ${lng.toFixed(4)}</p>
@@ -328,6 +339,7 @@ export default function AdminFincasMapa() {
       propietarioTelefono: '',
       departamento: 'Huila',
       municipio: 'Neiva',
+      municipioPersonalizado: '',
       vereda: '',
       coordenadas: { lat: 2.9273, lng: -75.2819 },
       numeroAnimales: '',
@@ -342,14 +354,18 @@ export default function AdminFincasMapa() {
   const handleAbrirEditar = (finca) => {
     setIsEditing(true);
     setErrorModal('');
+    const dep = finca.departamento || 'Huila';
+    const munis = obtenerMunicipios(dep);
+    const esMuniConocido = munis.includes(finca.municipio);
     setFincaForm({
       _id: finca._id,
       nombreFinca: finca.nombreFinca || '',
       propietarioNombre: finca.propietarioNombre || '',
       propietarioEmail: finca.propietarioEmail || '',
       propietarioTelefono: finca.propietarioTelefono || '',
-      departamento: finca.departamento || 'Huila',
-      municipio: finca.municipio || 'Neiva',
+      departamento: dep,
+      municipio: esMuniConocido ? (finca.municipio || 'Neiva') : 'Otro',
+      municipioPersonalizado: esMuniConocido ? '' : (finca.municipio || ''),
       vereda: finca.vereda || '',
       coordenadas: {
         lat: finca.coordenadas?.lat ?? 2.9273,
@@ -412,11 +428,16 @@ export default function AdminFincasMapa() {
 
       const method = isEditing ? 'PUT' : 'POST';
 
+      const municipioFinal = fincaForm.municipio === 'Otro'
+        ? (fincaForm.municipioPersonalizado?.trim() || 'Otro')
+        : (fincaForm.municipio?.trim() || 'Neiva');
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...fincaForm,
+          municipio: municipioFinal,
           registradoPor: 'Admin'
         })
       });
@@ -555,7 +576,7 @@ export default function AdminFincasMapa() {
             className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             <option value="todos">Todos los municipios</option>
-            {MUNICIPIOS_HUILA.map((m) => (
+            {listaMunicipiosFiltro.map((m) => (
               <option key={m} value={m}>
                 {m}
               </option>
@@ -643,7 +664,7 @@ export default function AdminFincasMapa() {
                 <div>
                   <h4 className="font-extrabold text-slate-900 text-sm">{selectedFinca.nombreFinca}</h4>
                   <p className="text-xs text-slate-500 font-medium">
-                    {selectedFinca.propietarioNombre} • {selectedFinca.municipio} ({selectedFinca.vereda || 'Principal'})
+                    {selectedFinca.propietarioNombre} • {formatearUbicacion(selectedFinca.municipio, selectedFinca.departamento)} ({selectedFinca.vereda || 'Principal'})
                   </p>
                   <p className="text-[11px] font-mono text-emerald-700 font-semibold">
                     GPS: {selectedFinca.coordenadas?.lat?.toFixed(5)}, {selectedFinca.coordenadas?.lng?.toFixed(5)}
@@ -744,7 +765,7 @@ export default function AdminFincasMapa() {
                             {finca.nombreFinca}
                           </h4>
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                            {finca.municipio}
+                            {formatearUbicacion(finca.municipio, finca.departamento)}
                           </span>
                         </div>
                         <p className="text-xs text-slate-600 font-medium mt-0.5 truncate">
@@ -916,14 +937,28 @@ export default function AdminFincasMapa() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Departamento
+                    Departamento *
                   </label>
-                  <input
-                    type="text"
-                    value={fincaForm.departamento}
-                    onChange={(e) => setFincaForm({ ...fincaForm, departamento: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+                  <select
+                    value={fincaForm.departamento || 'Huila'}
+                    onChange={(e) => {
+                      const nuevoDep = e.target.value;
+                      const munis = obtenerMunicipios(nuevoDep);
+                      setFincaForm({
+                        ...fincaForm,
+                        departamento: nuevoDep,
+                        municipio: munis[0] || 'Otro',
+                        municipioPersonalizado: ''
+                      });
+                    }}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {DEPARTAMENTOS_COLOMBIA.map((dep) => (
+                      <option key={dep} value={dep}>
+                        {dep}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -931,11 +966,11 @@ export default function AdminFincasMapa() {
                     Municipio *
                   </label>
                   <select
-                    value={fincaForm.municipio}
+                    value={fincaForm.municipio || 'Neiva'}
                     onChange={(e) => setFincaForm({ ...fincaForm, municipio: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    {MUNICIPIOS_HUILA.map((m) => (
+                    {obtenerMunicipios(fincaForm.departamento || 'Huila').map((m) => (
                       <option key={m} value={m}>
                         {m}
                       </option>
@@ -955,6 +990,22 @@ export default function AdminFincasMapa() {
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
+
+                {fincaForm.municipio === 'Otro' && (
+                  <div className="sm:col-span-3">
+                    <label className="block text-xs font-bold text-amber-700 mb-1">
+                      Especificar Municipio / Corregimiento *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Garzón rural, Inspección Zuluaga..."
+                      value={fincaForm.municipioPersonalizado || ''}
+                      onChange={(e) => setFincaForm({ ...fincaForm, municipioPersonalizado: e.target.value })}
+                      className="w-full px-3 py-2 bg-amber-50 border border-amber-300 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               {/* COORDENADAS GPS */}
