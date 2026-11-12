@@ -483,10 +483,20 @@ export default function AdminClientes() {
 
   const formatearFecha = (fechaRaw) => {
     if (!fechaRaw) return 'Reciente';
+    if (typeof fechaRaw === 'string') {
+      const match = fechaRaw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        const [, year, month, day] = match;
+        return `${day}/${month}/${year}`;
+      }
+    }
     try {
-      return new Date(fechaRaw).toLocaleDateString('es-CO', {
-        day: '2-digit', month: 'short', year: 'numeric'
-      });
+      const d = new Date(fechaRaw);
+      if (isNaN(d.getTime())) return 'Reciente';
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const year = d.getUTCFullYear();
+      return `${day}/${month}/${year}`;
     } catch {
       return 'Reciente';
     }
@@ -1166,7 +1176,7 @@ export default function AdminClientes() {
                                 {p.estadoPrenez}
                               </span>
                               <p className="text-[10px] text-slate-400 mt-0.5">
-                                {new Date(p.fechasProtocolo?.dia0_sincronizacion || p.createdAt).toLocaleDateString()}
+                                {formatearFecha(p.fechasProtocolo?.dia0_sincronizacion || p.fechaProcedimiento || p.createdAt)}
                               </p>
                             </div>
                           </div>
@@ -1290,7 +1300,7 @@ export default function AdminClientes() {
                                 {p.geneticaUtilizada}
                               </td>
                               <td className="py-2.5 px-3 text-slate-500 font-medium">
-                                {new Date(p.fechasProtocolo?.dia0_sincronizacion || p.createdAt).toLocaleDateString()}
+                                {formatearFecha(p.fechasProtocolo?.dia0_sincronizacion || p.fechaProcedimiento || p.createdAt)}
                               </td>
                               <td className="py-2.5 px-3 text-slate-600">
                                 {p.veterinarioAsignado || 'Veterinario Sembriogan'}

@@ -27,6 +27,18 @@ const crearRegistro = async (req, res) => {
             req.body.fechasProtocolo = { dia0_sincronizacion: new Date() };
         } else if (!req.body.fechasProtocolo.dia0_sincronizacion) {
             req.body.fechasProtocolo.dia0_sincronizacion = new Date();
+        } else {
+            // Asegurar que la fecha día 0 se guarde a mediodía (12:00:00 UTC) para que ninguna zona horaria reste un día
+            const rawFecha = req.body.fechasProtocolo.dia0_sincronizacion;
+            if (typeof rawFecha === 'string') {
+                const soloFecha = rawFecha.substring(0, 10);
+                if (/^\d{4}-\d{2}-\d{2}$/.test(soloFecha)) {
+                    req.body.fechasProtocolo.dia0_sincronizacion = new Date(`${soloFecha}T12:00:00.000Z`);
+                }
+            }
+        }
+        if (!req.body.fechaProcedimiento) {
+            req.body.fechaProcedimiento = req.body.fechasProtocolo.dia0_sincronizacion;
         }
 
         // Si la genética o toro no se especificó o quedó pendiente de selección
@@ -225,6 +237,18 @@ const actualizarPrenez = async (req, res) => {
             updateData.veterinarioAsignado = veterinarioAsignado.trim();
         }
 
+        // Si se confirma preñez, animal vacío o parto atendido, marcar pasos de visita y confirmación como completados
+        if (estadoPrenez === 'Preñada' || estadoPrenez === 'Vacía' || estadoPrenez === 'Parto Atendido') {
+            updateData['pasosCompletados.dia0_visita'] = true;
+            updateData['pasosCompletados.dia45_confirmacion'] = true;
+        }
+
+        if (req.body.pasosCompletados && typeof req.body.pasosCompletados === 'object') {
+            for (const [k, v] of Object.entries(req.body.pasosCompletados)) {
+                updateData[`pasosCompletados.${k}`] = Boolean(v);
+            }
+        }
+
         const actualizado = await RegistroGenetico.findByIdAndUpdate(
             id, 
             { $set: updateData }, 
@@ -249,7 +273,12 @@ const actualizarPaso = async (req, res) => {
         const { paso, geneticaUtilizada } = req.body; // 'dia8_retiro', 'dia10_inseminacion', etc.
         
         const updateObj = {};
-        updateObj[`pasosCompletados.${paso}`] = true;
+        if (paso) {
+            updateObj[`pasosCompletados.${paso}`] = true;
+        }
+        if (paso === 'dia0_visita' || paso === 'visita') {
+            updateObj['pasosCompletados.dia0_visita'] = true;
+        }
 
         // Si en el día de la inseminación o transferencia se define el toro:
         if (geneticaUtilizada && geneticaUtilizada.trim() !== '' && geneticaUtilizada !== 'Pendiente de Selección') {

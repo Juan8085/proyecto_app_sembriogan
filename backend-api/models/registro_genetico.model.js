@@ -35,6 +35,7 @@ const RegistroGeneticoSchema = new Schema({
     },
     // Seguimiento de pasos realizados por el veterinario
     pasosCompletados: {
+        dia0_visita: { type: Boolean, default: false },
         dia8_retiro: { type: Boolean, default: false },
         dia10_inseminacion: { type: Boolean, default: false },
         dia17_transferencia: { type: Boolean, default: false },

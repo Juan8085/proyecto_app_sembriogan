@@ -349,10 +349,38 @@ export default function DashboardScreen({ navigation }) {
     navigation.replace('Login');
   };
 
+  const formatearFecha = (fecha) => {
+    if (!fecha) return 'N/A';
+    if (typeof fecha === 'string') {
+      const match = fecha.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        const [, year, month, day] = match;
+        return `${day}/${month}/${year}`;
+      }
+    }
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return 'N/A';
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const year = d.getUTCFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   const calcularAlertas = (procs) => {
     const alertasGeneradas = [];
     const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
+    hoy.setHours(12, 0, 0, 0);
+
+    const parsearFechaLocal = (f) => {
+      if (!f) return new Date();
+      if (typeof f === 'string' && f.length >= 10) {
+        const parts = f.substring(0, 10).split('-');
+        if (parts.length === 3) {
+          return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
+        }
+      }
+      return new Date(f);
+    };
 
     const sumarDias = (fecha, dias) => {
       const nueva = new Date(fecha);
@@ -367,19 +395,19 @@ export default function DashboardScreen({ navigation }) {
       let pasoActual = null;
       let endpointPaso = null;
 
-      const dia0 = new Date(proc.fechasProtocolo?.dia0_sincronizacion || proc.createdAt);
-      dia0.setHours(0, 0, 0, 0);
+      const dia0 = parsearFechaLocal(proc.fechasProtocolo?.dia0_sincronizacion || proc.fechaProcedimiento || proc.createdAt);
       const comp = proc.pasosCompletados || {};
 
       // -------------------------------------------------------------
       // 1. ATENCIÓN DE PARTO (Prioridad Inmediata)
       // -------------------------------------------------------------
       if (proc.tipoProcedimiento === 'Atencion de Parto') {
-        const diasDiff = Math.ceil((hoy - dia0) / (1000 * 60 * 60 * 24));
+        if (proc.estadoPrenez === 'Parto Atendido' || comp.dia0_visita || comp.dia45_confirmacion) return;
+        const diasDiff = Math.round((hoy - dia0) / (1000 * 60 * 60 * 24));
         alertasGeneradas.push({
           ...proc,
           pasoNombre: '🚨 Asistencia y Atención de Parto',
-          endpointPaso: 'dia45_confirmacion',
+          endpointPaso: 'dia0_visita',
           esUrgente: true,
           retrasado: diasDiff > 0
         });
@@ -390,16 +418,15 @@ export default function DashboardScreen({ navigation }) {
       // 2. DIAGNÓSTICO DE PREÑEZ (Palpación o Ecografía)
       // -------------------------------------------------------------
       if (proc.tipoProcedimiento === 'Diagnostico') {
-        if (proc.estadoPrenez === 'Pendiente Evaluación') {
-          const diasFaltantes = Math.ceil((dia0 - hoy) / (1000 * 60 * 60 * 24));
-          if (diasFaltantes <= 1) {
-            alertasGeneradas.push({
-              ...proc,
-              pasoNombre: '🩺 Diagnóstico de Preñez (Palpación)',
-              endpointPaso: 'dia45_confirmacion',
-              retrasado: diasFaltantes < 0
-            });
-          }
+        if (proc.estadoPrenez !== 'Pendiente Evaluación' || comp.dia0_visita || comp.dia45_confirmacion) return;
+        const diasFaltantes = Math.round((dia0 - hoy) / (1000 * 60 * 60 * 24));
+        if (diasFaltantes <= 0) {
+          alertasGeneradas.push({
+            ...proc,
+            pasoNombre: '🩺 Diagnóstico de Preñez (Palpación)',
+            endpointPaso: 'dia0_visita',
+            retrasado: diasFaltantes < 0
+          });
         }
         return;
       }
@@ -408,7 +435,10 @@ export default function DashboardScreen({ navigation }) {
       // 3. IATF (Inseminación a Tiempo Fijo)
       // -------------------------------------------------------------
       if (proc.tipoProcedimiento === 'IATF') {
-        if (!comp.dia8_retiro) {
+        if (!comp.dia0_visita) {
+          pasoActual = { nombre: 'Sincronización (Día 0) • Dispositivo', fecha: dia0 };
+          endpointPaso = 'dia0_visita';
+        } else if (!comp.dia8_retiro) {
           pasoActual = { nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) };
           endpointPaso = 'dia8_retiro';
         } else if (!comp.dia10_inseminacion) {
@@ -424,13 +454,19 @@ export default function DashboardScreen({ navigation }) {
         }
       } else if (proc.tipoProcedimiento === 'IA') {
         // IA en celo natural
-        if (!comp.dia45_confirmacion) {
+        if (!comp.dia0_visita) {
+          pasoActual = { nombre: 'Inseminación Artificial (Día 0)', fecha: dia0 };
+          endpointPaso = 'dia0_visita';
+        } else if (!comp.dia45_confirmacion) {
           pasoActual = { nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) };
           endpointPaso = 'dia45_confirmacion';
         }
       } else if (proc.tipoProcedimiento === 'TE') {
         // Transferencia de Embriones
-        if (!comp.dia8_retiro) {
+        if (!comp.dia0_visita) {
+          pasoActual = { nombre: 'Inicio Protocolo Receptoras (Día 0)', fecha: dia0 };
+          endpointPaso = 'dia0_visita';
+        } else if (!comp.dia8_retiro) {
           pasoActual = { nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) };
           endpointPaso = 'dia8_retiro';
         } else if (!comp.dia17_transferencia) {
@@ -446,21 +482,8 @@ export default function DashboardScreen({ navigation }) {
         }
       }
 
-      // Si es una visita técnica recién programada en la oficina para el día de hoy (Día 0)
-      if (!comp.dia8_retiro && !comp.dia10_inseminacion && !comp.dia17_transferencia) {
-        const diffDia0 = Math.ceil((dia0 - hoy) / (1000 * 60 * 60 * 24));
-        if (diffDia0 === 0) {
-          alertasGeneradas.push({
-            ...proc,
-            pasoNombre: `🗓️ Visita Programada Hoy: ${proc.tipoProcedimiento}`,
-            endpointPaso: null,
-            retrasado: false
-          });
-        }
-      }
-
       if (pasoActual) {
-        const diasFaltantes = Math.ceil((pasoActual.fecha - hoy) / (1000 * 60 * 60 * 24));
+        const diasFaltantes = Math.round((pasoActual.fecha - hoy) / (1000 * 60 * 60 * 24));
         if (diasFaltantes <= 0) {
           alertasGeneradas.push({
             ...proc,
@@ -539,9 +562,25 @@ export default function DashboardScreen({ navigation }) {
       const data = await res.json();
       if (data.success) {
         Alert.alert('Éxito', 'Paso marcado como completado.');
+        setProcedimientos(prev => {
+          const actualizados = prev.map(p => {
+            if (p._id === idProcedimiento) {
+              return {
+                ...p,
+                pasosCompletados: {
+                  ...(p.pasosCompletados || {}),
+                  [nombrePasoBD]: true
+                }
+              };
+            }
+            return p;
+          });
+          calcularAlertas(actualizados);
+          return actualizados;
+        });
         cargarProcedimientos();
       } else {
-        Alert.alert('Error', data.mensaje);
+        Alert.alert('Error', data.mensaje || 'No se pudo actualizar el paso.');
       }
     } catch (error) {
       Alert.alert('Error', 'No se pudo actualizar el progreso.');
@@ -576,17 +615,25 @@ export default function DashboardScreen({ navigation }) {
       if (!selectedProc.isOffline) {
         try {
           const currentUrl = getApiUrl() || API_URL;
+          const bodyPayload = {
+            estadoPrenez: nuevoEstadoPrenez,
+            observaciones: novedadesTexto,
+            geneticaUtilizada: geneticaAGuardar
+          };
+          if (nuevoEstadoPrenez === 'Preñada' || nuevoEstadoPrenez === 'Vacía' || nuevoEstadoPrenez === 'Parto Atendido') {
+            bodyPayload.pasosCompletados = {
+              ...(selectedProc.pasosCompletados || {}),
+              dia0_visita: true,
+              dia45_confirmacion: true
+            };
+          }
           const res = await fetch(`${currentUrl}/api/registro-genetico/${selectedProc._id}/prenez`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({
-              estadoPrenez: nuevoEstadoPrenez,
-              observaciones: novedadesTexto,
-              geneticaUtilizada: geneticaAGuardar
-            })
+            body: JSON.stringify(bodyPayload)
           });
           const data = await res.json();
           if (data.success) {
@@ -598,11 +645,29 @@ export default function DashboardScreen({ navigation }) {
       }
 
       // Actualizar estado en memoria
-      const actualizarItem = (p) => p._id === selectedProc._id 
-        ? { ...p, estadoPrenez: nuevoEstadoPrenez, observaciones: novedadesTexto, geneticaUtilizada: geneticaAGuardar } 
-        : p;
+      const actualizarItem = (p) => {
+        if (p._id === selectedProc._id) {
+          const nuevosPasos = { ...(p.pasosCompletados || {}) };
+          if (nuevoEstadoPrenez === 'Preñada' || nuevoEstadoPrenez === 'Vacía' || nuevoEstadoPrenez === 'Parto Atendido') {
+            nuevosPasos.dia0_visita = true;
+            nuevosPasos.dia45_confirmacion = true;
+          }
+          return { 
+            ...p, 
+            estadoPrenez: nuevoEstadoPrenez, 
+            observaciones: novedadesTexto, 
+            geneticaUtilizada: geneticaAGuardar,
+            pasosCompletados: nuevosPasos
+          };
+        }
+        return p;
+      };
 
-      setProcedimientos(prev => prev.map(actualizarItem));
+      setProcedimientos(prev => {
+        const actualizados = prev.map(actualizarItem);
+        calcularAlertas(actualizados);
+        return actualizados;
+      });
 
       // Actualizar en caché local
       const cacheRaw = await AsyncStorage.getItem('cacheProcedimientos');
@@ -640,7 +705,7 @@ export default function DashboardScreen({ navigation }) {
     const prenez = proc.estadoPrenez || 'Pendiente Evaluación';
     const vet = proc.veterinarioAsignado || 'Equipo Veterinario Sembriogan';
     const dia0 = proc.fechasProtocolo?.dia0_sincronizacion || proc.createdAt;
-    const dia0Str = dia0 ? new Date(dia0).toLocaleDateString('es-CO') : 'N/A';
+    const dia0Str = dia0 ? formatearFecha(dia0) : 'N/A';
     const observaciones = proc.observaciones ? `\n📝 *Novedades / Observaciones:* ${proc.observaciones}` : '';
 
     const mensaje = 
@@ -811,7 +876,7 @@ _Generado desde la App Veterinaria Sembriogan (Somos EPSEA)._`;
         else if (p.estadoPrenez === 'Vacía') iconoPrenez = '❌ VACÍA';
 
         const fechaProc = p.fechasProtocolo?.dia0_sincronizacion || p.createdAt;
-        const fechaStr = fechaProc ? new Date(fechaProc).toLocaleDateString('es-CO') : '';
+        const fechaStr = fechaProc ? formatearFecha(fechaProc) : '';
         const gen = p.geneticaUtilizada || p.semenToro ? ` | Pajilla: ${p.geneticaUtilizada || p.semenToro}` : '';
 
         return `🔹 Chapeta *${arete}*${raza} | ${tipo}${gen}\n   ↳ Diagnóstico: *${iconoPrenez}* ${fechaStr ? `(${fechaStr})` : ''}`;
@@ -898,7 +963,7 @@ _Contacto y asistencia técnica: +57 320 857 7634_`;
         </View>
       </View>
       <Text style={styles.detail}>Finca: {item.finca ? `${item.finca} (${item.productor})` : item.productor}</Text>
-      <Text style={styles.detail}>Día 0: {new Date(item.fechasProtocolo?.dia0_sincronizacion || item.createdAt).toLocaleDateString()}</Text>
+      <Text style={styles.detail}>Día 0: {formatearFecha(item.fechasProtocolo?.dia0_sincronizacion || item.fechaProcedimiento || item.createdAt)}</Text>
       {item.geneticaUtilizada === 'Pendiente de Selección' ? (
         <Text style={[styles.detail, { color: '#d97706', fontWeight: 'bold' }]}>
           ⚠️ Toro: Pendiente por definir en campo

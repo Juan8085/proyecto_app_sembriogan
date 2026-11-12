@@ -171,8 +171,9 @@ export default function AdminTrazabilidad() {
         veterinarioAsignado: nuevoProcedimiento.veterinarioAsignado || 'Equipo Veterinario Sembriogan',
         observaciones: nuevoProcedimiento.observaciones.trim(),
         origenRegistro: 'Oficina / Administrativo',
+        fechaProcedimiento: `${nuevoProcedimiento.fechaVisita}T12:00:00.000Z`,
         fechasProtocolo: {
-          dia0_sincronizacion: new Date(nuevoProcedimiento.fechaVisita)
+          dia0_sincronizacion: `${nuevoProcedimiento.fechaVisita}T12:00:00.000Z`
         }
       };
 
@@ -221,7 +222,19 @@ export default function AdminTrazabilidad() {
 
   const formatearFecha = (fecha) => {
     if (!fecha) return 'N/A';
-    return new Date(fecha).toLocaleDateString('es-CO');
+    if (typeof fecha === 'string') {
+      const match = fecha.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        const [, year, month, day] = match;
+        return `${day}/${month}/${year}`;
+      }
+    }
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return 'N/A';
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const year = d.getUTCFullYear();
+    return `${day}/${month}/${year}`;
   };
 
   // Filtrado reactivo en tiempo real (por animal)
@@ -420,7 +433,7 @@ _Emitido por el Departamento Técnico de Sembriogan (Somos EPSEA)._`;
     const prenez = reg.estadoPrenez || 'Pendiente Evaluación';
     const vet = reg.veterinarioAsignado || 'Equipo Veterinario Sembriogan';
     const dia0 = reg.fechasProtocolo?.dia0_sincronizacion || reg.fechaProcedimiento || reg.createdAt;
-    const dia0Str = dia0 ? new Date(dia0).toLocaleDateString('es-CO') : 'N/A';
+    const dia0Str = dia0 ? formatearFecha(dia0) : 'N/A';
     const observaciones = reg.observaciones ? `\n📝 *Novedades / Observaciones:* ${reg.observaciones}` : '';
 
     const mensaje = 
@@ -459,7 +472,18 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
     const fechaBase = registro.fechasProtocolo?.dia0_sincronizacion || registro.fechaProcedimiento;
     if (!fechaBase) return { texto: 'Sin fecha de inicio', color: 'bg-slate-100 text-slate-500' };
 
-    const dia0 = new Date(fechaBase);
+    const parsearFechaLocal = (f) => {
+      if (!f) return new Date();
+      if (typeof f === 'string' && f.length >= 10) {
+        const parts = f.substring(0, 10).split('-');
+        if (parts.length === 3) {
+          return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
+        }
+      }
+      return new Date(f);
+    };
+
+    const dia0 = parsearFechaLocal(fechaBase);
     const sumarDias = (fecha, dias) => {
       const nueva = new Date(fecha);
       nueva.setDate(nueva.getDate() + dias);
@@ -470,19 +494,23 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
     const comp = registro.pasosCompletados || {};
 
     if (registro.tipoProcedimiento === 'IATF') {
+      if (!comp.dia0_visita) pasos.push({ nombre: 'Sincronización (Día 0)', fecha: dia0 });
       if (!comp.dia8_retiro) pasos.push({ nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) });
       if (!comp.dia10_inseminacion) pasos.push({ nombre: 'Inseminación (Día 10)', fecha: sumarDias(dia0, 10) });
       if (!comp.dia45_confirmacion) pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
     } else if (registro.tipoProcedimiento === 'IA') {
+      if (!comp.dia0_visita) pasos.push({ nombre: 'Inseminación (Día 0)', fecha: dia0 });
       if (!comp.dia45_confirmacion) pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
     } else if (registro.tipoProcedimiento === 'TE') {
+      if (!comp.dia0_visita) pasos.push({ nombre: 'Inicio Receptoras (Día 0)', fecha: dia0 });
       if (!comp.dia8_retiro) pasos.push({ nombre: 'Retiro Dispositivo (Día 8)', fecha: sumarDias(dia0, 8) });
       if (!comp.dia17_transferencia) pasos.push({ nombre: 'Transferencia (Día 17)', fecha: sumarDias(dia0, 17) });
       if (!comp.dia45_confirmacion) pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
       pasos.push({ nombre: 'Entrega (Día 90)', fecha: sumarDias(dia0, 90) });
     } else if (registro.tipoProcedimiento === 'Diagnostico') {
-      if (!comp.dia45_confirmacion) pasos.push({ nombre: 'Diagnóstico Ecográfico', fecha: dia0 });
+      if (!comp.dia0_visita && !comp.dia45_confirmacion) pasos.push({ nombre: 'Diagnóstico Ecográfico', fecha: dia0 });
     } else {
+      if (!comp.dia0_visita) pasos.push({ nombre: 'Atención en Campo (Día 0)', fecha: dia0 });
       if (!comp.dia45_confirmacion) pasos.push({ nombre: 'Conf. Preñez (Día 45)', fecha: sumarDias(dia0, 45) });
     }
 
@@ -490,9 +518,9 @@ _Generado desde el Panel Administrativo Sembriogan (Somos EPSEA)._`;
     if (!proximoPaso) return { texto: 'Protocolo Finalizado. Pendiente Estado.', color: 'bg-amber-50 text-amber-700 border border-amber-200' };
 
     const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
+    hoy.setHours(12, 0, 0, 0);
     const fechaComparar = new Date(proximoPaso.fecha);
-    fechaComparar.setHours(0, 0, 0, 0);
+    fechaComparar.setHours(12, 0, 0, 0);
 
     const diasFaltantes = Math.round((fechaComparar - hoy) / (1000 * 60 * 60 * 24));
     const fechaPasoStr = formatearFecha(proximoPaso.fecha);

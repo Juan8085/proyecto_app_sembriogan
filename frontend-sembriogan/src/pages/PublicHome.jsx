@@ -110,6 +110,23 @@ export default function PublicHome() {
     return { total, preñadas, vacias, pendientes, tasa };
   }, [misProcedimientosCliente]);
 
+  const formatearFecha = (fecha) => {
+    if (!fecha) return 'N/A';
+    if (typeof fecha === 'string') {
+      const match = fecha.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        const [, year, month, day] = match;
+        return `${day}/${month}/${year}`;
+      }
+    }
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return 'N/A';
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const year = d.getUTCFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
   // Estados interactivos de la barra de navegación flotante
   const [isScrolled, setIsScrolled] = useState(false);
   const [capsuleProgress, setCapsuleProgress] = useState(0); // 0 = transparente total en carrusel, 1 = cápsula consolidada
@@ -1474,7 +1491,7 @@ export default function PublicHome() {
                              </span>
                           </div>
                           <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-1">
-                             <span className="text-xs text-slate-400">Día 0: {new Date(proc.fechasProtocolo?.dia0_sincronizacion || proc.createdAt).toLocaleDateString()}</span>
+                             <span className="text-xs text-slate-400">Día 0: {formatearFecha(proc.fechasProtocolo?.dia0_sincronizacion || proc.createdAt)}</span>
                              <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${(proc.estadoPrenez === 'Pendiente' || proc.estadoPrenez === 'Pendiente Evaluación') ? 'bg-yellow-100 text-yellow-700' : (proc.estadoPrenez === 'Preñada' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}`}>
                                {proc.estadoPrenez}
                              </span>
@@ -1567,7 +1584,7 @@ export default function PublicHome() {
                   </div>
                   <div>
                     <span className="text-xs text-slate-500 block">Fecha Inicio:</span>
-                    <span className="font-bold text-slate-800 text-sm">{new Date(certificadoClienteModal.fechasProtocolo?.dia0_sincronizacion || certificadoClienteModal.createdAt).toLocaleDateString()}</span>
+                    <span className="font-bold text-slate-800 text-sm">{formatearFecha(certificadoClienteModal.fechasProtocolo?.dia0_sincronizacion || certificadoClienteModal.createdAt)}</span>
                   </div>
                 </div>
 
@@ -1734,7 +1751,7 @@ export default function PublicHome() {
                           </td>
                           <td className="py-2.5 px-3 text-slate-700 font-semibold">{proc.geneticaUtilizada || 'Convencional'}</td>
                           <td className="py-2.5 px-3 text-slate-500 font-mono text-[11px]">
-                            {new Date(proc.fechasProtocolo?.dia0_sincronizacion || proc.createdAt).toLocaleDateString()}
+                            {formatearFecha(proc.fechasProtocolo?.dia0_sincronizacion || proc.createdAt)}
                           </td>
                           <td className="py-2.5 px-3">
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
