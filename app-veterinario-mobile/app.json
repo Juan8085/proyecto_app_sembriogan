@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sembriogan Veterinario",
     "slug": "sembriogan-veterinario",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.sembriogan.veterinario",
+      "versionCode": 2,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
