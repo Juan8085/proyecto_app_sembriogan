@@ -1,0 +1,6 @@
+# Ignore everything outside app-veterinario-mobile
+backend-api/
+frontend-sembriogan/
+docs/
+*.log
+*.cjs

@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Expo / build
+.expo/
+dist/
+web-build/
+*.log
+
+# Scripts temporales
+fix_*.cjs
+migrate_*.cjs
+update_*.cjs
