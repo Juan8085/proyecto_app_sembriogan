@@ -839,6 +839,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     padding: 16,
+    paddingBottom: 120,
   },
   card: {
     backgroundColor: '#fff',
