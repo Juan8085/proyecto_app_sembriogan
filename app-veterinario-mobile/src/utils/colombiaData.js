@@ -236,3 +236,4 @@ export const formatearUbicacion = (municipio, departamento) => {
   }
   return m || d || 'Colombia';
 };
+
